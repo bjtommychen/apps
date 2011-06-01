@@ -12,5 +12,8 @@
 		android:textSize="4sp" >
 
 	</ListView>
+	<ListView android:layout_height="wrap_content" android:id="@+id/listView1"
+		android:layout_width="fill_parent"></ListView>
 </LinearLayout>
+
         
