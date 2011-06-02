@@ -45,7 +45,7 @@ public class SmsClean extends Activity
 
 		list = (ListView) findViewById(R.id.listView1);
 		list.setBackgroundColor(Color.BLUE);
-		list.setCacheColorHint(Color.BLUE);// Tommy: won't change color when
+		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color when
 
 		// head/foot view
 		footview = new TextView(this);
@@ -294,7 +294,7 @@ public class SmsClean extends Activity
 			ViewHolder holder = null;
 
 			// Log.i(TAG, "MyAdapter getView " + position);
-			if (convertView == null)
+			if (true)//(convertView == null)
 			{
 				holder = new ViewHolder();
 				convertView = mInflater.inflate(R.layout.smslist_map, null);
@@ -306,7 +306,7 @@ public class SmsClean extends Activity
 						.findViewById(R.id.checkBox_delete);
 				convertView.setTag(holder);
 			} else
-			{
+			{ //µÃµ½»º´æµÄ
 				holder = (ViewHolder) convertView.getTag();
 			}
 
