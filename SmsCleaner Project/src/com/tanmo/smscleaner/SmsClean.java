@@ -20,15 +20,19 @@ import android.content.Context;
 public class SmsClean extends Activity
 {
 	private String TAG = "smsclean";
+	private final int MAX_SMS_BROWSE = 5;
 	private String info, dbginfo, info_show;
-	private Cursor cur;
+	private Cursor cur, cur_delete;
 	private Uri uri;
 	private List<String> arraylist_sms = new ArrayList<String>();
+	private ArrayList<Boolean> checkedItem = new ArrayList<Boolean>();
 	private ArrayAdapter<String> arrayadapter_sms;
 	private ListView list;
 	private TextView footview;
 	private ArrayList<Map<String, Object>> sms_array1 = new ArrayList<Map<String, Object>>();
 	private int iTotal, iSelected;
+	static final private int MENU_DELETE_SELECTED = Menu.FIRST;
+	static final private int MENU_QUIT = Menu.FIRST + 2;
 
 	// private ListView list;
 
@@ -42,13 +46,26 @@ public class SmsClean extends Activity
 		list = (ListView) findViewById(R.id.listView1);
 		list.setBackgroundColor(Color.BLUE);
 		list.setCacheColorHint(Color.BLUE);// Tommy: won't change color when
+
+		// head/foot view
+		footview = new TextView(this);
+		footview.setTextColor(Color.RED);
+		footview.setTypeface(null, Typeface.BOLD);
+		list.addHeaderView(footview);
+
 		// select
 		Log.i(TAG, "start !");
 
 		// Show list
-		browse_sms(25);
+		browse_sms(MAX_SMS_BROWSE);
 
 		Log.i(TAG, "stop !");
+	}
+
+	private void list_update_headview()
+	{
+		// footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
+		footview.setText(" " + iSelected + "/" + iTotal + " SMS Selected. ");
 	}
 
 	// Browser all the SMS
@@ -74,12 +91,16 @@ public class SmsClean extends Activity
 		// }
 
 		i = 1;
+//		arrayadapter_sms.clear();
 		arraylist_sms.clear();
+		checkedItem.clear();
+		sms_array1.clear();
+		
 
 		uri = Uri.parse("content://sms/inbox");
 		// cur = this.managedQuery(uri, null, null, null, null);
 		cur = getContentResolver().query(uri, null, null, null, null);
-		
+
 		iSelected = 0;
 		if (cur.getCount() == 0)
 		{
@@ -88,13 +109,6 @@ public class SmsClean extends Activity
 		{
 			Log.i(TAG, "Total " + cur.getCount() + " sms !!!");
 			// arraylist_sms.add("Total " + cur.getCount() + " sms !!!");
-			
-			footview = new TextView(this);
-//			footview.setText("Total " + cur.getCount() + " !");
-			footview.setTextColor(Color.RED);
-			footview.setTypeface(null, Typeface.BOLD);
-//			list.addFooterView(footview);
-			list.addHeaderView(footview);
 
 			iSelected = 0;
 			iTotal = 0;
@@ -123,11 +137,27 @@ public class SmsClean extends Activity
 							if (cur.getString(j) == null)
 							{
 								map.put("CHECKED", true);
-								iSelected++;
-							}
-							else
+								if (false)
+								{
+									checkedItem.add(true);
+									iSelected++;
+								} else
+								{
+									checkedItem.add(false);
+								}
+							} else
+							{
+								checkedItem.add(false);
 								map.put("CHECKED", false);
-						} else
+							}
+						} else if (cur.getColumnName(j).equals("_id"))
+						{
+							map.put("ID", cur.getString(j));
+						}else if (cur.getColumnName(j).equals("thread_id"))
+						{
+							map.put("THREAD_ID", cur.getString(j));
+						}
+						
 						{
 							info += cur.getColumnName(j) + "="
 									+ cur.getString(j) + ";";
@@ -138,13 +168,13 @@ public class SmsClean extends Activity
 					arraylist_sms.add(info_show);
 					sms_array1.add(map);
 					iTotal++;
-					
+
 				} while (cur.moveToNext() && (i++ < num));
 			}
 		}
 
-		footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
-		
+		list_update_headview();
+
 		{ // if extends ListActivity, Tommy: this mode, can't change textsize.
 			// arrayadapter_sms = new ArrayAdapter<String>(this,
 			// android.R.layout.simple_list_item_multiple_choice,
@@ -187,6 +217,32 @@ public class SmsClean extends Activity
 
 	} // browse_sms
 
+	private void delete_sms_selected()
+	{
+		Boolean bDel;
+
+		if (iTotal > 0 && iSelected > 0)
+		{
+			for (int i = 0; i < iTotal; i++)
+			{
+				bDel = (Boolean) checkedItem.get(i);
+				if (bDel)
+				{	// DELETE
+					Log.i(TAG, "Pos " + i + " will be delete." + " Tel is "
+							+ sms_array1.get(i).get("ADDR") + "thread_id is " + sms_array1.get(i).get("THREAD_ID"));
+//					this.getContentResolver().delete(Uri.parse("content://sms/inbox"), "_id=?", new String[]{"357"});// {sms_array1.get(i).get("ID"));
+				} else
+				{
+					Log.i(TAG, "Pos " + i + " SKIP." + " Tel is "
+							+ sms_array1.get(i).get("ADDR"));
+				}
+			}
+		}
+		
+		//update
+		browse_sms(MAX_SMS_BROWSE);
+	}
+
 	public final class ViewHolder
 	{
 		public TextView addr;
@@ -228,7 +284,7 @@ public class SmsClean extends Activity
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent)
 		{
-			final int p = position;	// Must be final.
+			final int p = position; // Must be final.
 			ViewHolder holder = null;
 
 			// Log.i(TAG, "MyAdapter getView " + position);
@@ -251,8 +307,9 @@ public class SmsClean extends Activity
 			holder.addr.setText("From:"
 					+ (String) sms_array1.get(position).get("ADDR"));
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
-			holder.checked.setChecked((Boolean) sms_array1.get(position).get(
-					"CHECKED"));
+			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
+			// "CHECKED"));
+			holder.checked.setChecked(checkedItem.get(position));
 			holder.checked
 					.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener()
 					{
@@ -267,18 +324,51 @@ public class SmsClean extends Activity
 							// .show();
 							if (isChecked)
 							{
+								checkedItem.set(p, true);
 								iSelected++;
-							}
-							else
+							} else
 							{
+								checkedItem.set(p, false);
 								iSelected--;
 							}
-							footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
-						
+							list_update_headview();
 						}
 					});
 
 			return convertView;
 		}
 	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		// TODO Auto-generated method stub
+		int idGroup1 = 0;
+
+		/* The order position of the item */
+		int orderItem1 = Menu.NONE;
+		int orderItem3 = Menu.NONE + 2;
+
+		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, "Delete Selected")
+				.setIcon(android.R.drawable.ic_delete);
+		int MENU_DRAW;
+		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, android.R.string.ok).setIcon(
+				android.R.drawable.ic_dialog_alert);
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item)
+	{
+		// TODO Auto-generated method stub
+		switch (item.getItemId())
+		{
+			case (MENU_DELETE_SELECTED):
+				delete_sms_selected();
+				break;
+
+		}
+		return super.onMenuItemSelected(featureId, item);
+	}
+
 }
