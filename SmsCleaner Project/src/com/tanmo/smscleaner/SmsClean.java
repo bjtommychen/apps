@@ -12,6 +12,8 @@ import android.graphics.Typeface;
 
 import java.util.*;
 
+import javax.security.auth.Destroyable;
+
 import android.os.Bundle;
 import android.widget.*;
 import android.view.*;
@@ -294,7 +296,7 @@ public class SmsClean extends Activity
 			ViewHolder holder = null;
 
 			// Log.i(TAG, "MyAdapter getView " + position);
-			if (true)//(convertView == null)
+			if (convertView == null)
 			{
 				holder = new ViewHolder();
 				convertView = mInflater.inflate(R.layout.smslist_map, null);
@@ -315,6 +317,7 @@ public class SmsClean extends Activity
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
 			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
 			// "CHECKED"));
+			holder.checked.setChecked(false);
 			holder.checked.setChecked(checkedItem.get(position));
 			holder.checked
 					.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener()
@@ -358,8 +361,8 @@ public class SmsClean extends Activity
 		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, "Delete Selected")
 				.setIcon(android.R.drawable.ic_delete);
 		int MENU_DRAW;
-		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, android.R.string.ok).setIcon(
-				android.R.drawable.ic_dialog_alert);
+		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, "Quit").setIcon(
+				android.R.drawable.ic_menu_send);
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -372,7 +375,8 @@ public class SmsClean extends Activity
 			case (MENU_DELETE_SELECTED):
 				delete_sms_selected();
 				break;
-
+			case (MENU_QUIT):
+				finish();
 		}
 		return super.onMenuItemSelected(featureId, item);
 	}
