@@ -20,7 +20,7 @@ import android.content.Context;
 public class SmsClean extends Activity
 {
 	private String TAG = "smsclean";
-	private final int MAX_SMS_BROWSE = 5;
+	private final int MAX_SMS_BROWSE = 555;
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_delete;
 	private Uri uri;
@@ -99,7 +99,11 @@ public class SmsClean extends Activity
 
 		uri = Uri.parse("content://sms/inbox");
 		// cur = this.managedQuery(uri, null, null, null, null);
-		cur = getContentResolver().query(uri, null, null, null, null);
+		cur = getContentResolver().query(uri, 
+				//null,
+//				new String[] { "_id", "thread_id", "address", "person", "date", "body" },
+				new String[] { "thread_id", "address", "person", "body" },
+				null, null, null);
 
 		iSelected = 0;
 		if (cur.getCount() == 0)
@@ -119,25 +123,25 @@ public class SmsClean extends Activity
 					Map<String, Object> map = new HashMap<String, Object>();
 
 					info = "Sms " + String.valueOf(i) + ": ";
-					info_show = "";
+//					info_show = "";
 					for (int j = 0; j < cur.getColumnCount(); j++)
 					{
 						if (cur.getColumnName(j).equals("body"))
 						{
 							Log.i(TAG, "Msg is " + cur.getString(j));
-							info_show += cur.getString(j);
+//							info_show += cur.getString(j);
 							map.put("BODY", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("address"))
 						{
 							Log.i(TAG, "From " + cur.getString(j));
-							info_show += "From:" + cur.getString(j) + "\n";
+//							info_show += "From:" + cur.getString(j) + "\n";
 							map.put("ADDR", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("person"))
 						{
 							if (cur.getString(j) == null)
 							{
 								map.put("CHECKED", true);
-								if (false)
+								if (true)	// when test, set to false
 								{
 									checkedItem.add(true);
 									iSelected++;
@@ -158,6 +162,7 @@ public class SmsClean extends Activity
 							map.put("THREAD_ID", cur.getString(j));
 						}
 						
+						if (cur.getColumnName(j).equals("body") == false)
 						{
 							info += cur.getColumnName(j) + "="
 									+ cur.getString(j) + ";";
@@ -165,7 +170,7 @@ public class SmsClean extends Activity
 
 					}
 					Log.i(TAG, info);
-					arraylist_sms.add(info_show);
+//					arraylist_sms.add(info_show);
 					sms_array1.add(map);
 					iTotal++;
 
@@ -231,6 +236,7 @@ public class SmsClean extends Activity
 					Log.i(TAG, "Pos " + i + " will be delete." + " Tel is "
 							+ sms_array1.get(i).get("ADDR") + "thread_id is " + sms_array1.get(i).get("THREAD_ID"));
 //					this.getContentResolver().delete(Uri.parse("content://sms/inbox"), "_id=?", new String[]{"357"});// {sms_array1.get(i).get("ID"));
+					this.getContentResolver().delete(Uri.parse("content://sms/conversations/"+sms_array1.get(i).get("THREAD_ID")), null, null);					
 				} else
 				{
 					Log.i(TAG, "Pos " + i + " SKIP." + " Tel is "
