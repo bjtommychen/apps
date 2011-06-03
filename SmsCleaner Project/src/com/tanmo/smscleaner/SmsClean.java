@@ -263,6 +263,8 @@ public class SmsClean extends Activity
 		 */
 		if (iTotal > 0 && iSelected > 0)
 		{
+			progressDialog.show();
+			
 			new Thread()
 			{
 				Boolean bDel;
@@ -275,8 +277,6 @@ public class SmsClean extends Activity
 					try
 					{
 						m_count = 0;
-						progressDialog.setProgress(0);
-						progressDialog.show();
 
 						for (int i = 0; i < iTotal; i++)
 						{
