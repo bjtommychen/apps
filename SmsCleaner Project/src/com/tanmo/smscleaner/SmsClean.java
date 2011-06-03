@@ -6,7 +6,6 @@ import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.SystemClock;
 
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.net.Uri;
 import android.database.Cursor;
@@ -25,7 +24,7 @@ public class SmsClean extends Activity
 	private String TAG = "smsclean";
 	private final int MAX_SMS_BROWSE = 555;
 	private String info, dbginfo, info_show;
-	private Cursor cur, cur_delete;
+	private Cursor cur;
 	private Uri uri;
 	private List<String> arraylist_sms = new ArrayList<String>();
 	private ArrayList<Boolean> checkedItem = new ArrayList<Boolean>();
@@ -272,8 +271,6 @@ public class SmsClean extends Activity
 				@Override
 				public void run()
 				{
-					// TODO Auto-generated method stub
-					// super.run();
 					try
 					{
 						m_count = 0;
@@ -284,18 +281,28 @@ public class SmsClean extends Activity
 							if (bDel)
 							{
 								m_count++;
-								SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
-								Thread.sleep(1);
+								if(true)
+								{
+									SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
+								}
+								else
+								{
+									Thread.sleep(100);
+								}
 								progressDialog.incrementProgressBy(1);
 							}
 						}
 
+						Thread.sleep(1);
 						progressDialog.cancel();
 						handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
 
 					} catch (InterruptedException e)
 					{
 						e.printStackTrace();
+					}finally
+					{
+//						browse_sms(MAX_SMS_BROWSE);
 					}
 				}
 
@@ -325,21 +332,18 @@ public class SmsClean extends Activity
 		@Override
 		public int getCount()
 		{
-			// TODO Auto-generated method stub
 			return sms_array1.size();
 		}
 
 		@Override
 		public Object getItem(int arg0)
 		{
-			// TODO Auto-generated method stub
 			return null;
 		}
 
 		@Override
 		public long getItemId(int position)
 		{
-			// TODO Auto-generated method stub
 			return position;
 		}
 
@@ -350,7 +354,8 @@ public class SmsClean extends Activity
 			ViewHolder holder = null;
 
 			// Log.i(TAG, "MyAdapter getView " + position);
-			if (convertView == null)
+			// Tommy: always create holder. scroll slower, but correct. I think, the faster way is optimized with speed, and not good for CheckBox.
+			if (true)//(convertView == null)	
 			{
 				holder = new ViewHolder();
 				convertView = mInflater.inflate(R.layout.smslist_map, null);
@@ -399,7 +404,6 @@ public class SmsClean extends Activity
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
-		// TODO Auto-generated method stub
 		int idGroup1 = 0;
 
 		/* The order position of the item */
@@ -415,7 +419,6 @@ public class SmsClean extends Activity
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item)
 	{
-		// TODO Auto-generated method stub
 		switch (item.getItemId())
 		{
 			case (MENU_DELETE_SELECTED):
