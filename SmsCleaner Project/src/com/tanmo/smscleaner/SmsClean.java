@@ -1,7 +1,10 @@
 package com.tanmo.smscleaner;
 
+import android.R.color;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.os.SystemClock;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -9,15 +12,13 @@ import android.net.Uri;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
-
 import java.util.*;
-
-import javax.security.auth.Destroyable;
-
 import android.os.Bundle;
 import android.widget.*;
 import android.view.*;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 
 public class SmsClean extends Activity
 {
@@ -35,6 +36,11 @@ public class SmsClean extends Activity
 	private int iTotal, iSelected;
 	static final private int MENU_DELETE_SELECTED = Menu.FIRST;
 	static final private int MENU_QUIT = Menu.FIRST + 2;
+	private int m_count = 0;
+	private ProgressDialog progressDialog;
+	private Handler handler = null;
+
+	protected static final int GUI_UPDATE_SMS_LIST = 0x108;
 
 	// private ListView list;
 
@@ -46,8 +52,9 @@ public class SmsClean extends Activity
 		setContentView(R.layout.main);
 
 		list = (ListView) findViewById(R.id.listView1);
-		list.setBackgroundColor(Color.BLUE);
-		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color when
+		list.setBackgroundColor(Color.rgb(0, 0, 250));// (0xff02003f);
+		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color
+		// when
 
 		// head/foot view
 		footview = new TextView(this);
@@ -62,12 +69,27 @@ public class SmsClean extends Activity
 		browse_sms(MAX_SMS_BROWSE);
 
 		Log.i(TAG, "stop !");
+
+		handler = new Handler()
+		{
+			@Override
+			public void handleMessage(Message msg)
+			{
+				switch (msg.what)
+				{
+					case GUI_UPDATE_SMS_LIST:
+						browse_sms(MAX_SMS_BROWSE);
+						break;
+				}
+				super.handleMessage(msg);
+			}
+		};
 	}
 
 	private void list_update_headview()
 	{
 		// footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
-		footview.setText(" " + iSelected + "/" + iTotal + " SMS Selected. ");
+		footview.setText(" " + iSelected + "/" + iTotal + " Selected. ");
 	}
 
 	// Browser all the SMS
@@ -93,19 +115,18 @@ public class SmsClean extends Activity
 		// }
 
 		i = 1;
-//		arrayadapter_sms.clear();
+		// arrayadapter_sms.clear();
 		arraylist_sms.clear();
 		checkedItem.clear();
 		sms_array1.clear();
-		
 
 		uri = Uri.parse("content://sms/inbox");
 		// cur = this.managedQuery(uri, null, null, null, null);
-		cur = getContentResolver().query(uri, 
-				//null,
-//				new String[] { "_id", "thread_id", "address", "person", "date", "body" },
-				new String[] { "thread_id", "address", "person", "body" },
-				null, null, null);
+		cur = getContentResolver().query(uri,
+		// null,
+				// new String[] { "_id", "thread_id", "address", "person",
+				// "date", "body" },
+				new String[] { "thread_id", "address", "person", "body" }, null, null, null);
 
 		iSelected = 0;
 		if (cur.getCount() == 0)
@@ -125,25 +146,25 @@ public class SmsClean extends Activity
 					Map<String, Object> map = new HashMap<String, Object>();
 
 					info = "Sms " + String.valueOf(i) + ": ";
-//					info_show = "";
+					// info_show = "";
 					for (int j = 0; j < cur.getColumnCount(); j++)
 					{
 						if (cur.getColumnName(j).equals("body"))
 						{
 							Log.i(TAG, "Msg is " + cur.getString(j));
-//							info_show += cur.getString(j);
+							// info_show += cur.getString(j);
 							map.put("BODY", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("address"))
 						{
 							Log.i(TAG, "From " + cur.getString(j));
-//							info_show += "From:" + cur.getString(j) + "\n";
+							// info_show += "From:" + cur.getString(j) + "\n";
 							map.put("ADDR", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("person"))
 						{
 							if (cur.getString(j) == null)
 							{
 								map.put("CHECKED", true);
-								if (true)	// when test, set to false
+								if (true) // when test, set to false
 								{
 									checkedItem.add(true);
 									iSelected++;
@@ -159,20 +180,19 @@ public class SmsClean extends Activity
 						} else if (cur.getColumnName(j).equals("_id"))
 						{
 							map.put("ID", cur.getString(j));
-						}else if (cur.getColumnName(j).equals("thread_id"))
+						} else if (cur.getColumnName(j).equals("thread_id"))
 						{
 							map.put("THREAD_ID", cur.getString(j));
 						}
-						
+
 						if (cur.getColumnName(j).equals("body") == false)
 						{
-							info += cur.getColumnName(j) + "="
-									+ cur.getString(j) + ";";
+							info += cur.getColumnName(j) + "=" + cur.getString(j) + ";";
 						}
 
 					}
 					Log.i(TAG, info);
-//					arraylist_sms.add(info_show);
+					// arraylist_sms.add(info_show);
 					sms_array1.add(map);
 					iTotal++;
 
@@ -214,9 +234,7 @@ public class SmsClean extends Activity
 			list.setAdapter(smslistadapter);
 		}
 
-		Toast.makeText(getApplicationContext(),
-				"Total " + cur.getCount() + " sms !!!", Toast.LENGTH_LONG)
-				.show();
+		Toast.makeText(getApplicationContext(), "Total " + cur.getCount() + " sms !!!", Toast.LENGTH_LONG).show();
 
 		// listView.setItemsCanFocus(false);
 
@@ -224,33 +242,69 @@ public class SmsClean extends Activity
 
 	} // browse_sms
 
+	// Delete SMS
 	private void delete_sms_selected()
 	{
-		Boolean bDel;
+		progressDialog = new ProgressDialog(this);
+		progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		// progressDialog.setTitle("title");
+		progressDialog.setMessage("Deleting ...");
+		progressDialog.setMax(iSelected);
+		progressDialog.setProgress(0);
+		progressDialog.setIndeterminate(false);
+		progressDialog.setCancelable(true);
+		// SystemClock.sleep(100);
 
+		/*
+		 * m_count = 0; while (m_count <= iSelected) { m_count++; //
+		 * progressDialog.setProgress(m_count);
+		 * progressDialog.incrementProgressBy(1); SystemClock.sleep(100); }
+		 * SystemClock.sleep(1000);
+		 */
 		if (iTotal > 0 && iSelected > 0)
 		{
-			for (int i = 0; i < iTotal; i++)
+			new Thread()
 			{
-				bDel = (Boolean) checkedItem.get(i);
-				if (bDel)
-				{	// DELETE
-					Log.i(TAG, "Pos " + i + " will be delete." + " Tel is "
-							+ sms_array1.get(i).get("ADDR") + "thread_id is " + sms_array1.get(i).get("THREAD_ID"));
-//					this.getContentResolver().delete(Uri.parse("content://sms/inbox"), "_id=?", new String[]{"357"});// {sms_array1.get(i).get("ID"));
-					this.getContentResolver().delete(Uri.parse("content://sms/conversations/"+sms_array1.get(i).get("THREAD_ID")), null, null);					
-				} else
+				Boolean bDel;
+
+				@Override
+				public void run()
 				{
-					Log.i(TAG, "Pos " + i + " SKIP." + " Tel is "
-							+ sms_array1.get(i).get("ADDR"));
+					// TODO Auto-generated method stub
+					// super.run();
+					try
+					{
+						m_count = 0;
+						progressDialog.setProgress(0);
+						progressDialog.show();
+
+						for (int i = 0; i < iTotal; i++)
+						{
+							bDel = (Boolean) checkedItem.get(i);
+							if (bDel)
+							{
+								m_count++;
+								SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
+								Thread.sleep(1);
+								progressDialog.incrementProgressBy(1);
+							}
+						}
+
+						progressDialog.cancel();
+						handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
+
+					} catch (InterruptedException e)
+					{
+						e.printStackTrace();
+					}
 				}
-			}
+
+			}.start();
 		}
-		
-		//update
-		browse_sms(MAX_SMS_BROWSE);
+
 	}
 
+	// START of MyAdapter
 	public final class ViewHolder
 	{
 		public TextView addr;
@@ -300,49 +354,43 @@ public class SmsClean extends Activity
 			{
 				holder = new ViewHolder();
 				convertView = mInflater.inflate(R.layout.smslist_map, null);
-				holder.addr = (TextView) convertView
-						.findViewById(R.id.sms_address);
-				holder.body = (TextView) convertView
-						.findViewById(R.id.sms_body);
-				holder.checked = (CheckBox) convertView
-						.findViewById(R.id.checkBox_delete);
+				holder.addr = (TextView) convertView.findViewById(R.id.sms_address);
+				holder.body = (TextView) convertView.findViewById(R.id.sms_body);
+				holder.checked = (CheckBox) convertView.findViewById(R.id.checkBox_delete);
 				convertView.setTag(holder);
 			} else
-			{ //得到缓存的
+			{ // 得到缓存的
 				holder = (ViewHolder) convertView.getTag();
 			}
 
-			holder.addr.setText("From:"
-					+ (String) sms_array1.get(position).get("ADDR"));
+			holder.addr.setText("From:" + (String) sms_array1.get(position).get("ADDR"));
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
 			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
 			// "CHECKED"));
-			holder.checked.setChecked(false);
+//			holder.checked.setChecked(false);
 			holder.checked.setChecked(checkedItem.get(position));
-			holder.checked
-					.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener()
+			holder.checked.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener()
+			{
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+				{
+					// sms_array1.get(p);
+					// Toast.makeText(getApplicationContext(),
+					// "Pos " + p + " will be deleted !!!",
+					// Toast.LENGTH_LONG)
+					// .show();
+					if (isChecked)
 					{
-						@Override
-						public void onCheckedChanged(CompoundButton buttonView,
-								boolean isChecked)
-						{
-							// sms_array1.get(p);
-							// Toast.makeText(getApplicationContext(),
-							// "Pos " + p + " will be deleted !!!",
-							// Toast.LENGTH_LONG)
-							// .show();
-							if (isChecked)
-							{
-								checkedItem.set(p, true);
-								iSelected++;
-							} else
-							{
-								checkedItem.set(p, false);
-								iSelected--;
-							}
-							list_update_headview();
-						}
-					});
+						checkedItem.set(p, true);
+						iSelected++;
+					} else
+					{
+						checkedItem.set(p, false);
+						iSelected--;
+					}
+					list_update_headview();
+				}
+			});
 
 			return convertView;
 		}
@@ -358,11 +406,9 @@ public class SmsClean extends Activity
 		int orderItem1 = Menu.NONE;
 		int orderItem3 = Menu.NONE + 2;
 
-		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, "Delete Selected")
-				.setIcon(android.R.drawable.ic_delete);
+		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, "Delete Selected").setIcon(android.R.drawable.ic_delete);
 		int MENU_DRAW;
-		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, "Quit").setIcon(
-				android.R.drawable.ic_menu_send);
+		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return super.onCreateOptionsMenu(menu);
 	}
 
