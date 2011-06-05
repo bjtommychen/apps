@@ -18,13 +18,15 @@ import android.view.*;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Contacts;
+import android.provider.Contacts.People;
 
 public class SmsClean extends Activity
 {
 	private String TAG = "smsclean";
 	private final int MAX_SMS_BROWSE = 555;
 	private String info, dbginfo, info_show;
-	private Cursor cur;
+	private Cursor cur, cur_contacts;
 	private Uri uri;
 	private List<String> arraylist_sms = new ArrayList<String>();
 	private ArrayList<Boolean> checkedItem = new ArrayList<Boolean>();
@@ -120,12 +122,14 @@ public class SmsClean extends Activity
 		sms_array1.clear();
 
 		uri = Uri.parse("content://sms/inbox");
+		// uri = Uri.parse("content://mms/inbox");
+		// uri = (People.CONTENT_URI);
+		// uri = Contacts.Phones.CONTENT_URI;
 		// cur = this.managedQuery(uri, null, null, null, null);
-		cur = getContentResolver().query(uri,
-		// null,
-				// new String[] { "_id", "thread_id", "address", "person",
-				// "date", "body" },
-				new String[] { "thread_id", "address", "person", "body" }, null, null, null);
+		cur = getContentResolver().query(uri, null, null, null, null);
+		// null, Contacts.Phones.PERSON_ID +"=662", null, null);
+		// new String[] { "thread_id", "address", "person", "body" }, null,
+		// null, null);
 
 		iSelected = 0;
 		if (cur.getCount() == 0)
@@ -161,7 +165,7 @@ public class SmsClean extends Activity
 						} else if (cur.getColumnName(j).equals("person"))
 						{
 							if (cur.getString(j) == null)
-							{
+							{	// Stranger !!!
 								map.put("CHECKED", true);
 								if (true) // when test, set to false
 								{
@@ -173,6 +177,15 @@ public class SmsClean extends Activity
 								}
 							} else
 							{
+								{
+//									Log.i(TAG, Contacts.Phones.PERSON_ID +"="+cur.getString(j));
+									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI,
+											null, Contacts.Phones.PERSON_ID +"="+cur.getString(j), null, null);
+									cur_contacts.moveToFirst();
+									String name = cur_contacts.getString(cur_contacts.getColumnIndex(People.DISPLAY_NAME));
+									map.put("NAME", name);
+//									Log.i(TAG, name);
+								}
 								checkedItem.add(false);
 								map.put("CHECKED", false);
 							}
@@ -194,6 +207,11 @@ public class SmsClean extends Activity
 					// arraylist_sms.add(info_show);
 					sms_array1.add(map);
 					iTotal++;
+
+//					String id = cur.getString(cur.getColumnIndex(People._ID));
+//					String name = cur.getString(cur.getColumnIndex(People.DISPLAY_NAME));
+//					String number = cur.getString(cur.getColumnIndex(People.NUMBER));
+//					Log.i(TAG, id + "  " + name + " " + number);
 
 				} while (cur.moveToNext() && (i++ < num));
 			}
@@ -263,7 +281,7 @@ public class SmsClean extends Activity
 		if (iTotal > 0 && iSelected > 0)
 		{
 			progressDialog.show();
-			
+
 			new Thread()
 			{
 				Boolean bDel;
@@ -284,8 +302,7 @@ public class SmsClean extends Activity
 								if(true)
 								{
 									SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
-								}
-								else
+								} else
 								{
 									Thread.sleep(100);
 								}
@@ -300,9 +317,9 @@ public class SmsClean extends Activity
 					} catch (InterruptedException e)
 					{
 						e.printStackTrace();
-					}finally
+					} finally
 					{
-//						browse_sms(MAX_SMS_BROWSE);
+						// browse_sms(MAX_SMS_BROWSE);
 					}
 				}
 
@@ -354,8 +371,10 @@ public class SmsClean extends Activity
 			ViewHolder holder = null;
 
 			// Log.i(TAG, "MyAdapter getView " + position);
-			// Tommy: always create holder. scroll slower, but correct. I think, the faster way is optimized with speed, and not good for CheckBox.
-			if (true)//(convertView == null)	
+			// Tommy: always create holder. scroll slower, but correct. I think,
+			// the faster way is optimized with speed, and not good for
+			// CheckBox.
+			if (true)// (convertView == null)
 			{
 				holder = new ViewHolder();
 				convertView = mInflater.inflate(R.layout.smslist_map, null);
@@ -368,11 +387,18 @@ public class SmsClean extends Activity
 				holder = (ViewHolder) convertView.getTag();
 			}
 
-			holder.addr.setText("From:" + (String) sms_array1.get(position).get("ADDR"));
+			if ((String) sms_array1.get(position).get("NAME") == null)
+			{
+				holder.addr.setText("From:" + (String) sms_array1.get(position).get("ADDR"));
+			}
+			else
+			{
+				holder.addr.setText("From:" + (String) sms_array1.get(position).get("NAME") + " (" +(String) sms_array1.get(position).get("ADDR")+ ")");
+			}
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
 			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
 			// "CHECKED"));
-//			holder.checked.setChecked(false);
+			// holder.checked.setChecked(false);
 			holder.checked.setChecked(checkedItem.get(position));
 			holder.checked.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener()
 			{
