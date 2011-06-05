@@ -5,7 +5,7 @@
 
 	<TextView android:id="@+id/sms_address" android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:textStyle="bold"
-		android:textSize="20px" />
+		android:textSize="22px" />
 	<TextView android:id="@+id/sms_body" android:layout_width="280sp"
 		android:layout_height="wrap_content" android:layout_below="@+id/sms_address"
 		android:layout_marginLeft="2sp" android:textSize="20px" />
