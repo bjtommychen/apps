@@ -1,4 +1,9 @@
 130/202  before smsclean
 0/72    after delete
 131 restore from qq
-
+//sms
+05-31 12:32:17.033: INFO/SMS Cleaner(13112): Sms:_id=208;thread_id=55;address=076921844720;person=null;date=1306307800019;protocol=0;read=1;status=-1;type=1;reply_path_present=0;subject=null;service_center=+8613800757510;locked=0;error_code=0;seen=0;
+//mms
+06-05 23:11:57.733: INFO/smsclean(7347): Sms 2: _id=76;thread_id=33;date=1307242823;msg_box=1;read=0;m_id=null;sub=null;sub_cs=null;ct_t=null;ct_l=http://218.200.244.197/FK7QJ4QcrOqB;exp=1307502023;m_cls=personal;m_type=130;v=16;m_size=16481;pri=null;rr=null;rpt_a=null;resp_st=null;st=132;tr_id=FK7QJ4QcrOqB;retr_st=null;retr_txt=null;retr_txt_cs=null;read_status=null;ct_cls=null;resp_txt=null;d_tm=null;d_rpt=null;locked=0;seen=0;
+//contacts
+06-05 23:16:22.788: INFO/smsclean(7433): Sms 7: times_contacted=0;custom_ringtone=null;primary_organization=null;phonetic_name=;status=null;label=null;number=null;type=null;mode=null;last_time_contacted=null;display_name=Fu Guipeng;im_handle=null;_id=405;number_key=null;starred=0;primary_email=2957;name=Fu Guipeng;primary_phone=null;im_account=null;notes=;im_protocol=null;send_to_voicemail=0;
