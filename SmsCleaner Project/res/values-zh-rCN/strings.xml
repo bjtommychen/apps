@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">哈World, SmsClean!</string>
+    <string name="app_name">短信清理大师</string>
+    <string name="from">来自</string>
+    <string name="delete_seleted">删除选中项</string>
+    <string name="quit">退出</string>
+    <string name="sms">短信</string>
+    <string name="selected">选中</string>
+    <string name="processbar_deleting_title">删除短信中 ...</string>
+    <string name="processbar_deleting_msg">取消请按返回键.</string>    
+</resources>
