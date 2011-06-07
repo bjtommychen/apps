@@ -2,4 +2,11 @@
 <resources>
     <string name="hello">Hello World, SmsClean!</string>
     <string name="app_name">SMS Cleaner</string>
+    <string name="from">From</string>
+    <string name="delete_seleted">Delete Selected</string>
+    <string name="quit">Quit</string>
+    <string name="sms">SMS</string>
+    <string name="selected">selected</string>
+    <string name="processbar_deleting_title">Deleting SMS ...</string>
+    <string name="processbar_deleting_msg">Press RETURN to cancel.</string>       
 </resources>
