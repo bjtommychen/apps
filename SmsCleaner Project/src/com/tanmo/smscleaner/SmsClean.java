@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.widget.*;
 import android.view.*;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Contacts;
@@ -40,6 +41,7 @@ public class SmsClean extends Activity
 	private int m_count = 0;
 	private ProgressDialog progressDialog;
 	private Handler handler = null;
+	private Thread thread_sms;
 
 	protected static final int GUI_UPDATE_SMS_LIST = 0x108;
 
@@ -90,7 +92,7 @@ public class SmsClean extends Activity
 	private void list_update_headview()
 	{
 		// footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
-		footview.setText(" " + iSelected + "/" + iTotal + " Selected. ");
+		footview.setText(" " + getString(R.string.sms) + " " + iSelected + "/" + iTotal + " " + getString(R.string.selected) + ". ");
 	}
 
 	// Browser all the SMS
@@ -154,12 +156,12 @@ public class SmsClean extends Activity
 					{
 						if (cur.getColumnName(j).equals("body"))
 						{
-							Log.i(TAG, "Msg is " + cur.getString(j));
+//							Log.i(TAG, "Msg is " + cur.getString(j));
 							// info_show += cur.getString(j);
 							map.put("BODY", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("address"))
 						{
-							Log.i(TAG, "From " + cur.getString(j));
+//							Log.i(TAG, "From " + cur.getString(j));
 							// info_show += "From:" + cur.getString(j) + "\n";
 							map.put("ADDR", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("person"))
@@ -203,7 +205,7 @@ public class SmsClean extends Activity
 						}
 
 					}
-					Log.i(TAG, info);
+//					Log.i(TAG, info);
 					// arraylist_sms.add(info_show);
 					sms_array1.add(map);
 					iTotal++;
@@ -262,10 +264,11 @@ public class SmsClean extends Activity
 	// Delete SMS
 	private void delete_sms_selected()
 	{
+		
 		progressDialog = new ProgressDialog(this);
 		progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		// progressDialog.setTitle("title");
-		progressDialog.setMessage("Deleting ...");
+		progressDialog.setTitle(getString(R.string.processbar_deleting_title));
+		progressDialog.setMessage(getString(R.string.processbar_deleting_msg));
 		progressDialog.setMax(iSelected);
 		progressDialog.setProgress(0);
 		progressDialog.setIndeterminate(false);
@@ -282,7 +285,7 @@ public class SmsClean extends Activity
 		{
 			progressDialog.show();
 
-			new Thread()
+			thread_sms =  new Thread()
 			{
 				Boolean bDel;
 
@@ -299,12 +302,13 @@ public class SmsClean extends Activity
 							if (bDel)
 							{
 								m_count++;
-								if(true)
-								{
+								if(false)
+								{	// Deleting SMS
 									SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
 								} else
-								{
+								{	// Simulate 
 									Thread.sleep(100);
+//									Log.i(TAG, "deleting " + i);
 								}
 								progressDialog.incrementProgressBy(1);
 							}
@@ -323,8 +327,20 @@ public class SmsClean extends Activity
 					}
 				}
 
-			}.start();
+			};
+			thread_sms.start();
 		}
+		
+		progressDialog.setOnCancelListener(new ProgressDialog.OnCancelListener()
+		{
+			
+			@Override
+			public void onCancel(DialogInterface dialog)
+			{
+				// TODO Auto-generated method stub
+				thread_sms.interrupt();
+			}
+		});
 
 	}
 
@@ -389,11 +405,11 @@ public class SmsClean extends Activity
 
 			if ((String) sms_array1.get(position).get("NAME") == null)
 			{
-				holder.addr.setText("From:" + (String) sms_array1.get(position).get("ADDR"));
+				holder.addr.setText(getString(R.string.from) +": " + (String) sms_array1.get(position).get("ADDR"));
 			}
 			else
 			{
-				holder.addr.setText("From:" + (String) sms_array1.get(position).get("NAME") + " (" +(String) sms_array1.get(position).get("ADDR")+ ")");
+				holder.addr.setText(getString(R.string.from) +": " + (String) sms_array1.get(position).get("NAME") + " (" +(String) sms_array1.get(position).get("ADDR")+ ")");
 			}
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
 			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
@@ -436,9 +452,9 @@ public class SmsClean extends Activity
 		int orderItem1 = Menu.NONE;
 		int orderItem3 = Menu.NONE + 2;
 
-		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, "Delete Selected").setIcon(android.R.drawable.ic_delete);
+		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, getString(R.string.delete_seleted)).setIcon(android.R.drawable.ic_delete);
 		int MENU_DRAW;
-		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, getString(R.string.quit)).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return super.onCreateOptionsMenu(menu);
 	}
 
