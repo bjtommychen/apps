@@ -11,5 +11,7 @@
     <string name="processbar_deleting_msg">Press RETURN to cancel.</string>
     <string name="total">Total</string>
     <string name="stranger">Stranger</string>
-    <string name="delete_sms_confirm">Confirm to delete SMS ?</string>       
+    <string name="delete_sms_confirm">Confirm to delete SMS ?</string>
+    <string name="about">About</string>
+    <string name="feedback">Feedback: tanmobaby@gmail.com</string>       
 </resources>
