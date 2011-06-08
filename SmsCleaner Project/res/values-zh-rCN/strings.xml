@@ -13,5 +13,6 @@
     <string name="stranger">陌生人</string>
     <string name="delete_sms_confirm">确认删除短信吗 ?</string>     
     <string name="about">关于</string>
-    <string name="feedback">反馈: tanmobaby@gmail.com</string>          
+    <string name="feedback">反馈: tanmobaby@gmail.com</string>      
+    <string name="load">检查中 ...</string>             
 </resources>
