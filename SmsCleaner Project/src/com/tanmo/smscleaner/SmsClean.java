@@ -11,6 +11,7 @@ import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.SystemClock;
 
+import android.text.util.Linkify;
 import android.util.Log;
 import android.net.Uri;
 import android.database.Cursor;
@@ -27,6 +28,7 @@ import android.os.Message;
 import android.provider.Contacts;
 import android.provider.Contacts.People;
 import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
 
 public class SmsClean extends Activity
 {
@@ -43,6 +45,7 @@ public class SmsClean extends Activity
 	private ArrayList<Map<String, Object>> sms_array1 = new ArrayList<Map<String, Object>>();
 	private int iTotal, iSelected;
 	static final private int MENU_DELETE_SELECTED = Menu.FIRST;
+	static final private int MENU_ABOUT = Menu.FIRST + 1;
 	static final private int MENU_QUIT = Menu.FIRST + 2;
 	private int m_count = 0;
 	private ProgressDialog progressDialog;
@@ -270,7 +273,7 @@ public class SmsClean extends Activity
 				getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " !" + "\n" + getString(R.string.stranger) + " " + getString(R.string.sms) + " "
 						+ iSelected + " !", Toast.LENGTH_LONG);
 		toast.setGravity(Gravity.CENTER, 0, 0);
-//		toast.setDuration(3000);
+		// toast.setDuration(3000);
 		toast.show();
 
 		// listView.setItemsCanFocus(false);
@@ -359,6 +362,41 @@ public class SmsClean extends Activity
 			}
 		});
 
+	}
+
+	// Delete SMS
+	private void show_about()
+	{
+		AlertDialog.Builder aboutBox;
+
+		LinearLayout aboutLayout = new LinearLayout(this);
+		aboutLayout.setOrientation(LinearLayout.VERTICAL);
+		TextView aboutText = new TextView(this);
+		TextView emailLink = new TextView(this);
+		ImageView iv = new ImageView(this);
+
+		aboutText.setText(getString(R.string.app_name));
+		emailLink.setAutoLinkMask(Linkify.ALL);
+		emailLink.setText(getString(R.string.feedback));
+		iv.setImageResource(R.drawable.tanmo);
+		aboutBox = new AlertDialog.Builder(SmsClean.this);
+
+		// aboutLayout.addView(aboutText);
+		aboutLayout.addView(iv);
+		aboutLayout.addView(emailLink);
+
+		aboutBox.setView(aboutLayout);
+
+		aboutBox.setTitle(getString(R.string.app_name));
+		// aboutBox.setMessage(getString(R.string.delete_sms_confirm));
+		aboutBox.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int which)
+			{
+			}
+		});
+
+		aboutBox.show();
 	}
 
 	// START of MyAdapter
@@ -466,11 +504,12 @@ public class SmsClean extends Activity
 		int idGroup1 = 0;
 
 		/* The order position of the item */
-		int orderItem1 = Menu.NONE;
-		int orderItem3 = Menu.NONE + 2;
+		// int orderItem1 = Menu.NONE;
+		// int orderItem3 = Menu.NONE + 2;
 
 		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, getString(R.string.delete_seleted)).setIcon(android.R.drawable.ic_delete);
 		int MENU_DRAW;
+		menu.add(Menu.NONE, MENU_ABOUT, Menu.NONE, getString(R.string.about)).setIcon(android.R.drawable.ic_menu_info_details);
 		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, getString(R.string.quit)).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return super.onCreateOptionsMenu(menu);
 	}
@@ -481,13 +520,14 @@ public class SmsClean extends Activity
 		switch (item.getItemId())
 		{
 			case (MENU_DELETE_SELECTED):
-				new AlertDialog.Builder(SmsClean.this).setTitle(android.R.string.dialog_alert_title).setMessage(getString(R.string.delete_sms_confirm)).setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener()
-				{
-					public void onClick(DialogInterface dialog, int which)
-					{
-						delete_sms_selected();
-					}
-				}).setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener()
+				new AlertDialog.Builder(SmsClean.this).setTitle(android.R.string.dialog_alert_title).setMessage(getString(R.string.delete_sms_confirm)).setPositiveButton(
+						getString(android.R.string.ok), new DialogInterface.OnClickListener()
+						{
+							public void onClick(DialogInterface dialog, int which)
+							{
+								delete_sms_selected();
+							}
+						}).setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener()
 				{
 					public void onClick(DialogInterface dialog, int which)
 					{
@@ -496,8 +536,13 @@ public class SmsClean extends Activity
 
 				break;
 
+			case (MENU_ABOUT):
+				show_about();
+				break;
+
 			case (MENU_QUIT):
 				finish();
+				break;
 		}
 		return super.onMenuItemSelected(featureId, item);
 	}
