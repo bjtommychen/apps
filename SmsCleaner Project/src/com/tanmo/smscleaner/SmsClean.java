@@ -33,7 +33,7 @@ import android.app.AlertDialog.Builder;
 public class SmsClean extends Activity
 {
 	private String TAG = "smsclean";
-	private final int MAX_SMS_BROWSE = 555;
+	private final int MAX_SMS_BROWSE = 999;
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
 	private Uri uri;
@@ -52,6 +52,7 @@ public class SmsClean extends Activity
 	private Handler handler = null;
 	private Thread thread_sms;
 	private Toast toast;
+	private MyAdapter smslistadapter;
 
 	protected static final int GUI_UPDATE_SMS_LIST = 0x108;
 
@@ -79,8 +80,12 @@ public class SmsClean extends Activity
 		// select
 		Log.i(TAG, "start !");
 
+		show_wait();
+//		SystemClock.sleep(1000);
+		
 		// Show list
-		browse_sms(MAX_SMS_BROWSE);
+//		browse_sms(MAX_SMS_BROWSE);		
+//		thread_show_sms();
 
 		Log.i(TAG, "stop !");
 
@@ -106,6 +111,83 @@ public class SmsClean extends Activity
 		footview.setText(" " + getString(R.string.sms) + " " + iSelected + "/" + iTotal + " " + getString(R.string.selected) + ". ");
 	}
 
+	private void thread_show_sms()
+	{
+		new Thread()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					browse_sms(MAX_SMS_BROWSE);		
+					Thread.sleep(1);
+				} catch (InterruptedException e)
+				{
+					e.printStackTrace();
+				} finally
+				{
+				}
+			}
+
+		}.start();
+	}
+	
+	
+	private void show_wait()
+	{
+		final ProgressDialog pd;
+		
+		pd = new ProgressDialog(this);
+		pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+//		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		pd.setTitle(getString(R.string.app_name));
+		pd.setMessage(getString(R.string.load));
+//		pd.setMax(100);
+//		pd.setProgress(0);
+		pd.setIndeterminate(true);
+//		pd.setCancelable(true);
+		
+		pd.show(); 
+		/*
+		 * m_count = 0; while (m_count <= iSelected) { m_count++; //
+		 * progressDialog.setProgress(m_count);
+		 * progressDialog.incrementProgressBy(1); SystemClock.sleep(100); }
+		 * SystemClock.sleep(1000);
+		 */
+		{
+			new Thread()
+			{
+				@Override
+				public void run()
+				{
+					try
+					{
+						for(int j=0; j<15; j++)
+						{
+							pd.incrementProgressBy(1);
+							Thread.sleep(100);
+//							if (j == 50)
+//								handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
+						}
+						handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
+						pd.cancel();
+						Thread.sleep(1);
+					} catch (InterruptedException e)
+					{
+						e.printStackTrace();
+					} finally
+					{
+					}
+				}
+
+			}.start();
+		}		
+		
+		
+	}
+	
+	
 	// Browser all the SMS
 	private void browse_sms(int num)
 	{
@@ -323,7 +405,7 @@ public class SmsClean extends Activity
 							if (bDel)
 							{
 								m_count++;
-								if (false)
+								if (true)
 								{ // Deleting SMS
 									SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
 								} else
