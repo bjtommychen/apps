@@ -1,5 +1,10 @@
 package com.tanmo.smscleaner;
 
+// TODO AlertDialog.Builder 还有很多复杂的用法,有确定和取消的对话框
+// TODO ICONS
+// TODO OTHER RESOLUTION TEST
+// 
+
 import android.R.color;
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -21,6 +26,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.Contacts;
 import android.provider.Contacts.People;
+import android.app.AlertDialog;
 
 public class SmsClean extends Activity
 {
@@ -42,6 +48,7 @@ public class SmsClean extends Activity
 	private ProgressDialog progressDialog;
 	private Handler handler = null;
 	private Thread thread_sms;
+	private Toast toast;
 
 	protected static final int GUI_UPDATE_SMS_LIST = 0x108;
 
@@ -63,6 +70,7 @@ public class SmsClean extends Activity
 		footview = new TextView(this);
 		footview.setTextColor(Color.RED);
 		footview.setTypeface(null, Typeface.BOLD);
+		footview.setGravity(Gravity.CENTER_HORIZONTAL);
 		list.addHeaderView(footview);
 
 		// select
@@ -156,18 +164,18 @@ public class SmsClean extends Activity
 					{
 						if (cur.getColumnName(j).equals("body"))
 						{
-//							Log.i(TAG, "Msg is " + cur.getString(j));
+							// Log.i(TAG, "Msg is " + cur.getString(j));
 							// info_show += cur.getString(j);
 							map.put("BODY", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("address"))
 						{
-//							Log.i(TAG, "From " + cur.getString(j));
+							// Log.i(TAG, "From " + cur.getString(j));
 							// info_show += "From:" + cur.getString(j) + "\n";
 							map.put("ADDR", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("person"))
 						{
 							if (cur.getString(j) == null)
-							{	// Stranger !!!
+							{ // Stranger !!!
 								map.put("CHECKED", true);
 								if (true) // when test, set to false
 								{
@@ -180,13 +188,13 @@ public class SmsClean extends Activity
 							} else
 							{
 								{
-//									Log.i(TAG, Contacts.Phones.PERSON_ID +"="+cur.getString(j));
-									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI,
-											null, Contacts.Phones.PERSON_ID +"="+cur.getString(j), null, null);
+									// Log.i(TAG, Contacts.Phones.PERSON_ID
+									// +"="+cur.getString(j));
+									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, null, Contacts.Phones.PERSON_ID + "=" + cur.getString(j), null, null);
 									cur_contacts.moveToFirst();
 									String name = cur_contacts.getString(cur_contacts.getColumnIndex(People.DISPLAY_NAME));
 									map.put("NAME", name);
-//									Log.i(TAG, name);
+									// Log.i(TAG, name);
 								}
 								checkedItem.add(false);
 								map.put("CHECKED", false);
@@ -205,15 +213,18 @@ public class SmsClean extends Activity
 						}
 
 					}
-//					Log.i(TAG, info);
+					// Log.i(TAG, info);
 					// arraylist_sms.add(info_show);
 					sms_array1.add(map);
 					iTotal++;
 
-//					String id = cur.getString(cur.getColumnIndex(People._ID));
-//					String name = cur.getString(cur.getColumnIndex(People.DISPLAY_NAME));
-//					String number = cur.getString(cur.getColumnIndex(People.NUMBER));
-//					Log.i(TAG, id + "  " + name + " " + number);
+					// String id =
+					// cur.getString(cur.getColumnIndex(People._ID));
+					// String name =
+					// cur.getString(cur.getColumnIndex(People.DISPLAY_NAME));
+					// String number =
+					// cur.getString(cur.getColumnIndex(People.NUMBER));
+					// Log.i(TAG, id + "  " + name + " " + number);
 
 				} while (cur.moveToNext() && (i++ < num));
 			}
@@ -253,7 +264,14 @@ public class SmsClean extends Activity
 			list.setAdapter(smslistadapter);
 		}
 
-		Toast.makeText(getApplicationContext(), "Total " + cur.getCount() + " sms !!!", Toast.LENGTH_LONG).show();
+		toast = 
+		Toast.makeText(
+				getApplicationContext(),
+				getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " !" + "\n" + getString(R.string.stranger) + " " + getString(R.string.sms) + " "
+						+ iSelected + " !", Toast.LENGTH_LONG);
+		toast.setGravity(Gravity.CENTER, 0, 0);
+//		toast.setDuration(3000);
+		toast.show();
 
 		// listView.setItemsCanFocus(false);
 
@@ -264,7 +282,7 @@ public class SmsClean extends Activity
 	// Delete SMS
 	private void delete_sms_selected()
 	{
-		
+
 		progressDialog = new ProgressDialog(this);
 		progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		progressDialog.setTitle(getString(R.string.processbar_deleting_title));
@@ -285,7 +303,7 @@ public class SmsClean extends Activity
 		{
 			progressDialog.show();
 
-			thread_sms =  new Thread()
+			thread_sms = new Thread()
 			{
 				Boolean bDel;
 
@@ -302,13 +320,13 @@ public class SmsClean extends Activity
 							if (bDel)
 							{
 								m_count++;
-								if(false)
-								{	// Deleting SMS
+								if (false)
+								{ // Deleting SMS
 									SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
 								} else
-								{	// Simulate 
+								{ // Simulate
 									Thread.sleep(100);
-//									Log.i(TAG, "deleting " + i);
+									// Log.i(TAG, "deleting " + i);
 								}
 								progressDialog.incrementProgressBy(1);
 							}
@@ -330,14 +348,13 @@ public class SmsClean extends Activity
 			};
 			thread_sms.start();
 		}
-		
+
 		progressDialog.setOnCancelListener(new ProgressDialog.OnCancelListener()
 		{
-			
+
 			@Override
 			public void onCancel(DialogInterface dialog)
 			{
-				// TODO Auto-generated method stub
 				thread_sms.interrupt();
 			}
 		});
@@ -405,12 +422,12 @@ public class SmsClean extends Activity
 
 			if ((String) sms_array1.get(position).get("NAME") == null)
 			{
-				holder.addr.setText(getString(R.string.from) +": " + (String) sms_array1.get(position).get("ADDR"));
-			}
-			else
+				holder.addr.setText(getString(R.string.from) + ": " + (String) sms_array1.get(position).get("ADDR"));
+			} else
 			{
-				holder.addr.setText(getString(R.string.from) +": " + (String) sms_array1.get(position).get("NAME") + " (" +(String) sms_array1.get(position).get("ADDR")+ ")");
+				holder.addr.setText(getString(R.string.from) + ": " + (String) sms_array1.get(position).get("NAME") + " (" + (String) sms_array1.get(position).get("ADDR") + ")");
 			}
+			holder.addr.setTextColor(Color.GREEN);
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
 			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
 			// "CHECKED"));
@@ -464,8 +481,21 @@ public class SmsClean extends Activity
 		switch (item.getItemId())
 		{
 			case (MENU_DELETE_SELECTED):
-				delete_sms_selected();
+				new AlertDialog.Builder(SmsClean.this).setTitle(android.R.string.dialog_alert_title).setMessage(getString(R.string.delete_sms_confirm)).setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, int which)
+					{
+						delete_sms_selected();
+					}
+				}).setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, int which)
+					{
+					}
+				}).show();
+
 				break;
+
 			case (MENU_QUIT):
 				finish();
 		}
