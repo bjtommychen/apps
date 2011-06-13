@@ -7,3 +7,21 @@
 06-05 23:11:57.733: INFO/smsclean(7347): Sms 2: _id=76;thread_id=33;date=1307242823;msg_box=1;read=0;m_id=null;sub=null;sub_cs=null;ct_t=null;ct_l=http://218.200.244.197/FK7QJ4QcrOqB;exp=1307502023;m_cls=personal;m_type=130;v=16;m_size=16481;pri=null;rr=null;rpt_a=null;resp_st=null;st=132;tr_id=FK7QJ4QcrOqB;retr_st=null;retr_txt=null;retr_txt_cs=null;read_status=null;ct_cls=null;resp_txt=null;d_tm=null;d_rpt=null;locked=0;seen=0;
 //contacts
 06-05 23:16:22.788: INFO/smsclean(7433): Sms 7: times_contacted=0;custom_ringtone=null;primary_organization=null;phonetic_name=;status=null;label=null;number=null;type=null;mode=null;last_time_contacted=null;display_name=Fu Guipeng;im_handle=null;_id=405;number_key=null;starred=0;primary_email=2957;name=Fu Guipeng;primary_phone=null;im_account=null;notes=;im_protocol=null;send_to_voicemail=0;
+
+
+
+因为每天的垃圾短信太多, 又不想安装一个防火墙来过滤. 就开发了这个小应用, 这样平时短信只看不删很省时间, 每周运行一下来做个清洁就可以了.
+程序运行后, 显示所有短信, 自动选中来自陌生人的. 等待用户选择是否删除它们. 很简单的小应用, 希望大家
+
+显示所有收到的短信, 自动选中来自陌生人的. 等待用户选择是否删除它们. 简单好用的小应用, 希望大家喜欢!
+
+SMS Cleaner
+短信清理工
+Many spam SMS every day? do not want to install a firewall to filter ? Now you have new choice. By using this small application, no need waste time to delete SMS after read it. Only need run this application weekly, your inbox will become cleaner soon.
+Running the program to display all inbox sms, automatically selected which from stranger. wait for the user to choose whether to delete them. Very simple little application, I hope you like it. 
+因为每天的垃圾短信太多, 又不想安装一个防火墙来过滤. 就开发了这个小应用, 这样平时短信只看不删很省时间, 每周运行一下来做个清洁就可以了.
+程序运行后, 显示所有短信, 自动选中来自陌生人的. 等待用户选择是否删除它们. 很简单的小应用, 希望大家喜欢!
+initial version.
+1-click to delete all user selected SMS from strangers.
+
+
