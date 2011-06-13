@@ -276,9 +276,14 @@ public class SmsClean extends Activity
 									// Log.i(TAG, Contacts.Phones.PERSON_ID
 									// +"="+cur.getString(j));
 									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, null, Contacts.Phones.PERSON_ID + "=" + cur.getString(j), null, null);
-									cur_contacts.moveToFirst();
-									String name = cur_contacts.getString(cur_contacts.getColumnIndex(People.DISPLAY_NAME));
-									map.put("NAME", name);
+									// Tommy: add below to resolve BUGS report from Android Market.
+									if (cur_contacts != null)
+									{
+										cur_contacts.moveToFirst();
+										String name = cur_contacts.getString(cur_contacts.getColumnIndex(People.DISPLAY_NAME));
+										if (name != null)
+											map.put("NAME", name);
+									}
 									// Log.i(TAG, name);
 								}
 								checkedItem.add(false);
