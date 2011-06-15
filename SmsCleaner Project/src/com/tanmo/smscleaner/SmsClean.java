@@ -1,7 +1,6 @@
 package com.tanmo.smscleaner;
 
 // TODO AlertDialog.Builder 还有很多复杂的用法,有确定和取消的对话框
-// TODO ICONS
 // TODO OTHER RESOLUTION TEST
 // 
 
@@ -29,11 +28,12 @@ import android.provider.Contacts;
 import android.provider.Contacts.People;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
+import android.content.ContentResolver;
 
 public class SmsClean extends Activity
 {
 	private String TAG = "smsclean";
-	private final int MAX_SMS_BROWSE = 999;
+	private final int MAX_SMS_BROWSE = 999;	//Tommy: max sms displayed. too large will slower.
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
 	private Uri uri;
@@ -67,10 +67,10 @@ public class SmsClean extends Activity
 
 		list = (ListView) findViewById(R.id.listView1);
 		list.setBackgroundColor(Color.rgb(0, 0, 250));// (0xff02003f);
-		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color
+		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color when scroll.
 		// when
 
-		// head/foot view
+		// head/foot view, display  222/333 selected.
 		footview = new TextView(this);
 		footview.setTextColor(Color.RED);
 		footview.setTypeface(null, Typeface.BOLD);
@@ -80,6 +80,7 @@ public class SmsClean extends Activity
 		// select
 		Log.i(TAG, "start !");
 
+		// Show 'loading, pls wait'
 		show_wait();
 //		SystemClock.sleep(1000);
 		
@@ -110,7 +111,7 @@ public class SmsClean extends Activity
 		// footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
 		footview.setText(" " + getString(R.string.sms) + " " + iSelected + "/" + iTotal + " " + getString(R.string.selected) + ". ");
 	}
-
+/*
 	private void thread_show_sms()
 	{
 		new Thread()
@@ -132,8 +133,9 @@ public class SmsClean extends Activity
 
 		}.start();
 	}
+	*/
 	
-	
+	// 显示 '请等待...'
 	private void show_wait()
 	{
 		final ProgressDialog pd;
@@ -170,6 +172,7 @@ public class SmsClean extends Activity
 //							if (j == 50)
 //								handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
 						}
+						//TODO show sms AFTER ProgressBar shown 1.5 second, need changed to do it 同时. 
 						handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
 						pd.cancel();
 						Thread.sleep(1);
@@ -221,10 +224,10 @@ public class SmsClean extends Activity
 		// uri = (People.CONTENT_URI);
 		// uri = Contacts.Phones.CONTENT_URI;
 		// cur = this.managedQuery(uri, null, null, null, null);
-		cur = getContentResolver().query(uri, null, null, null, null);
+
+//		cur = getContentResolver().query(uri, null, null, null, null);
 		// null, Contacts.Phones.PERSON_ID +"=662", null, null);
-		// new String[] { "thread_id", "address", "person", "body" }, null,
-		// null, null);
+		cur = getContentResolver().query(uri, new String[] { "thread_id", "address", "person", "body" }, null, null, null);
 
 		iSelected = 0;
 		if (cur.getCount() == 0)
@@ -271,7 +274,7 @@ public class SmsClean extends Activity
 									checkedItem.add(false);
 								}
 							} else
-							{
+							{	//SMS from contacts.
 								{
 									// Log.i(TAG, Contacts.Phones.PERSON_ID
 									// +"="+cur.getString(j));
@@ -295,9 +298,7 @@ public class SmsClean extends Activity
 						} else if (cur.getColumnName(j).equals("thread_id"))
 						{
 							map.put("THREAD_ID", cur.getString(j));
-						}
-
-						if (cur.getColumnName(j).equals("body") == false)
+						} else if (cur.getColumnName(j).equals("body") == false)
 						{
 							info += cur.getColumnName(j) + "=" + cur.getString(j) + ";";
 						}
@@ -354,11 +355,12 @@ public class SmsClean extends Activity
 			list.setAdapter(smslistadapter);
 		}
 
+		// Display SMS list statistics.
 		toast = 
 		Toast.makeText(
 				getApplicationContext(),
-				getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " !" + "\n" + getString(R.string.stranger) + " " + getString(R.string.sms) + " "
-						+ iSelected + " !", Toast.LENGTH_LONG);
+				getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " ." + "\n" + getString(R.string.stranger) + " " + getString(R.string.sms) + " "
+						+ iSelected + " .", Toast.LENGTH_LONG);
 		toast.setGravity(Gravity.CENTER, 0, 0);
 		// toast.setDuration(3000);
 		toast.show();
@@ -372,7 +374,6 @@ public class SmsClean extends Activity
 	// Delete SMS
 	private void delete_sms_selected()
 	{
-
 		progressDialog = new ProgressDialog(this);
 		progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		progressDialog.setTitle(getString(R.string.processbar_deleting_title));
@@ -392,7 +393,7 @@ public class SmsClean extends Activity
 		if (iTotal > 0 && iSelected > 0)
 		{
 			progressDialog.show();
-
+			
 			thread_sms = new Thread()
 			{
 				Boolean bDel;
@@ -403,7 +404,7 @@ public class SmsClean extends Activity
 					try
 					{
 						m_count = 0;
-
+						ContentResolver resolver = SmsClean.this.getContentResolver();;
 						for (int i = 0; i < iTotal; i++)
 						{
 							bDel = (Boolean) checkedItem.get(i);
@@ -412,7 +413,7 @@ public class SmsClean extends Activity
 								m_count++;
 								if (true)
 								{ // Deleting SMS
-									SmsClean.this.getContentResolver().delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
+									resolver.delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
 								} else
 								{ // Simulate
 									Thread.sleep(100);
