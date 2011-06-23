@@ -4,6 +4,7 @@ package com.tanmo.smscleaner;
 // TODO OTHER RESOLUTION TEST
 // 
 
+import android.R.bool;
 import android.R.color;
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -33,6 +34,7 @@ import android.content.ContentResolver;
 public class SmsClean extends Activity
 {
 	private String TAG = "smsclean";
+	private boolean debugmode = true;		//0 for release mode.
 	private final int MAX_SMS_BROWSE = 999;	//Tommy: max sms displayed. too large will slower.
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
@@ -53,6 +55,7 @@ public class SmsClean extends Activity
 	private Thread thread_sms;
 	private Toast toast;
 	private MyAdapter smslistadapter;
+	private boolean delete_running = false;
 
 	protected static final int GUI_UPDATE_SMS_LIST = 0x108;
 
@@ -308,7 +311,10 @@ public class SmsClean extends Activity
 					// arraylist_sms.add(info_show);
 					sms_array1.add(map);
 					iTotal++;
-
+					
+					if (debugmode)
+						SystemClock.sleep(10);
+					
 					// String id =
 					// cur.getString(cur.getColumnIndex(People._ID));
 					// String name =
@@ -377,11 +383,22 @@ public class SmsClean extends Activity
 		progressDialog = new ProgressDialog(this);
 		progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		progressDialog.setTitle(getString(R.string.processbar_deleting_title));
-		progressDialog.setMessage(getString(R.string.processbar_deleting_msg));
+//		progressDialog.setMessage(getString(R.string.processbar_deleting_msg));
 		progressDialog.setMax(iSelected);
 		progressDialog.setProgress(0);
 		progressDialog.setIndeterminate(false);
 		progressDialog.setCancelable(true);
+		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, getString(android.R.string.cancel), new DialogInterface.OnClickListener()
+		{
+			@Override
+			public void onClick(DialogInterface dialog, int which)
+			{
+//				dialog.cancel();
+				if (delete_running)
+					delete_running = false;
+			}
+		});
+		
 		// SystemClock.sleep(100);
 
 		/*
@@ -400,30 +417,33 @@ public class SmsClean extends Activity
 
 				@Override
 				public void run()
+				
 				{
 					try
 					{
 						m_count = 0;
 						ContentResolver resolver = SmsClean.this.getContentResolver();;
-						for (int i = 0; i < iTotal; i++)
+						delete_running = true;
+						for (int i = 0; i < iTotal && delete_running; i++)
 						{
 							bDel = (Boolean) checkedItem.get(i);
 							if (bDel)
 							{
 								m_count++;
-								if (true)
+								if (!debugmode)
 								{ // Deleting SMS
 									resolver.delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
 								} else
 								{ // Simulate
 									Thread.sleep(100);
-									// Log.i(TAG, "deleting " + i);
+									Log.i(TAG, "deleting " + i);
 								}
 								progressDialog.incrementProgressBy(1);
 							}
 						}
 
 						Thread.sleep(1);
+						delete_running = false;
 						progressDialog.cancel();
 						handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
 
@@ -466,6 +486,7 @@ public class SmsClean extends Activity
 		aboutText.setText(getString(R.string.app_name));
 		emailLink.setAutoLinkMask(Linkify.ALL);
 		emailLink.setText(getString(R.string.feedback));
+		emailLink.setGravity(Gravity.CENTER_HORIZONTAL);
 		iv.setImageResource(R.drawable.tanmo);
 		aboutBox = new AlertDialog.Builder(SmsClean.this);
 
@@ -477,6 +498,9 @@ public class SmsClean extends Activity
 
 		aboutBox.setTitle(getString(R.string.app_name));
 		// aboutBox.setMessage(getString(R.string.delete_sms_confirm));
+		if (debugmode)
+			aboutBox.setMessage("DEBUG");
+
 		aboutBox.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener()
 		{
 			public void onClick(DialogInterface dialog, int which)
@@ -548,10 +572,10 @@ public class SmsClean extends Activity
 
 			if ((String) sms_array1.get(position).get("NAME") == null)
 			{
-				holder.addr.setText(getString(R.string.from) + ": " + (String) sms_array1.get(position).get("ADDR"));
+				holder.addr.setText(/*getString(R.string.from) + ": " +*/ (String) sms_array1.get(position).get("ADDR"));
 			} else
 			{
-				holder.addr.setText(getString(R.string.from) + ": " + (String) sms_array1.get(position).get("NAME") + " (" + (String) sms_array1.get(position).get("ADDR") + ")");
+				holder.addr.setText(/*getString(R.string.from) + ": " +*/ (String) sms_array1.get(position).get("NAME") + " (" + (String) sms_array1.get(position).get("ADDR") + ")");
 			}
 			holder.addr.setTextColor(Color.GREEN);
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
@@ -608,6 +632,14 @@ public class SmsClean extends Activity
 		switch (item.getItemId())
 		{
 			case (MENU_DELETE_SELECTED):
+				if (iTotal > 0 && iSelected > 0)
+				{
+				}
+				else
+				{	// if no sms, exit
+					break;
+				}
+			
 				new AlertDialog.Builder(SmsClean.this).setTitle(android.R.string.dialog_alert_title).setMessage(getString(R.string.delete_sms_confirm)).setPositiveButton(
 						getString(android.R.string.ok), new DialogInterface.OnClickListener()
 						{
