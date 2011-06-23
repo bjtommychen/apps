@@ -3,8 +3,14 @@
 	android:orientation="horizontal" android:layout_width="fill_parent"
 	android:layout_height="wrap_content">
 
+	<ImageView android:id="@+id/smsIcon"
+	android:src="@android:drawable/sym_contact_card" 
+	android:layout_width="wrap_content" android:layout_height="wrap_content"
+    />
+
 	<TextView android:id="@+id/sms_address" android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:textStyle="bold"
+		android:layout_toRightOf="@+id/smsIcon"
 		android:textSize="22px" />
 	<TextView android:id="@+id/sms_body" android:layout_width="280sp"
 		android:layout_height="wrap_content" android:layout_below="@+id/sms_address"
