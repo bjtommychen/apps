@@ -36,7 +36,7 @@ public class SmsClean extends Activity
 {
 	private String TAG = "smsclean";
 	private boolean debugmode = false; // 0 for release mode.
-	private final int MAX_SMS_BROWSE = 999; // Tommy: max sms displayed. too
+	private final int MAX_SMS_BROWSE = 1999; // Tommy: max sms displayed. too
 	// large will slower.
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
@@ -92,6 +92,8 @@ public class SmsClean extends Activity
 	 */
 	private void initResourceRefs()
 	{
+		smslistadapter = new MyAdapter(this);
+		
 		list = (ListView) findViewById(R.id.listView1);
 		list.setBackgroundColor(Color.rgb(0, 0, 250));// (0xff02003f);
 		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color
@@ -257,7 +259,7 @@ public class SmsClean extends Activity
 
 		// cur = getContentResolver().query(uri, null, null, null, null);
 		// null, Contacts.Phones.PERSON_ID +"=662", null, null);
-		cur = getContentResolver().query(uri, new String[] { "thread_id", "address", "person", "body" }, null, null, null);
+		cur = getContentResolver().query(uri, new String[] { "_id", "thread_id", "address", "person", "body" }, null, null, null);
 
 		iSelected = 0;
 		iTotal = 0;
@@ -291,6 +293,8 @@ public class SmsClean extends Activity
 							map.put("ADDR", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("person"))
 						{
+							 //Log.i(TAG, Contacts.Phones.PERSON_ID
+							 //+"="+cur.getString(j));							
 							if (cur.getString(j) == null)
 							{ // Stranger !!!
 								map.put("CHECKED", true);
@@ -305,8 +309,6 @@ public class SmsClean extends Activity
 							} else
 							{ // SMS from contacts.
 								{
-									// Log.i(TAG, Contacts.Phones.PERSON_ID
-									// +"="+cur.getString(j));
 									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, null, Contacts.Phones.PERSON_ID + "=" + cur.getString(j), null, null);
 									// Tommy: add below to resolve BUGS report
 									// from Android Market.
@@ -389,8 +391,6 @@ public class SmsClean extends Activity
 
 		// Use My Adapter
 		{
-			MyAdapter smslistadapter = new MyAdapter(this);
-
 			list.setAdapter(smslistadapter);
 		}
 
@@ -463,7 +463,10 @@ public class SmsClean extends Activity
 								m_count++;
 								if (!debugmode)
 								{ // Deleting SMS
-									resolver.delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), null, null);
+									resolver.delete(
+											Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), 
+											"_id = " + sms_array1.get(i).get("ID"), null);
+//									Log.i(TAG, "deleting " + "_id = " + sms_array1.get(i).get("ID"));
 								} else
 								{ // Simulate
 									Thread.sleep(100);
