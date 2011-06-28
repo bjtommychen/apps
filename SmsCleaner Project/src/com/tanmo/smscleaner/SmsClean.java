@@ -34,9 +34,9 @@ import android.content.pm.PackageManager.NameNotFoundException;
 
 public class SmsClean extends Activity
 {
-	private String TAG = "smsclean";
-	private boolean debugmode = false; // 0 for release mode.
-	private final int MAX_SMS_BROWSE = 1999; // Tommy: max sms displayed. too
+	static final String TAG = "smsclean";
+	static final boolean debugmode = false; // 0 for release mode.
+	static final int MAX_SMS_BROWSE = 1999; // Tommy: max sms displayed. too
 	// large will slower.
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
@@ -48,9 +48,9 @@ public class SmsClean extends Activity
 	private TextView footview;
 	private ArrayList<Map<String, Object>> sms_array1 = new ArrayList<Map<String, Object>>();
 	private int iTotal, iSelected;
-	static final private int MENU_DELETE_SELECTED = Menu.FIRST;
-	static final private int MENU_ABOUT = Menu.FIRST + 1;
-	static final private int MENU_QUIT = Menu.FIRST + 2;
+	static final int MENU_DELETE_SELECTED = Menu.FIRST;
+	static final int MENU_ABOUT = Menu.FIRST + 1;
+	static final int MENU_QUIT = Menu.FIRST + 2;
 	private int m_count = 0;
 	private ProgressDialog progressDialog;
 	private Handler handler = null;
@@ -75,11 +75,9 @@ public class SmsClean extends Activity
 		initResourceRefs();
 
 		initHandles();
-		
+
 		// select
 		Log.i(TAG, "start !");
-
-
 
 		// ////////////
 		handler.sendEmptyMessage(GUI_SHOW_WAITING);
@@ -93,7 +91,7 @@ public class SmsClean extends Activity
 	private void initResourceRefs()
 	{
 		smslistadapter = new MyAdapter(this);
-		
+
 		list = (ListView) findViewById(R.id.listView1);
 		list.setBackgroundColor(Color.rgb(0, 0, 250));// (0xff02003f);
 		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color
@@ -144,9 +142,9 @@ public class SmsClean extends Activity
 				}
 				super.handleMessage(msg);
 			}
-		};		
+		};
 	}
-	
+
 	private void list_update_headview()
 	{
 		// footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
@@ -201,7 +199,7 @@ public class SmsClean extends Activity
 						// for (int j = 0; j < 150; j++)
 						while (showwaiting_running)
 						{
-//							pd.incrementProgressBy(1);
+							// pd.incrementProgressBy(1);
 							Thread.sleep(500);
 							// if (j == 50)
 							// handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
@@ -227,6 +225,7 @@ public class SmsClean extends Activity
 	private void get_smsinfo(int num)
 	{
 		int i;
+		int index;
 
 		if (num == 0)
 			num = 99999;
@@ -293,8 +292,8 @@ public class SmsClean extends Activity
 							map.put("ADDR", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("person"))
 						{
-							 //Log.i(TAG, Contacts.Phones.PERSON_ID
-							 //+"="+cur.getString(j));							
+							// Log.i(TAG, Contacts.Phones.PERSON_ID
+							// +"="+cur.getString(j));
 							if (cur.getString(j) == null)
 							{ // Stranger !!!
 								map.put("CHECKED", true);
@@ -312,12 +311,17 @@ public class SmsClean extends Activity
 									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, null, Contacts.Phones.PERSON_ID + "=" + cur.getString(j), null, null);
 									// Tommy: add below to resolve BUGS report
 									// from Android Market.
-									if (cur_contacts != null)
+									// The returned Cursor from the query() call will never be null but it might be empty.
+									if (cur_contacts != null && cur_contacts.moveToFirst())
 									{
-										cur_contacts.moveToFirst();
-										String name = cur_contacts.getString(cur_contacts.getColumnIndex(People.DISPLAY_NAME));
-										if (name != null)
-											map.put("NAME", name);
+										index = cur_contacts.getColumnIndex(People.DISPLAY_NAME);
+										if (index != -1)
+										{
+											String name = cur_contacts.getString(index);
+											if (name != null)
+												map.put("NAME", name);
+										}
+										cur_contacts.close();
 									}
 									// Log.i(TAG, name);
 								}
@@ -463,10 +467,9 @@ public class SmsClean extends Activity
 								m_count++;
 								if (!debugmode)
 								{ // Deleting SMS
-									resolver.delete(
-											Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), 
-											"_id = " + sms_array1.get(i).get("ID"), null);
-//									Log.i(TAG, "deleting " + "_id = " + sms_array1.get(i).get("ID"));
+									resolver.delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), "_id = " + sms_array1.get(i).get("ID"), null);
+									// Log.i(TAG, "deleting " + "_id = " +
+									// sms_array1.get(i).get("ID"));
 								} else
 								{ // Simulate
 									Thread.sleep(100);
@@ -507,12 +510,12 @@ public class SmsClean extends Activity
 	}
 
 	// Delete SMS
-	private void show_about() 
+	private void show_about()
 	{
 		AlertDialog.Builder aboutBox;
 		String pkName = this.getPackageName();
 
-		//this.getPackageManager().getPackageInfo返回包的一些overall信息
+		// this.getPackageManager().getPackageInfo返回包的一些overall信息
 		String versionName = null;
 		try
 		{
@@ -522,14 +525,14 @@ public class SmsClean extends Activity
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		LinearLayout aboutLayout = new LinearLayout(this);
 		aboutLayout.setOrientation(LinearLayout.VERTICAL);
-//		TextView aboutText = new TextView(this);
+		// TextView aboutText = new TextView(this);
 		TextView emailLink = new TextView(this);
 		ImageView iv = new ImageView(this);
 
-//		aboutText.setText(getString(R.string.app_name) );
+		// aboutText.setText(getString(R.string.app_name) );
 		emailLink.setAutoLinkMask(Linkify.ALL);
 		emailLink.setText(getString(R.string.feedback));
 		emailLink.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -542,7 +545,7 @@ public class SmsClean extends Activity
 
 		aboutBox.setView(aboutLayout);
 
-		aboutBox.setTitle(getString(R.string.app_name)+ " " + versionName);
+		aboutBox.setTitle(getString(R.string.app_name) + " " + versionName);
 		// aboutBox.setMessage(getString(R.string.delete_sms_confirm));
 		if (debugmode)
 			aboutBox.setMessage("DEBUG");
