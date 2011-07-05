@@ -315,13 +315,20 @@ jbyteArray Java_com_tommy_test_audiotest_AudioTest_mp3decGetOutputPcmBuff(
 		JNIEnv* env, jobject thiz, jbyteArray buf)
 {
 	struct MP3DEC_PCM *pcm = &lpcm;
+#if 0
 	jbyte *elems = (*env)->GetByteArrayElements(env, buf, NULL);
 
 	memcpy(elems, pcm->pOutBuffer, pcm->length * pcm->channels * 2);
 
 	//	ReferenceTable overflow (max=1024)
 	(*env)->ReleaseByteArrayElements(env, buf, elems, 0);
-
 	return buf;
+#else
+	jbyte *outbuf = (jbyte*)pcm->pOutBuffer;
+	int nOutSize = pcm->length * pcm->channels * 2;
+	jbyteArray jarray = (*env)->NewByteArray(env, nOutSize);
+	(*env)->SetByteArrayRegion(env, jarray, 0, nOutSize, outbuf);
+	return jarray;
+#endif
 }
 

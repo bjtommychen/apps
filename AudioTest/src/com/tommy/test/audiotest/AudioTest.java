@@ -212,7 +212,7 @@ public class AudioTest extends Activity
 				try
 				{
 					// inData = new byte[977 * 2];
-					outPcm = new byte[1152 * 2 * 2];
+//					outPcm = new byte[1152 * 2 * 2];
 					while (bRunning == true)
 					{
 						// Read data
@@ -253,7 +253,7 @@ public class AudioTest extends Activity
 						if (outlen > 0)
 						{
 							// outPcm = new byte[outlen];
-							mp3decGetOutputPcmBuff(outPcm);
+							outPcm = mp3decGetOutputPcmBuff(null);
 							Log.d(TAG, "get pcm done.");
 							// Audio out
 
