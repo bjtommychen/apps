@@ -74,7 +74,7 @@ enum player_channel
 typedef struct
 {
 	//input
-//	char const *input_path;
+	//	char const *input_path;
 	//    FILE* input_fd;
 	unsigned short *input_data;
 	unsigned long input_length;
@@ -85,7 +85,7 @@ typedef struct
 	unsigned int channels_in;
 	unsigned int channels_out;
 	enum player_channel output_select;
-//	char const *output_path;
+	//	char const *output_path;
 	//    FILE* output_fd;
 	int output_speed;
 	unsigned short *output_data;
@@ -264,6 +264,11 @@ jint Java_com_tommy_test_audiotest_AudioTest_mp3decFillData(JNIEnv* env,
 	stream->pb_stream = pplayer->input_data;
 	pplayer->input_length = stream->unusedsize + len / 2;
 	stream->streamsize = pplayer->input_length;
+
+	//	ReferenceTable overflow (max=1024)
+	(*env)->ReleaseByteArrayElements(env, buf, elems, 0);
+	return 0;
+
 }
 
 /*
@@ -313,6 +318,9 @@ jbyteArray Java_com_tommy_test_audiotest_AudioTest_mp3decGetOutputPcmBuff(
 	jbyte *elems = (*env)->GetByteArrayElements(env, buf, NULL);
 
 	memcpy(elems, pcm->pOutBuffer, pcm->length * pcm->channels * 2);
+
+	//	ReferenceTable overflow (max=1024)
+	(*env)->ReleaseByteArrayElements(env, buf, elems, 0);
 
 	return buf;
 }
