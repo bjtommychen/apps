@@ -17,14 +17,21 @@
 #include <string.h>
 #include <jni.h>
 
-#define DEBUG 1
+#define DEBUG 0
+#include <android/log.h>
 
 #if DEBUG
-#include <android/log.h>
 #  define  D(x...)  __android_log_print(ANDROID_LOG_DEBUG,"audiotest",x)
 #else
 #  define  D(...)  do {} while (0)
 #endif
+
+#if 1
+#  define  I(x...)  __android_log_print(ANDROID_LOG_INFO,"audiotest",x)
+#else
+#  define  I(...)  do {} while (0)
+#endif
+
 
 /* This is a trivial JNI example where we use a native method
  * to return a new VM String. See the corresponding Java source
@@ -161,12 +168,12 @@ jint Java_com_tommy_test_audiotest_AudioTest_mp3decInit(JNIEnv* env,
 {
 	D("mp3dec_init called ! ");
 
-	D("\n**************************android******************************\n");
-	D("*  MP3 Decoder application, build time: %s %s \n", __DATE__, __TIME__);
+	I("\n**************************android******************************\n");
+	I("*  MP3 Decoder application, build time: %s %s \n", __DATE__, __TIME__);
 #ifdef OPT_TOMMY_NEON
-	D("***************  TOMMY OPTIMIZED USING NEON  ********************\n");
+	I("***************  TOMMY OPTIMIZED USING NEON  ********************\n");
 #endif
-	D("*****************************************************************\n");
+	I("*****************************************************************\n");
 
 	player.input_data = (unsigned short *) malloc(INPUT_BUFSZ
 			* sizeof(unsigned short));
