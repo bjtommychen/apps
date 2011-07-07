@@ -66,6 +66,8 @@ public class AudioTest extends Activity
 
 		audiotrack_init();
 
+		mp3decInit();
+
 	}
 
 	/*
@@ -192,7 +194,7 @@ public class AudioTest extends Activity
 		File file = new File(Environment.getExternalStorageDirectory(), fileName);
 		fins = new FileInputStream(file);
 
-		mp3decInit();
+//		mp3decInit();
 
 		bRunning = true;
 		at.play();
@@ -218,13 +220,13 @@ public class AudioTest extends Activity
 						// Read data
 						readlen = mp3decGetInputDataLen();
 						Log.i(TAG, "Frame " + count++);
-						Log.d(TAG, "mp3decGetInputDataLen return short. " + readlen);
+//						Log.d(TAG, "mp3decGetInputDataLen return short. " + readlen);
 
 						if (readlen > 0)
 						{
-							Log.d(TAG, "new indata");
+//							Log.d(TAG, "new indata");
 							inData = new byte[readlen * 2];
-							Log.d(TAG, "before read");
+//							Log.d(TAG, "before read");
 
 							readlen = fins.read(inData);
 							if (readlen == -1)
@@ -233,8 +235,8 @@ public class AudioTest extends Activity
 								continue;
 							}
 							total += readlen;
-							Log.d(TAG, "total bytes " + total);
-							Log.d(TAG, "fins.read read byte. " + readlen);
+//							Log.d(TAG, "total bytes " + total);
+//							Log.d(TAG, "fins.read read byte. " + readlen);
 							mp3decFillData(inData, readlen);
 							inData = null;
 						}
@@ -249,16 +251,16 @@ public class AudioTest extends Activity
 						
 						// Output
 						outlen = mp3decGetOutputPcmLen();
-						Log.d(TAG, "output pcm byte. " + outlen);
+//						Log.d(TAG, "output pcm byte. " + outlen);
 						if (outlen > 0)
 						{
 							// outPcm = new byte[outlen];
 							outPcm = mp3decGetOutputPcmBuff(null);
-							Log.d(TAG, "get pcm done.");
+//							Log.d(TAG, "get pcm done.");
 							// Audio out
 
 							writelen = at.write(outPcm, 0, outlen);
-							Log.d(TAG, "write2audio bytes " + writelen);
+//							Log.d(TAG, "write2audio bytes " + writelen);
 							// outPcm = null;
 						}
 						Thread.sleep(1);
