@@ -1,7 +1,7 @@
 package com.tanmo.smscleaner;
 
-// TODO AlertDialog.Builder 还有很多复杂的用法,有确定和取消的对话框
-// TODO OTHER RESOLUTION TEST
+// TODO version notes
+// TODO select all
 // 
 
 import android.R.bool;
@@ -93,7 +93,7 @@ public class SmsClean extends Activity
 		smslistadapter = new MyAdapter(this);
 
 		list = (ListView) findViewById(R.id.listView1);
-		list.setBackgroundColor(Color.rgb(0, 0, 250));// (0xff02003f);
+		list.setBackgroundColor(Color.WHITE);// (0xff02003f);
 		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color
 		// when scroll.
 
@@ -204,8 +204,6 @@ public class SmsClean extends Activity
 							// if (j == 50)
 							// handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
 						}
-						// TODO show sms AFTER ProgressBar shown 1.5 second,
-						// need changed to do it 同时.
 						pd.cancel();
 						Thread.sleep(1);
 					} catch (InterruptedException e)
@@ -627,7 +625,7 @@ public class SmsClean extends Activity
 				holder.addr.setText(/* getString(R.string.from) + ": " + */(String) sms_array1.get(position).get("NAME") + " (" + (String) sms_array1.get(position).get("ADDR")
 						+ ")");
 			}
-			holder.addr.setTextColor(Color.GREEN);
+			holder.addr.setTextColor(Color.BLACK);
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
 			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
 			// "CHECKED"));
