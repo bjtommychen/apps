@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.tanmo.smscleaner" android:versionName="1.0.4" android:versionCode="1003">
+	package="com.tanmo.smscleaner" android:versionCode="1004" android:versionName="1.0.5">
 	<uses-sdk android:minSdkVersion="4" android:maxSdkVersion="10"
 		android:targetSdkVersion="8" />
 	<uses-permission android:name="android.permission.READ_SMS"></uses-permission>
