@@ -13,6 +13,7 @@
 	<TextView android:id="@+id/sms_body" android:layout_width="wrap_content"
 		android:layout_height="wrap_content" android:layout_below="@+id/sms_address"
 		android:layout_marginLeft="2sp"
+		android:textColor="@color/gray"
 		android:textSize="20px" />
 		
 	<CheckBox android:layout_height="wrap_content"
