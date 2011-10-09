@@ -36,7 +36,7 @@ public class SmsClean extends Activity
 {
 	static final String TAG = "smsclean";
 	static final boolean debugmode = false; // 0 for release mode.
-	static final int MAX_SMS_BROWSE = 1999; // Tommy: max sms displayed. too
+	static final int MAX_SMS_BROWSE = 20000; // Tommy: max sms displayed. too
 	// large will slower.
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
@@ -47,7 +47,7 @@ public class SmsClean extends Activity
 	private ListView list;
 	private TextView footview;
 	private ArrayList<Map<String, Object>> sms_array1 = new ArrayList<Map<String, Object>>();
-	private int iTotal, iSelected;
+	private int iTotal, iSelected, iCount;
 	static final int MENU_DELETE_SELECTED = Menu.FIRST;
 	static final int MENU_ABOUT = Menu.FIRST + 1;
 	static final int MENU_QUIT = Menu.FIRST + 2;
@@ -94,8 +94,8 @@ public class SmsClean extends Activity
 
 		list = (ListView) findViewById(R.id.listView1);
 		list.setBackgroundColor(Color.WHITE);// (0xff02003f);
-		list.setCacheColorHint(Color.TRANSPARENT);// Tommy: won't change color
-		// when scroll.
+		// Tommy: add to make color won't be changed when scroll.
+		list.setCacheColorHint(Color.TRANSPARENT);
 
 		// head/foot view, display 222/333 selected.
 		footview = new TextView(this);
@@ -167,13 +167,13 @@ public class SmsClean extends Activity
 		final ProgressDialog pd;
 
 		pd = new ProgressDialog(this);
-		pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-		// pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+//		pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		 pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		pd.setTitle(getString(R.string.app_name));
 		pd.setMessage(getString(R.string.load));
-		// pd.setMax(100);
-		// pd.setProgress(0);
-		pd.setIndeterminate(true);
+		 pd.setMax(500);
+//		 pd.setProgress(0);
+//		pd.setIndeterminate(true);
 		pd.setCancelable(false);
 		// pd.setCancelable(true);
 
@@ -191,8 +191,12 @@ public class SmsClean extends Activity
 				@Override
 				public void run()
 				{
+					int bGetCount = 0;
 					try
 					{
+						iTotal = 0;
+						iCount = 0;
+						
 						showwaiting_running = true;
 						handler.sendEmptyMessage(GUI_GET_SMSINFO);
 
@@ -200,10 +204,19 @@ public class SmsClean extends Activity
 						while (showwaiting_running)
 						{
 							// pd.incrementProgressBy(1);
-							Thread.sleep(500);
+							if (bGetCount == 0 && iCount != 0 )
+							{
+								pd.setMax(iCount);
+								bGetCount = 1;
+							}
+							if (bGetCount == 1)
+								pd.setProgress(iTotal);
+							Thread.sleep(100);
 							// if (j == 50)
 							// handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
 						}
+						pd.setProgress(pd.getMax());
+						Thread.sleep(100);
 						pd.cancel();
 						Thread.sleep(1);
 					} catch (InterruptedException e)
@@ -219,6 +232,19 @@ public class SmsClean extends Activity
 
 	}
 
+	private boolean isInteger( String input )  
+	{  
+	   try  
+	   {  
+	      Integer.parseInt( input );  
+	      return true;  
+	   }  
+	   catch( Exception e)  
+	   {  
+	      return false;  
+	   }  
+	} 
+	
 	// Browser all the SMS
 	private void get_smsinfo(int num)
 	{
@@ -260,6 +286,7 @@ public class SmsClean extends Activity
 
 		iSelected = 0;
 		iTotal = 0;
+		iCount = 0;
 		if (cur.getCount() == 0)
 		{
 			Log.i(TAG, "No sms found !");
@@ -267,7 +294,8 @@ public class SmsClean extends Activity
 		{
 			Log.i(TAG, "Total " + cur.getCount() + " sms !!!");
 			// arraylist_sms.add("Total " + cur.getCount() + " sms !!!");
-
+			iCount = cur.getCount();
+			
 			if (cur.moveToFirst())
 			{
 				do
@@ -303,10 +331,10 @@ public class SmsClean extends Activity
 								{
 									checkedItem.add(false);
 								}
-							} else
-							{ // SMS from contacts.
+							} else if (isInteger(cur.getString(j)))
+							{ // SMS from contacts !
 								{
-									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, null, Contacts.Phones.PERSON_ID + "=" + cur.getString(j), null, null);
+									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, new String[] { People.DISPLAY_NAME }, Contacts.Phones.PERSON_ID + " = " +  cur.getString(j) , null, null);
 									// Tommy: add below to resolve BUGS report
 									// from Android Market.
 									// The returned Cursor from the query() call will never be null but it might be empty.
