@@ -211,7 +211,7 @@ public class SmsClean extends Activity
 							}
 							if (bGetCount == 1)
 								pd.setProgress(iTotal);
-							Thread.sleep(100);
+							Thread.sleep(500);
 							// if (j == 50)
 							// handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
 						}
@@ -331,7 +331,7 @@ public class SmsClean extends Activity
 								{
 									checkedItem.add(false);
 								}
-							} else if (isInteger(cur.getString(j)))
+							} else //if (isInteger(cur.getString(j)))
 							{ // SMS from contacts !
 								{
 									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, new String[] { People.DISPLAY_NAME }, Contacts.Phones.PERSON_ID + " = " +  cur.getString(j) , null, null);
