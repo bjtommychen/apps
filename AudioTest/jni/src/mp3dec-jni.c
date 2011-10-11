@@ -228,7 +228,8 @@ jint Java_com_tommy_test_audiotest_AudioTest_mp3decExit(JNIEnv* env,
 }
 
 /*
- * Get 16-bit short len to read from mp3 files.
+* Note: split original decode_input_read() into below 2 function: GetInputDataLen() and FillData().
+ * Get 16-bit short length need to read from mp3 files. will be called in android app.
  * len: in short.
  */
 jint Java_com_tommy_test_audiotest_AudioTest_mp3decGetInputDataLen(JNIEnv* env,
@@ -263,7 +264,7 @@ jint Java_com_tommy_test_audiotest_AudioTest_mp3decFillData(JNIEnv* env,
 	//	 (*env)->GetIntArrayRegion(env, buf, 0, len, elems);   //a2[]
 	jbyte *elems = (*env)->GetByteArrayElements(env, buf, NULL);
 
-	// Copy Data
+	// Copy Data from elems to ptr.
 	memcpy(ptr, elems, len);
 	D("mp3decFillData fill %d bytes!\n", len);
 
@@ -323,6 +324,7 @@ jbyteArray Java_com_tommy_test_audiotest_AudioTest_mp3decGetOutputPcmBuff(
 {
 	struct MP3DEC_PCM *pcm = &lpcm;
 #if 0
+	// Copy mp3dec internal output buffer to Android app's buffer.
 	jbyte *elems = (*env)->GetByteArrayElements(env, buf, NULL);
 
 	memcpy(elems, pcm->pOutBuffer, pcm->length * pcm->channels * 2);
@@ -331,6 +333,7 @@ jbyteArray Java_com_tommy_test_audiotest_AudioTest_mp3decGetOutputPcmBuff(
 	(*env)->ReleaseByteArrayElements(env, buf, elems, 0);
 	return buf;
 #else
+	// 在jni中直接new一个byte数组，然后调用函数(*env)->SetByteArrayRegion(env, bytearray, 0, len, buffer);将buffer的值copy到bytearray中，函数直接return bytearray就可以了
 	jbyte *outbuf = (jbyte*)pcm->pOutBuffer;
 	int nOutSize = pcm->length * pcm->channels * 2;
 	jbyteArray jarray = (*env)->NewByteArray(env, nOutSize);
