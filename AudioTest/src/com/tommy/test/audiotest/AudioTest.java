@@ -219,7 +219,7 @@ public class AudioTest extends Activity
 					{
 						// Read data
 						readlen = mp3decGetInputDataLen();
-						Log.i(TAG, "Frame " + count++);
+//						Log.i(TAG, "Frame " + count++);
 //						Log.d(TAG, "mp3decGetInputDataLen return short. " + readlen);
 
 						if (readlen > 0)
@@ -263,7 +263,7 @@ public class AudioTest extends Activity
 //							Log.d(TAG, "write2audio bytes " + writelen);
 							// outPcm = null;
 						}
-						Thread.sleep(1);
+//						Thread.sleep(1);
 					}
 					fins.close();
 					mp3decExit();
@@ -272,11 +272,12 @@ public class AudioTest extends Activity
 				{
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				} catch (InterruptedException e)
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				} 
+//				catch (InterruptedException e)
+//				{	// need by Thread.sleep(1)
+//					// TODO Auto-generated catch blockj
+//					e.printStackTrace();
+//				}
 
 				at.stop();
 			}
@@ -367,12 +368,12 @@ public class AudioTest extends Activity
 	private void audiotrack_init()
 	{
 		// Get Min Buffer Size
-		min_buf_size = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+		min_buf_size = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 
 		// New
-		at = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, min_buf_size*2, AudioTrack.MODE_STREAM);
+		at = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, min_buf_size*2, AudioTrack.MODE_STREAM);
 		Log.d(TAG, "volume " + at.getMinVolume() + " -- " + at.getMaxVolume());
-		Log.d(TAG, "min buffer is " + min_buf_size);
+		Log.d(TAG, "audio track's min. buffer is " + min_buf_size);
 	}
 
 	/*
@@ -397,6 +398,7 @@ public class AudioTest extends Activity
 					while ((len = fins.read(audioData)) != -1 && bRunning == true)
 					{
 						Log.d(TAG, "write bytes " + len);
+						// Writes the audio data to the audio hardware for playback
 						at.write(audioData, 0, audioData.length);
 //						Thread.sleep(1);
 					}
