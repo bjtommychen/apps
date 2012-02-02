@@ -55,7 +55,7 @@ public class SmsClean extends Activity
 	private ProgressDialog progressDialog;
 	private Handler handler = null;
 	private Thread thread_sms, thread_getsmsinfo;
-	private Toast toast;
+	private Toast toast, toast2;
 	private MyAdapter smslistadapter;
 	private boolean delete_running = false, showwaiting_running = false;
 
@@ -103,6 +103,12 @@ public class SmsClean extends Activity
 		footview.setTypeface(null, Typeface.BOLD);
 		footview.setGravity(Gravity.CENTER_HORIZONTAL);
 		list.addHeaderView(footview);
+		
+		toast = Toast.makeText(getApplicationContext(), ".", Toast.LENGTH_LONG);
+		toast.setGravity(Gravity.CENTER, 0, 0);
+		toast2 = Toast.makeText(getApplicationContext(), ".", Toast.LENGTH_SHORT);
+		toast2.setGravity(Gravity.BOTTOM, 0, 0);
+		
 	}
 
 	private void initHandles()
@@ -171,7 +177,7 @@ public class SmsClean extends Activity
 		 pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		pd.setTitle(getString(R.string.app_name));
 		pd.setMessage(getString(R.string.load));
-		 pd.setMax(500);
+		 pd.setMax(0);
 //		 pd.setProgress(0);
 //		pd.setIndeterminate(true);
 		pd.setCancelable(false);
@@ -425,10 +431,10 @@ public class SmsClean extends Activity
 		}
 
 		// Display SMS list statistics.
-		toast = Toast.makeText(getApplicationContext(), getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " ." + "\n" + getString(R.string.stranger) + " "
-				+ getString(R.string.sms) + " " + iSelected + " .", Toast.LENGTH_LONG);
-		toast.setGravity(Gravity.CENTER, 0, 0);
-		// toast.setDuration(3000);
+		toast.setText(getString(R.string.stranger) + " " + getString(R.string.sms) + " " + iSelected + " ."
+				+ "\n" 
+				+ getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " ."
+				);
 		toast.show();
 
 		// listView.setItemsCanFocus(false);
@@ -679,6 +685,15 @@ public class SmsClean extends Activity
 						iSelected--;
 					}
 					list_update_headview();
+					// Display SMS list statistics.
+					toast2.setText(
+							getString(R.string.stranger) + " " + getString(R.string.sms) + " " + iSelected + " ."
+							+ "\n" 
+							+ getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " ." 
+							);
+					
+					toast2.setGravity(Gravity.BOTTOM, 0, 0);
+					toast2.show();					
 				}
 			});
 
