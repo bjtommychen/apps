@@ -1,7 +1,18 @@
 
+/**** Todo List ****/
+1. handle MMS, possible?
+2. Backup all deleted sms to text file in /sdcard, and restore.
+3. prompt the options before search sms.  option is stranger? Older than xx month? 
+4. 
+
+
+/**** Change Log ****/
+1.0.7 change Toast
 1.0.5 Update UI only.
 
 
+
+/**** Debug Info ****/
 
 130/202  before smsclean
 0/72    after delete
@@ -14,6 +25,11 @@
 06-05 23:16:22.788: INFO/smsclean(7433): Sms 7: times_contacted=0;custom_ringtone=null;primary_organization=null;phonetic_name=;status=null;label=null;number=null;type=null;mode=null;last_time_contacted=null;display_name=Fu Guipeng;im_handle=null;_id=405;number_key=null;starred=0;primary_email=2957;name=Fu Guipeng;primary_phone=null;im_account=null;notes=;im_protocol=null;send_to_voicemail=0;
 
 
+
+
+
+
+/**** Market Information ****/
 
 因为每天的垃圾短信太多, 又不想安装一个防火墙来过滤. 就开发了这个小应用, 这样平时短信只看不删很省时间, 每周运行一下来做个清洁就可以了.
 程序运行后, 显示所有短信, 自动选中来自陌生人的. 等待用户选择是否删除它们. 很简单的小应用, 希望大家
