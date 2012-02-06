@@ -5,7 +5,7 @@
 3. prompt the options before search sms.  option is stranger? Older than xx month? 
 4. Add some keywords in Market page. explain the permission needed.
 5. add this line in ubuntu eclipse.
-6. add in e5510 ubuntu eclipse git. and more.
+6. add in e5510 ubuntu eclipse git. and more. and ......
 
 
 /**** Change Log ****/
