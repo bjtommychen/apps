@@ -28,20 +28,22 @@ int main(int argc, char *argv[]) {
 	int skip_bytes = 0;
 	char titlebar[255] = "";
 
-	printf(" YUV420show Version 1.00\n");
+	printf(" YUVshow Version 2.00\n");
 
 	if (argc < 4) {
 		printf(
-				" Usage: YUV420show yuvfile bytes_per_component(1,2) height [width:for frames] \n");
+				" Usage: YUVshow yuvfile bytes_per_component(1,2) height [width:for frames] \n");
 		exit(0);
 	}
 
+	// Open file
 	if ((fp = fopen(argv[1], "rb")) == NULL)
 	{
 		fprintf(stderr, "can 't open %s\n", argv[1]);
 		exit(1);
 	}
 
+	// Get file size
 	fseek(fp, 0, SEEK_END);
 	fileSize = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
@@ -66,7 +68,7 @@ int main(int argc, char *argv[]) {
 		printf("pitch %d , skip %d \n", pitch, skip_bytes);
 
 	} else {
-		pitch = 3 * w * bytes_per_component;
+		pitch = /*3*/1.5 * w * bytes_per_component;
 		frames = fileSize / (pitch * h);
 	}
 
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]) {
 		return (1);
 	}
 
-	//Print_videoinfo();
+	Print_videoinfo();
 
 	video_flags = 0; //SDL_HWSURFACE;
 	desired_bpp = 0;
