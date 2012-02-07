@@ -20,14 +20,29 @@
 /******************************************************************************\
 *  Local Macro Definitions
  \******************************************************************************/
+#define DEBUG
+#ifdef DEBUG
+#define log(a, b...)	printf(a, ##b)
+#else
+#define log(a, b...)
+#endif
+
 #define TRUE 1
 #define FALSE 0
 #define VERSION "2.00"
+
+enum YUVFORMAT
+{
+	YUV_420 = 0, YUV_422,
+};
 
 /******************************************************************************\
 *  Local Type Definitions
  \******************************************************************************/
 int bRunning = TRUE;
+int w = 0, h = 0;
+int format = YUV_420;
+char filename[256] = "infile";
 
 /******************************************************************************\
 *  Local Variables
@@ -38,7 +53,7 @@ int bRunning = TRUE;
  \******************************************************************************/
 static void show_banner(int argc, char **argv)
 {
-	printf(" YUVshow Version %s\n", VERSION);
+	printf("YUVshow Version %s\t\t", VERSION);
 	printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
 
 }
@@ -46,12 +61,13 @@ static void show_banner(int argc, char **argv)
 static void show_options(int argc, char **argv)
 {
 	printf("Options:\n");
-	printf("-i file		Input file\n");
-	printf("-w width		Width\n");
-	printf("-h height		Height\n");
-	printf("-fmt yuvformat		Specify the input YUV format\n");
+	printf(" -i file			Input file\n");
+	printf(" -w width		Width\n");
+	printf(" -h height		Height\n");
+	printf(" -fmt yuvformat		Specify the input YUV format\n");
 	printf("	yuv420:				\n");
 	printf("	yuv422:				\n");
+	printf("\n");
 }
 
 static void Print_videoinfo()
@@ -203,78 +219,213 @@ static int check_exit_key()
 	return bExit;
 }
 
+static void parse_options(int argc, char *argv[])
+{
+	int i;
+	char *p;
+
+	argv++;
+	for (i = 1; i < argc && *argv != NULL; i++)
+	{
+		log("No.%d, checking %s\n", i, *argv);
+		p = *argv;
+		if (*p == '-')
+		{
+			p++;
+			if (strlen(p) == 1)
+			{
+				switch (*p)
+				{
+				case 'i':
+					argv++;
+					strcpy(filename, *argv);
+					break;
+				case 'w':
+					argv++;
+					w = atoi(*argv);
+					break;
+				case 'h':
+					argv++;
+					h = atoi(*argv);
+					break;
+				}
+			}
+			else
+			{
+				if (strcmp(p, "fmt") == 0)
+				{
+//					log("get fmt\n");
+					argv++;
+					if (strcmp(*argv, "yuv420")==0)
+						format = YUV_420;
+					if (strcmp(*argv, "yuv422")==0)
+						format = YUV_422;
+				}
+			}
+		}
+		argv++;
+	}
+}
+
+static int get_framesize_in_bytes(int w, int h, int format)
+{
+	int size = 0;
+
+	switch (format)
+	{
+	case YUV_420:
+		size = w * h * 3 / 2;
+		break;
+	case YUV_422:
+		size = w * h * 2;
+		break;
+	}
+	return size;
+}
+
+// Return 1 if reach end of file.
+static int get_frame_yuv420(FILE *fp, SDL_Overlay *overlay)
+{
+	int x, y;
+	unsigned char *p, *dst;
+	unsigned char buff[150000];
+
+
+//	log("ready to YUV\n");
+	// Y
+	for (y = 0; y < h; y++)
+	{
+		if (!fread(buff, overlay->pitches[0], 1, fp))
+		{
+			return 1;
+		}
+
+//		log("do Y\n");
+		dst = overlay->pixels[0] + overlay->pitches[0] * y;
+		p = buff;
+		for (x = 0; x < w; x++)
+		{
+			// IYUV,
+			*dst++ = *p++; //y
+		}
+	}
+
+	// U
+	for (y = 0; y < h / 2; y++)
+	{
+		if (!fread(buff, overlay->pitches[1], 1, fp))
+		{
+			return 1;
+		}
+
+//		log("do U\n");
+		dst = overlay->pixels[1] + overlay->pitches[1] * y;
+		p = buff;
+		for (x = 0; x < w; x++)
+		{
+			// IYUV,
+			*dst++ = *p++; //y
+		}
+	}
+
+	// V
+	for (y = 0; y < h / 2; y++)
+	{
+		if (!fread(buff, overlay->pitches[2], 1, fp))
+		{
+			return 1;
+		}
+
+		dst = overlay->pixels[2] + overlay->pitches[2] * y;
+		p = buff;
+		for (x = 0; x < w; x++)
+		{
+			// IYUV,
+			*dst++ = *p++; //y
+		}
+	}
+
+	return 0;
+}
+
 /******************************************************************************\
 *  Function Definitions
  \******************************************************************************/
 
 int main(int argc, char *argv[])
 {
-	SDL_Surface *screen, *pic;
+	SDL_Surface *screen;
 	SDL_Overlay *overlay;
-	int i, j, w = 0, h, pitch, frames = 1;
+	int i, j, frames = 1;
 	int fileSize = 0;
 	Uint32 video_flags, desired_bpp, overlay_format;
 	FILE *fp;
-	const SDL_VideoInfo *VideoInfo;
+//	const SDL_VideoInfo *VideoInfo;
 	int bytes_per_component = 1; // 1: 8bit  2: 16bit
-	int skip_bytes = 0;
 	char titlebar[255] = "";
 
+// Show info & Get arguments.
 	show_banner(argc, argv);
+	parse_options(argc, argv);
 
 	if (argc < 2)
 	{
 		show_options(argc, argv);
-//		printf(
-//				" Usage: YUVshow yuvfile bytes_per_component(1,2) height [width:for frames] \n");
 		exit(0);
 	}
 
-	// Open file
-	if ((fp = fopen(argv[1], "rb")) == NULL)
+// Checking arguments
+	if (w == 0 || h == 0)
+		exit(0);
+
+// Open file
+	if ((fp = fopen(filename, "rb")) == NULL)
 	{
-		fprintf(stderr, "can 't open %s\n", argv[1]);
+		fprintf(stderr, "can 't open %s\n", filename);
 		exit(1);
 	}
 
-	// Get file size
+// Get file size
 	fseek(fp, 0, SEEK_END);
 	fileSize = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 
-	bytes_per_component = atoi(argv[2]);
-	if (bytes_per_component != 1 && bytes_per_component != 2)
-	{
-		printf(" Error: must be 1 or 2 \n");
-		exit(0);
-	}
+//	bytes_per_component = 1; //atoi(argv[2]);
+//	if (bytes_per_component != 1 && bytes_per_component != 2)
+//	{
+//		printf(" Error: must be 1 or 2 \n");
+//		exit(0);
+//	}
 
-	h = atoi(argv[3]);
-	if (argc > 4)
-		w = atoi(argv[4]);
+//	h = atoi(argv[3]);
+//	if (argc > 4)
+//		w = atoi(argv[4]);
 
-	//h = ((h+15)/16)*16;
+//h = ((h+15)/16)*16;
 
-	if (w == 0)
-	{
-		pitch = fileSize / h;
-		w = 2 * pitch / (3 * bytes_per_component);
-		skip_bytes = pitch - w * (3 * bytes_per_component);
-		//pitch = w*(3 * bytes_per_component);
-		printf("pitch %d , skip %d \n", pitch, skip_bytes);
+//	if (w == 0)
+//	{
+//		pitch = fileSize / h;
+//		w = 2 * pitch / (3 * bytes_per_component);
+//		skip_bytes = pitch - w * (3 * bytes_per_component);
+//		//pitch = w*(3 * bytes_per_component);
+//		printf("pitch %d , skip %d \n", pitch, skip_bytes);
+//
+//	}
+//	else
+//	{
+//		pitch = /*3*/1.5 * w * bytes_per_component;
+//		frames = fileSize / (pitch * h);
+//	}
 
-	}
-	else
-	{
-		pitch = /*3*/1.5 * w * bytes_per_component;
-		frames = fileSize / (pitch * h);
-	}
+	if (get_framesize_in_bytes(w, h, format))
+		frames = fileSize / get_framesize_in_bytes(w, h, format);
 
 	printf("width %d , height %d , frames %d\n", w, h, frames);
 //	getchar();
 //	exit(0);
 
-	// width must be Even !!!
+// width must be Even !!!
 	if (w % 2)
 		w++;
 
@@ -286,7 +437,11 @@ int main(int argc, char *argv[])
 
 //	Print_videoinfo();
 
-	video_flags = 0; //SDL_HWSURFACE;
+	video_flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
+	if (0)
+		video_flags |= SDL_FULLSCREEN;
+	else
+		video_flags |= SDL_RESIZABLE;
 	desired_bpp = 0;
 
 	/* Initialize the display */
@@ -335,80 +490,23 @@ int main(int argc, char *argv[])
 
 ////////////////////// Draw start ////////////////////////////////
 	j = frames;
+	i = 0;
 //	j = 10;
 	bytes_per_component--;
 	while (j-- && bRunning)
 	{
-//		printf("frame no. %d \n", j);
-//		printf(".");
+//		printf("frame no. %d/%d, format: %d \n", i++, frames, format);
+		SDL_LockYUVOverlay(overlay);
+
+		switch (format)
 		{
-			int x, y, len, i;
-			unsigned char *p, *dst, *src;
-			Uint8 *op[3];
-			unsigned char buff[150000];
-//			int tempu, tempv;
+		case YUV_420:
+			get_frame_yuv420(fp, overlay);
+			break;
 
-			SDL_LockYUVOverlay(overlay);
-
-			for (y = 0; y < h; y++)
-			{
-				if (!fread(buff, overlay->pitches[0], 1, fp))
-				{
-					printf(" file end !\n");
-					bRunning = FALSE;
-					break;
-				}
-
-				op[0] = overlay->pixels[0] + overlay->pitches[0] * y;
-				p = buff;
-				for (x = 0; x < w; x++)
-				{
-					// IYUV,
-					*(op[0]++) = *p++; //y
-//					p += bytes_per_component;
-				}
-			}
-
-			for (y = 0; y < h / 2; y++)
-			{
-				if (!fread(buff, overlay->pitches[1], 1, fp))
-				{
-					printf(" file end !\n");
-					bRunning = FALSE;
-					break;
-				}
-
-				op[1] = overlay->pixels[1] + overlay->pitches[1] * y;
-				p = buff;
-				for (x = 0; x < w; x++)
-				{
-					// IYUV,
-					*(op[1]++) = *p++; //y
-					p += bytes_per_component;
-				}
-			}
-
-			for (y = 0; y < h / 2; y++)
-			{
-				if (!fread(buff, overlay->pitches[2], 1, fp))
-				{
-					printf(" file end !\n");
-					bRunning = FALSE;
-					break;
-				}
-
-				op[2] = overlay->pixels[2] + overlay->pitches[2] * y;
-				p = buff;
-				for (x = 0; x < w; x++)
-				{
-					// IYUV,
-					*(op[2]++) = *p++; //y
-					p += bytes_per_component;
-				}
-			}
-
-			SDL_UnlockYUVOverlay(overlay);
 		}
+
+		SDL_UnlockYUVOverlay(overlay);
 
 		/* show */
 		{
@@ -420,6 +518,7 @@ int main(int argc, char *argv[])
 			rect.y = 0;
 			SDL_DisplayYUVOverlay(overlay, &rect);
 		}
+
 ////////////////////// Draw end ////////////////////////////////
 //		if (frames == 1)
 //			YUVshow_waitkey();
