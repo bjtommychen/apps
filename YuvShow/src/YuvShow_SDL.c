@@ -13,13 +13,20 @@
 #include <string.h>
 #include <SDL.h>
 
-void Print_videoinfo();
-void YUVshow_waitkey();
+#define TRUE 1
+#define FALSE 0
 
-int main(int argc, char *argv[]) {
+void
+Print_videoinfo();
+void
+YUVshow_waitkey();
+
+int main(int argc, char *argv[])
+{
 	SDL_Surface *screen, *pic;
 	SDL_Overlay *overlay;
 	int i, j, w = 0, h, pitch, frames = 1;
+	int bRunning = TRUE;
 	int fileSize = 0;
 	Uint32 video_flags, desired_bpp, overlay_format;
 	FILE *fp;
@@ -30,11 +37,13 @@ int main(int argc, char *argv[]) {
 
 	printf(" YUVshow Version 2.00\n");
 
-	if (argc < 4) {
+	if (argc < 4)
+	{
 		printf(
 				" Usage: YUVshow yuvfile bytes_per_component(1,2) height [width:for frames] \n");
 		exit(0);
 	}
+
 
 	// Open file
 	if ((fp = fopen(argv[1], "rb")) == NULL)
@@ -49,7 +58,8 @@ int main(int argc, char *argv[]) {
 	fseek(fp, 0, SEEK_SET);
 
 	bytes_per_component = atoi(argv[2]);
-	if (bytes_per_component != 1 && bytes_per_component != 2) {
+	if (bytes_per_component != 1 && bytes_per_component != 2)
+	{
 		printf(" Error: must be 1 or 2 \n");
 		exit(0);
 	}
@@ -60,30 +70,36 @@ int main(int argc, char *argv[]) {
 
 	//h = ((h+15)/16)*16;
 
-	if (w == 0) {
+	if (w == 0)
+	{
 		pitch = fileSize / h;
 		w = 2 * pitch / (3 * bytes_per_component);
 		skip_bytes = pitch - w * (3 * bytes_per_component);
 		//pitch = w*(3 * bytes_per_component);
 		printf("pitch %d , skip %d \n", pitch, skip_bytes);
 
-	} else {
+	}
+	else
+	{
 		pitch = /*3*/1.5 * w * bytes_per_component;
 		frames = fileSize / (pitch * h);
 	}
 
 	printf("width %d , height %d , frames %d\n", w, h, frames);
+	getchar();
+	exit(0);
 
 	// width must be Even !!!
 	if (w % 2)
 		w++;
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE) < 0)
+	{
 		fprintf(stderr, "Couldn' t initialize SDL:%s \n ", SDL_GetError());
 		return (1);
 	}
 
-	Print_videoinfo();
+//	Print_videoinfo();
 
 	video_flags = 0; //SDL_HWSURFACE;
 	desired_bpp = 0;
@@ -101,13 +117,14 @@ int main(int argc, char *argv[]) {
 			screen->h, screen->format->BitsPerPixel);
 	printf("(video surface located in %s memory)\n",
 			(screen->flags & SDL_HWSURFACE) ? "video" : "system");
-	if (screen->flags & SDL_DOUBLEBUF) {
+	if (screen->flags & SDL_DOUBLEBUF)
+	{
 		printf("Double-buffering enabled\n");
 		//flip = 1;
 	}
 
 	/* Set the window manager title bar */
-	strcpy(titlebar, "YUV420 show v1.0 - ");
+	strcpy(titlebar, "file: ");
 	strcat(titlebar, argv[1]);
 	SDL_WM_SetCaption(titlebar, "by tommy");
 
@@ -126,62 +143,79 @@ int main(int argc, char *argv[]) {
 			overlay->format == SDL_YUY2_OVERLAY ? "YUY2" :
 			overlay->format == SDL_UYVY_OVERLAY ? "UYVY" :
 			overlay->format == SDL_YVYU_OVERLAY ? "YVYU" : "Unknown");
-	for (i = 0; i < overlay->planes; i++) {
+	for (i = 0; i < overlay->planes; i++)
+	{
 		printf("  plane %d: pitch=%d\n", i, overlay->pitches[i]);
 	}
 
 ////////////////////// Draw start ////////////////////////////////
 	j = frames;
+//	j = 10;
 	bytes_per_component--;
-	while (j--) {
+	while (j-- && bRunning)
+	{
+//		printf("frame no. %d \n", j);
+		printf(".");
 		{
 			int x, y, len, i;
-			unsigned char *p;
+			unsigned char *p, *dst, *src;
 			Uint8 *op[3];
 			unsigned char buff[150000];
-			int tempu, tempv;
+//			int tempu, tempv;
 
 			SDL_LockYUVOverlay(overlay);
 
-			for (y = 0; y < h; y++) {
-				if (!fread(buff, overlay->pitches[0], 1, fp)) {
+			for (y = 0; y < h; y++)
+			{
+				if (!fread(buff, overlay->pitches[0], 1, fp))
+				{
 					printf(" file end !\n");
+					bRunning = FALSE;
 					break;
 				}
 
 				op[0] = overlay->pixels[0] + overlay->pitches[0] * y;
 				p = buff;
-				for (x = 0; x < w; x++) {
+				for (x = 0; x < w; x++)
+				{
 					// IYUV,
 					*(op[0]++) = *p++; //y
-					p += bytes_per_component;
+//					p += bytes_per_component;
 				}
 			}
 
-			for (y = 0; y < h; y++) {
-				if (!fread(buff, overlay->pitches[1], 1, fp)) {
+			for (y = 0; y < h/2; y++)
+			{
+				if (!fread(buff, overlay->pitches[1], 1, fp))
+				{
 					printf(" file end !\n");
+					bRunning = FALSE;
 					break;
 				}
 
 				op[1] = overlay->pixels[1] + overlay->pitches[1] * y;
 				p = buff;
-				for (x = 0; x < w; x++) {
+				for (x = 0; x < w; x++)
+				{
 					// IYUV,
 					*(op[1]++) = *p++; //y
 					p += bytes_per_component;
 				}
 			}
 
-			for (y = 0; y < h; y++) {
-				if (!fread(buff, overlay->pitches[2], 1, fp)) {
+			for (y = 0; y < h/2; y++)
+			{
+				if (!fread(buff, overlay->pitches[2], 1, fp))
+				{
 					printf(" file end !\n");
+					bRunning = FALSE;
 					break;
 				}
 
 				op[2] = overlay->pixels[2] + overlay->pitches[2] * y;
 				p = buff;
-				for (x = 0; x < w; x++) {
+				for (x = 0; x < w; x++)
+				{
 					// IYUV,
 					*(op[2]++) = *p++; //y
 					p += bytes_per_component;
@@ -207,17 +241,21 @@ int main(int argc, char *argv[]) {
 		else
 			SDL_Delay(5 * 10);
 	}
+
+	SDL_FreeYUVOverlay(overlay);
 	SDL_Quit();
 	return 0;
 }
 
-void Print_videoinfo() {
+void Print_videoinfo()
+{
 	const SDL_VideoInfo *info;
 	int i;
 	SDL_Rect **modes;
 	char driver[128];
 
-	if (SDL_VideoDriverName(driver, sizeof(driver))) {
+	if (SDL_VideoDriverName(driver, sizeof(driver)))
+	{
 		printf("Video driver: %s\n", driver);
 	}
 	info = SDL_GetVideoInfo();
@@ -231,63 +269,83 @@ void Print_videoinfo() {
 	}
 	/* Print available fullscreen video modes */
 	modes = SDL_ListModes(NULL, SDL_FULLSCREEN);
-	if (modes == (SDL_Rect **) 0) {
+	if (modes == (SDL_Rect **) 0)
+	{
 		printf("No available fullscreen video modes\n");
-	} else if (modes == (SDL_Rect **) -1) {
+	}
+	else if (modes == (SDL_Rect **) -1)
+	{
 		printf("No special fullscreen video modes\n");
-	} else {
+	}
+	else
+	{
 		printf("Fullscreen video modes:\n");
-		for (i = 0; modes[i]; ++i) {
+		for (i = 0; modes[i]; ++i)
+		{
 			printf("\t%dx%dx%d\n", modes[i]->w, modes[i]->h,
 					info->vfmt->BitsPerPixel);
 		}
 	}
-	if (info->wm_available) {
+	if (info->wm_available)
+	{
 		printf("A window manager is available\n");
 	}
-	if (info->hw_available) {
+	if (info->hw_available)
+	{
 		printf("Hardware surfaces are available (%dK video memory)\n",
 				info->video_mem);
 	}
-	if (info->blit_hw) {
+	if (info->blit_hw)
+	{
 		printf("Copy blits between hardware surfaces are accelerated\n");
 	}
-	if (info->blit_hw_CC) {
+	if (info->blit_hw_CC)
+	{
 		printf("Colorkey blits between hardware surfaces are accelerated\n");
 	}
-	if (info->blit_hw_A) {
+	if (info->blit_hw_A)
+	{
 		printf("Alpha blits between hardware surfaces are accelerated\n");
 	}
-	if (info->blit_sw) {
+	if (info->blit_sw)
+	{
 		printf(
 				"Copy blits from software surfaces to hardware surfaces are accelerated\n");
 	}
-	if (info->blit_sw_CC) {
+	if (info->blit_sw_CC)
+	{
 		printf(
 				"Colorkey blits from software surfaces to hardware surfaces are accelerated\n");
 	}
-	if (info->blit_sw_A) {
+	if (info->blit_sw_A)
+	{
 		printf(
 				"Alpha blits from software surfaces to hardware surfaces are accelerated\n");
 	}
-	if (info->blit_fill) {
+	if (info->blit_fill)
+	{
 		printf("Color fills on hardware surfaces are accelerated\n");
 	}
 
 }
 
-void YUVshow_waitkey() {
+void YUVshow_waitkey()
+{
 	int bRunning = 1;
 
 	// Wait key input
 	SDL_Event event;
-	while (bRunning) {
-		while (SDL_PollEvent(&event)) {
+	while (bRunning)
+	{
+		while (SDL_PollEvent(&event))
+		{
 
 			/* GLOBAL KEYS / EVENTS */
-			switch (event.type) {
+			switch (event.type)
+			{
 			case SDL_KEYDOWN:
-				switch (event.key.keysym.sym) {
+				switch (event.key.keysym.sym)
+				{
 				case SDLK_ESCAPE:
 					bRunning = 0;
 					break;
