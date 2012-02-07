@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
 
 	/* Set the window manager title bar */
 	strcpy(titlebar, "file: ");
-	strcat(titlebar, argv[1]);
+	strcat(titlebar, filename);
 	SDL_WM_SetCaption(titlebar, "by tommy");
 
 	/* Create the overlay */
