@@ -1,7 +1,5 @@
 Todo:
 
-add this in br master. masster2
-
 Feb  7 2012 15:21:12  
 add options parser, 
 move some function out of main()
