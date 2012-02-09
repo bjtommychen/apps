@@ -30,6 +30,8 @@
 #define TRUE 1
 #define FALSE 0
 #define VERSION "2.00"
+#define AUTHOR "Tommy"
+
 
 enum YUVFORMAT
 {
@@ -53,7 +55,7 @@ char filename[256] = "infile";
  \******************************************************************************/
 static void show_banner(int argc, char **argv)
 {
-	printf("YUVshow Version %s\t\t", VERSION);
+	printf("YUVshow Version %s by %s\t\t", VERSION, AUTHOR);
 	printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
 
 }

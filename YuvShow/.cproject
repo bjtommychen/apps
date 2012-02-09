@@ -78,11 +78,14 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.76951759" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.877378051" name="Optimization Level" superClass="gnu.c.compiler.exe.release.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.exe.release.option.debugging.level.1149288733" name="Debug Level" superClass="gnu.c.compiler.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.misc.other.436815030" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 `sdl-config --cflags`" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.436815030" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 `sdl-config --cflags`" valueType="string"/>
+								<option id="gnu.c.compiler.option.include.paths.1459745882" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/include/SDL"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2077295386" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1662905860" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release">
-								<option id="gnu.c.link.option.ldflags.120464656" superClass="gnu.c.link.option.ldflags" value="`sdl-config --libs`" valueType="string"/>
+								<option id="gnu.c.link.option.ldflags.120464656" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="`sdl-config --libs`" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.823718581" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
