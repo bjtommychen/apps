@@ -196,6 +196,7 @@ static void mixaudio(void *usr_used, Uint8 * stream, int len)
 
 	if (!fread(buff, len, 1, fp))
 	{
+		fclose(fp);
 		printf("\n file end !\n");
 		bRunning = FALSE;
 		return;
@@ -243,7 +244,6 @@ int main(int argc, char *argv[])
 
 // Show info & Get arguments.
 	show_banner(argc, argv);
-	parse_options(argc, argv);
 
 	if (argc < 2)
 	{
@@ -251,6 +251,9 @@ int main(int argc, char *argv[])
 		show_options(argc, argv);
 		exit(0);
 	}
+
+	parse_options(argc, argv);
+
 
 	if ((fp = fopen(filename, "rb")) == NULL)
 	{

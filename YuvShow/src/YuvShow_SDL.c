@@ -368,13 +368,14 @@ int main(int argc, char *argv[])
 
 // Show info & Get arguments.
 	show_banner(argc, argv);
-	parse_options(argc, argv);
 
 	if (argc < 2)
 	{
 		show_options(argc, argv);
 		exit(0);
 	}
+
+	parse_options(argc, argv);
 
 // Checking arguments
 	if (w == 0 || h == 0)
@@ -531,6 +532,7 @@ int main(int argc, char *argv[])
 			bRunning = FALSE;
 	}
 
+	fclose(fp);
 	SDL_FreeYUVOverlay(overlay);
 	SDL_Quit();
 	return 0;
