@@ -464,7 +464,7 @@ int main(int argc, char **argv)
     const char *filename;
 
     /* must be called before using avcodec lib */
-    avcodec_init();
+//    avcodec_init();
 
     /* register all the codecs */
     avcodec_register_all();
