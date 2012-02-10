@@ -8,6 +8,8 @@
  ============================================================================
  */
 
+/* based on ffmpeg/doc/examples/Decoding_encoding.c */
+
 /*
  * Copyright (c) 2001 Fabrice Bellard
  *
@@ -138,10 +140,10 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
 	av_init_packet(&avpkt);
 
-	printf("Audio decoding\n");
+	printf("Audio decoding...writing to %s.\n", outfilename);
 
 	/* find the mpeg audio decoder */
-	codec = avcodec_find_decoder(CODEC_ID_MP2);
+	codec = avcodec_find_decoder(CODEC_ID_MP3);
 	if (!codec)
 	{
 		fprintf(stderr, "codec not found\n");
@@ -178,6 +180,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 	{
 		int got_frame = 0;
 
+//		printf("avpkt.size is %d \n", avpkt.size);
 		if (!decoded_frame)
 		{
 			if (!(decoded_frame = avcodec_alloc_frame()))
@@ -192,11 +195,14 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 		len = avcodec_decode_audio4(c, decoded_frame, &got_frame, &avpkt);
 		if (len < 0)
 		{
+			printf("avpkt.size  %d bytes left.\n", avpkt.size);
 			fprintf(stderr, "Error while decoding\n");
 			exit(1);
 		}
 		if (got_frame)
 		{
+//			printf("^, ch:%d, samples:%d, fmt:%d\n", c->channels,
+//					decoded_frame->nb_samples, c->sample_fmt);
 			/* if a frame has been decoded, output it */
 			int data_size = av_samples_get_buffer_size(NULL, c->channels,
 					decoded_frame->nb_samples, c->sample_fmt, 1);
@@ -215,6 +221,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 			avpkt.data = inbuf;
 			len = fread(avpkt.data + avpkt.size, 1,
 					AUDIO_INBUF_SIZE - avpkt.size, f);
+//			printf(" only %d left, read %d \n", avpkt.size, len);
 			if (len > 0)
 				avpkt.size += len;
 		}
@@ -498,10 +505,12 @@ int main(int argc, char **argv)
 	const char *filename;
 
 	/* must be called before using avcodec lib */
-//    avcodec_init();
+//	avcodec_init();
+
 	/* register all the codecs */
 	avcodec_register_all();
 
+#if 0
 	if (argc <= 1)
 	{
 		audio_encode_example("/tmp/test.mp2");
@@ -518,6 +527,8 @@ int main(int argc, char **argv)
 
 	//    audio_decode_example("/tmp/test.sw", filename);
 	video_decode_example("/tmp/test%d.pgm", filename);
-
+#else
+	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
+#endif
 	return 0;
 }
