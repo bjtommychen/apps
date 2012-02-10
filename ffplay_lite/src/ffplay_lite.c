@@ -47,8 +47,6 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/samplefmt.h"
 
-
-
 /******************************************************************************/
 /*  Externs                                                                   */
 /******************************************************************************/
@@ -84,21 +82,20 @@
 /*  Local Function Declarations                                               */
 /******************************************************************************/
 
-
 /*
  * Audio encoding example
  */
-static void audio_encode_example(const char *filename)
+static void audio_encode_example(const char *outfilename, const char *filename)
 {
 	AVCodec *codec;
 	AVCodecContext *c = NULL;
 	int frame_size, i, j, out_size, outbuf_size;
-	FILE *f;
+	FILE *f, *outfile;
 	short *samples;
 	float t, tincr;
 	uint8_t *outbuf;
 
-	printf("Audio encoding\n");
+	printf("Audio encoding...writing to %s\n", outfilename);
 
 	/* find the MP2 encoder */
 	codec = avcodec_find_encoder(CODEC_ID_MP2);
@@ -129,29 +126,40 @@ static void audio_encode_example(const char *filename)
 	outbuf_size = 10000;
 	outbuf = malloc(outbuf_size);
 
-	f = fopen(filename, "wb");
+	f = fopen(filename, "rb");
 	if (!f)
 	{
 		fprintf(stderr, "could not open %s\n", filename);
 		exit(1);
 	}
 
-	/* encode a single tone sound */
-	t = 0;
-	tincr = 2 * M_PI * 440.0 / c->sample_rate;
-	for (i = 0; i < 200; i++)
+	outfile = fopen(outfilename, "wb");
+	if (!f)
 	{
-		for (j = 0; j < frame_size; j++)
-		{
-			samples[2 * j] = (int) (sin(t) * 10000);
-			samples[2 * j + 1] = samples[2 * j];
-			t += tincr;
-		}
-		/* encode the samples */
-		out_size = avcodec_encode_audio(c, outbuf, outbuf_size, samples);
-		fwrite(outbuf, 1, out_size, f);
+		fprintf(stderr, "could not open %s\n", outfilename);
+		exit(1);
 	}
+
+	{
+		int len;
+		while (1)
+		{
+			// read pcm data.
+			len = fread(samples, 1, frame_size * 2 * c->channels, f);
+			if (len == 0)
+			{
+				fprintf(stderr, "Error while reading\n");
+				break;
+			}
+			/* encode the samples */
+			out_size = avcodec_encode_audio(c, outbuf, outbuf_size, samples);
+
+			fwrite(outbuf, 1, out_size, outfile);
+		}
+	}
+
 	fclose(f);
+	fclose(outfile);
 	free(outbuf);
 	free(samples);
 
@@ -231,7 +239,8 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 		{
 			printf("avpkt.size  %d bytes left.\n", avpkt.size);
 			fprintf(stderr, "Error while decoding\n");
-			exit(1);
+//			exit(1);
+			return;
 		}
 		if (got_frame)
 		{
@@ -436,7 +445,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
 	picture = avcodec_alloc_frame();
 
 	if (codec->capabilities & CODEC_CAP_TRUNCATED
-		)
+	)
 		c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
 
 	/* For some codecs, such as msmpeg4 and mpeg4, width and height
@@ -534,7 +543,6 @@ static void video_decode_example(const char *outfilename, const char *filename)
 	printf("\n");
 }
 
-
 static void show_banner(int argc, char **argv)
 {
 	printf("ffplay lite Version %s by %s\t\t", VERSION, AUTHOR);
@@ -551,11 +559,9 @@ static void show_options(int argc, char **argv)
 	printf("\n");
 }
 
-
 /******************************************************************************/
 /*  Function Definitions                                                      */
 /******************************************************************************/
-
 
 int main(int argc, char **argv)
 {
@@ -564,7 +570,6 @@ int main(int argc, char **argv)
 	show_banner(argc, argv);
 	/* must be called before using avcodec lib */
 //	avcodec_init();
-
 	/* register all the codecs */
 	avcodec_register_all();
 
@@ -587,6 +592,7 @@ int main(int argc, char **argv)
 	video_decode_example("/tmp/test%d.pgm", filename);
 #else
 	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
+	audio_encode_example("out.mp3", "./out.pcm");
 #endif
 	return 0;
 }
