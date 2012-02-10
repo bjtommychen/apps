@@ -1,5 +1,9 @@
 
 
+Note:
+use below to split the video/audio stream in vcd file.
+ffmpeg -i /srv/stream/love_mv.mpg -vcodec copy -an -f rawvideo love_mv.mpeg1video 
+ffmpeg -i /srv/stream/love_mv.mpg -acodec copy -vn love_mv.mp3
 
 
 

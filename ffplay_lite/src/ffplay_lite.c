@@ -415,16 +415,33 @@ static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
 	fclose(f);
 }
 
+static void picture_yuv420_save(FILE *fp, AVFrame *picture, int xsize,
+		int ysize)
+{
+	int i;
+
+	// Note: xsize <= linesize[x];
+	//Y
+	for (i = 0; i < ysize; i++)
+		fwrite(picture->data[0] + i * picture->linesize[0], 1, xsize, fp);
+	//U
+	for (i = 0; i < ysize / 2; i++)
+		fwrite(picture->data[1] + i * picture->linesize[1], 1, xsize / 2, fp);
+	//V
+	for (i = 0; i < ysize / 2; i++)
+		fwrite(picture->data[2] + i * picture->linesize[2], 1, xsize / 2, fp);
+}
+
 static void video_decode_example(const char *outfilename, const char *filename)
 {
 	AVCodec *codec;
 	AVCodecContext *c = NULL;
 	int frame, got_picture, len;
-	FILE *f;
+	FILE *f, *outfile = NULL;
 	AVFrame *picture;
-	uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];char
-	buf[1024];
-	AVPacket avpkt;
+	char buf[1024];
+	uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];AVPacket
+	avpkt;
 
 	av_init_packet(&avpkt);
 
@@ -501,21 +518,50 @@ static void video_decode_example(const char *outfilename, const char *filename)
 			}
 			if (got_picture)
 			{
-				printf("saving frame %3d\n", frame);
-				fflush(stdout);
+//				printf("saving frame %3d\n", frame);
+//				fflush(stdout);
 
+				if (outfile == NULL)
+				{
+					buf[0] = 0;
+					sprintf(buf, "%dx%d.yuv", c->width, c->height);
+					outfile = fopen(buf, "wb");
+					if (!f)
+					{
+						fprintf(stderr, "could not open %s\n", buf);
+						exit(1);
+					}
+					printf("writing yuv data to %s\n", buf);
+
+					buf[0] = 0;
+				}
 				/* the picture is allocated by the decoder. no need to
 				 free it */
-				snprintf(buf, sizeof(buf), outfilename, frame);
-				pgm_save(picture->data[0], picture->linesize[0], c->width,
-						c->height, buf);
+//				snprintf(buf, sizeof(buf), outfilename, frame);
+//				pgm_save(picture->data[0], picture->linesize[0], c->width,
+//						c->height, buf);
+				if (frame == 0)
+				{
+					printf("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n",
+							picture->width, picture->height,
+							picture->linesize[0], picture->linesize[1],
+							picture->linesize[2]);
+				}
+				picture_yuv420_save(outfile, picture, c->width, c->height);
+
 				frame++;
 			}
 			avpkt.size -= len;
 			avpkt.data += len;
+
 		}
+
+		if (frame > 1000)
+			break;
 	}
 
+#if 0
+	// Handle last frame.
 	/* some codecs, such as MPEG, transmit the I and P frame with a
 	 latency of one frame. You must do the following to have a
 	 chance to get the last frame of the video */
@@ -534,8 +580,10 @@ static void video_decode_example(const char *outfilename, const char *filename)
 				buf);
 		frame++;
 	}
+#endif
 
 	fclose(f);
+	fclose(outfile);
 
 	avcodec_close(c);
 	av_free(c);
@@ -592,7 +640,10 @@ int main(int argc, char **argv)
 	video_decode_example("/tmp/test%d.pgm", filename);
 #else
 	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
-	audio_encode_example("out.mp3", "./out.pcm");
+	audio_encode_example("./out.mp3", "./out.pcm");
+
+	video_decode_example("/tmp/test%d.pgm", "./love_mv.mpeg1video");
+
 #endif
 	return 0;
 }
