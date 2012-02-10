@@ -47,9 +47,43 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/samplefmt.h"
 
+
+
+/******************************************************************************/
+/*  Externs                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  Local Macro Definitions                                                   */
+/******************************************************************************/
 #define INBUF_SIZE 4096
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
+
+//#define DEBUG
+#ifdef DEBUG
+#define log(a, b...)	printf(a, ##b)
+#else
+#define log(a, b...)
+#endif
+
+#define TRUE 1
+#define FALSE 0
+#define VERSION "0.01"
+#define AUTHOR "Tommy"
+
+/******************************************************************************/
+/*  Local Type Definitions                                                    */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  Local Variables                                                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  Local Function Declarations                                               */
+/******************************************************************************/
+
 
 /*
  * Audio encoding example
@@ -500,10 +534,34 @@ static void video_decode_example(const char *outfilename, const char *filename)
 	printf("\n");
 }
 
+
+static void show_banner(int argc, char **argv)
+{
+	printf("ffplay lite Version %s by %s\t\t", VERSION, AUTHOR);
+	printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
+}
+
+static void show_options(int argc, char **argv)
+{
+	printf("Options:\n");
+	printf(" -i file		Input pcm file\n");
+	printf(" -ch x			Channel number, default is 2.\n");
+	printf(" -srate xxx		Sample Rate in Hz, default is 44100hz.\n");
+	printf(" -bps xxx		Bits per Sample, 8/16(default)/24/32.\n");
+	printf("\n");
+}
+
+
+/******************************************************************************/
+/*  Function Definitions                                                      */
+/******************************************************************************/
+
+
 int main(int argc, char **argv)
 {
 	const char *filename;
 
+	show_banner(argc, argv);
 	/* must be called before using avcodec lib */
 //	avcodec_init();
 
