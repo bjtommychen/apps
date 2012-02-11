@@ -174,13 +174,13 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 {
 	AVCodec *codec;
 	AVCodecContext *c = NULL;
-	int len;
+	int len, ending;
 	FILE *f, *outfile;
-	uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];AVPacket
-	avpkt;
+	AVPacket avpkt;
 	AVFrame *decoded_frame = NULL;
+	uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
 
-	av_init_packet(&avpkt);
+av_init_packet	(&avpkt);
 
 	printf("Audio decoding...writing to %s.\n", outfilename);
 
@@ -218,6 +218,8 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 	avpkt.data = inbuf;
 	avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
+	ending = FALSE;
+
 	while (avpkt.size > 0)
 	{
 		int got_frame = 0;
@@ -239,8 +241,15 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 		{
 			printf("avpkt.size  %d bytes left.\n", avpkt.size);
 			fprintf(stderr, "Error while decoding\n");
+			if (ending == TRUE)
+			{
+				avpkt.size = 0;
+				break;
+			}
 //			exit(1);
-			return;
+			avpkt.size -= 1;
+			avpkt.data += 1;
+			continue;
 		}
 		if (got_frame)
 		{
@@ -266,7 +275,13 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 					AUDIO_INBUF_SIZE - avpkt.size, f);
 //			printf(" only %d left, read %d \n", avpkt.size, len);
 			if (len > 0)
+			{
 				avpkt.size += len;
+			}
+			else
+			{	// Reach EOF
+				ending = TRUE;
+			}
 		}
 	}
 
@@ -639,9 +654,11 @@ int main(int argc, char **argv)
 	//    audio_decode_example("/tmp/test.sw", filename);
 	video_decode_example("/tmp/test%d.pgm", filename);
 #else
+	// Decode mp3 to pcm file.
 	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
+	// Encode pcm to mpeg1 audio file.
 	audio_encode_example("./out.mp3", "./out.pcm");
-
+	// Decode pure mpeg1video stream file into yuv420 data file.
 	video_decode_example("/tmp/test%d.pgm", "./love_mv.mpeg1video");
 
 #endif
