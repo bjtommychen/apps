@@ -46,6 +46,9 @@
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/samplefmt.h"
+#include "libavformat/avformat.h"
+
+#include "libavutil/avutil.h"
 
 /******************************************************************************/
 /*  Externs                                                                   */
@@ -58,7 +61,7 @@
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define log(a, b...)	printf(a, ##b)
 #else
@@ -279,7 +282,7 @@ av_init_packet	(&avpkt);
 				avpkt.size += len;
 			}
 			else
-			{	// Reach EOF
+			{ // Reach EOF
 				ending = TRUE;
 			}
 		}
@@ -606,9 +609,108 @@ static void video_decode_example(const char *outfilename, const char *filename)
 	printf("\n");
 }
 
+static void avfile_decode_example(const char *filename, int isSDLshow)
+{
+	AVFormatContext *c;
+	AVPacket avpkt;
+	FILE *fa, *fv;
+	char str[128];
+	int i;
+	int audioidx, videoidx;
+
+	printf(" avfile decoding ... \n");
+
+	c = avformat_alloc_context();
+	if (avformat_open_input(&c, filename, NULL, 0) < 0)
+	{
+		fprintf(stderr, "could not open file\n");
+		return;
+	}
+	c->flags |= AVFMT_FLAG_GENPTS;
+
+	if (avformat_find_stream_info(c, 0) < 0)
+	{
+		fprintf(stderr, "find stream failed. \n");
+		return;
+	}
+
+	log("nb_streams is %d\n", c->nb_streams);
+	for (i = 0; i < c->nb_streams; i++)
+	{
+		printf("\nStream #%d: \n ", i);
+		switch (c->streams[i]->codec->codec_type)
+		{
+		case AVMEDIA_TYPE_VIDEO:
+			videoidx = i;
+			printf("Video.");
+			break;
+		case AVMEDIA_TYPE_AUDIO:
+			audioidx = i;
+			printf("Audio.");
+			break;
+		}
+		printf("codec_name:%s. id:%xH. tag:%xH",
+				c->streams[i]->codec->codec_name,
+				c->streams[i]->codec->codec_id,
+				&(c->streams[i]->codec->codec_tag));
+	}
+	printf("\n");
+
+	// Demux start
+	if (!isSDLshow)
+	{
+		str[0] = 0;
+		strcpy(str, filename);
+		strcat(str, ".audiostream");
+		fa = fopen(str, "wb");
+		if (!fa)
+		{
+			fprintf(stderr, "could not open %s\n", str);
+			return;
+		}
+		log("open stream files %s to write .\n", str);
+
+		str[0] = 0;
+		strcpy(str, filename);
+		strcat(str, ".videostream");
+		fv = fopen(str, "wb");
+		if (!fv)
+		{
+			fprintf(stderr, "could not open %s\n", str);
+			return;
+		}
+		log("\nopen stream files %s to write .\n", str);
+
+	}
+
+	while (av_read_frame(c, &avpkt) >= 0)
+	{
+		if (!isSDLshow)
+		{
+			if (avpkt.stream_index == videoidx)
+			{
+				fwrite(avpkt.data, 1, avpkt.size, fv);
+			}
+			if (avpkt.stream_index == audioidx)
+			{
+				fwrite(avpkt.data, 1, avpkt.size, fa);
+			}
+
+		}
+	}
+
+	if (!isSDLshow)
+	{
+		fclose(fa);
+		fclose(fv);
+	}
+	avformat_free_context(c);
+
+}
+
 static void show_banner(int argc, char **argv)
 {
-	printf("ffplay lite Version %s by %s\t\t", VERSION, AUTHOR);
+	printf("ffplay lite Version %s by %s\t", VERSION, AUTHOR);
 	printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
 }
 
@@ -636,6 +738,9 @@ int main(int argc, char **argv)
 	/* register all the codecs */
 	avcodec_register_all();
 
+// register all the format ?
+	av_register_all();
+
 #if 0
 	if (argc <= 1)
 	{
@@ -651,16 +756,17 @@ int main(int argc, char **argv)
 		filename = argv[1];
 	}
 
-	//    audio_decode_example("/tmp/test.sw", filename);
+//    audio_decode_example("/tmp/test.sw", filename);
 	video_decode_example("/tmp/test%d.pgm", filename);
 #else
-	// Decode mp3 to pcm file.
-	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
-	// Encode pcm to mpeg1 audio file.
-	audio_encode_example("./out.mp3", "./out.pcm");
-	// Decode pure mpeg1video stream file into yuv420 data file.
-	video_decode_example("/tmp/test%d.pgm", "./love_mv.mpeg1video");
-
+// Decode mp3 to pcm file.
+//	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
+// Encode pcm to mpeg1 audio file.
+//	audio_encode_example("./out.mp3", "./out.pcm");
+// Decode pure mpeg1video stream file into yuv420 data file.
+//	video_decode_example("/tmp/test%d.pgm", "./love_mv.mpeg1video");
+// demux av file
+	avfile_decode_example("/srv/stream/love_mv.mpg", 0);
 #endif
 	return 0;
 }
