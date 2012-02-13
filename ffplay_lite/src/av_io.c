@@ -34,7 +34,7 @@ SDL_Surface *screen, *bitmap;
 int chNum = 2, SampleRate = 44100, Bits_per_Sample = 16;
 int average;
 int outputAudioabufferSize = 0;
-unsigned char *abuff;
+unsigned char *abuff = NULL;
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -69,7 +69,8 @@ int AVIO_Init()
 int AVIO_Exit()
 {
 	//Audio
-	free(abuff);
+	if (abuff != 0)
+		free(abuff);
 	SDL_CloseAudio();
 
 	//Video
@@ -150,12 +151,12 @@ int AVIO_InitAudio(int ch, int srate, int bps, void *callback)
 	if (obtained->channels == 2)
 		outputAudioabufferSize *= 2;
 
-	abuff = (unsigned char *) malloc(outputAudioabufferSize + 10);
-	if (abuff == 0)
-	{
-		log("Can't alloc mem for abuff.\n");
-		return (1);
-	}
+//	abuff = (unsigned char *) malloc(outputAudioabufferSize + 10);
+//	if (abuff == 0)
+//	{
+//		log("Can't alloc mem for abuff.\n");
+//		return (1);
+//	}
 
 //	SDL_Pause?Audio(0);
 //	while (1)
