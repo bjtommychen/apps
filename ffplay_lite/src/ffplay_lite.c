@@ -758,8 +758,8 @@ static int ringbuff_filldata(RINGBUFF *rb, char *stream, int len)
 			}
 			else
 			{	// len > tailfree
-				memcpy(rb->bufstart + (rb->index + rb->len), stream, len);
-				memcpy(rb->bufstart, stream+len, (len-tailfree));
+				memcpy(rb->bufstart + (rb->index + rb->len), stream, tailfree);
+				memcpy(rb->bufstart, stream+tailfree, (len-tailfree));
 			}
 
 		}
@@ -915,13 +915,14 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	apkt.size = 0;
 
 	AVIO_Init();
+	aoutbuff.id = 0;
 	aoutbuff.index = 0;
 	aoutbuff.len = 0;
 	aoutbuff.bufstart = malloc(AUDIO_OUTBUF_SIZE);
 	aoutbuff.size = AUDIO_OUTBUF_SIZE;
 
 	i = 0;
-	while (running == TRUE)// && i++ < 10)
+	while (running == TRUE)//  && i++ < 20)
 	{
 		int got_frame = 0;
 		int len;
@@ -1003,10 +1004,10 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 						decoded_audio_frame->nb_samples, ac->sample_fmt, 1);
 				log("get decoded pcm data %d bytes. \n", data_size);
 				//				fwrite(decoded_audio_frame->data[0], 1, data_size, fp);
-			    if (ringbuff_filldata(&aoutbuff,decoded_audio_frame->data[0], data_size) == 1)
+			    while (ringbuff_filldata(&aoutbuff,decoded_audio_frame->data[0], data_size) == 1)
 				{
 //					AVIO_PauseAudio(0);
-					SDL_Delay(1);
+					SDL_Delay(10);
 				}
 			}
 			apkt.size -= len;
