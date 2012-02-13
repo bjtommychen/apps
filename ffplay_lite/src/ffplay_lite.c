@@ -61,12 +61,29 @@
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
+#define AUDIODATAIN_SIZE (AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE)
+#define VIDEODATAIN_SIZE (INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE)
+
 #define DEBUG
+
 #ifdef DEBUG
-#define log(a, b...)	printf(a, ##b)
+#define log(a, b...)	fprintf(stdout, a, ##b)
 #else
 #define log(a, b...)
 #endif
+
+#ifdef DEBUG
+#define logd(a, b...)	fprintf(stderr, a, ##b)
+#else
+#define logd(a, b...)
+#endif
+
+#ifdef DEBUG
+#define logi(a, b...)	fprintf(stdout, a, ##b)
+#else
+#define logi(a, b...)
+#endif
+
 
 #define TRUE 1
 #define FALSE 0
@@ -183,9 +200,9 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 	AVFrame *decoded_frame = NULL;
 	uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
 
-av_init_packet	(&avpkt);
+printf	("Audio decoding...writing to %s.\n", outfilename);
 
-	printf("Audio decoding...writing to %s.\n", outfilename);
+	av_init_packet(&avpkt);
 
 	/* find the mpeg audio decoder */
 	codec = avcodec_find_decoder(CODEC_ID_MP3);
@@ -609,7 +626,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
 	printf("\n");
 }
 
-static void avfile_decode_example(const char *filename, int isSDLshow)
+static void avfile_demux_example(const char *filename, int isSDLshow)
 {
 	AVFormatContext *c;
 	AVPacket avpkt;
@@ -667,8 +684,7 @@ static void avfile_decode_example(const char *filename, int isSDLshow)
 		{
 			fprintf(stderr, "could not open %s\n", str);
 			return;
-		}
-		log("open stream files %s to write .\n", str);
+		}log("open stream files %s to write .\n", str);
 
 		str[0] = 0;
 		strcpy(str, filename);
@@ -679,7 +695,7 @@ static void avfile_decode_example(const char *filename, int isSDLshow)
 			fprintf(stderr, "could not open %s\n", str);
 			return;
 		}
-		log("\nopen stream files %s to write .\n", str);
+		log("open stream files %s to write .\n", str);
 
 	}
 
@@ -690,6 +706,7 @@ static void avfile_decode_example(const char *filename, int isSDLshow)
 			if (avpkt.stream_index == videoidx)
 			{
 				fwrite(avpkt.data, 1, avpkt.size, fv);
+//				log("write audio %d bytes.\n", avpkt.size);
 			}
 			if (avpkt.stream_index == audioidx)
 			{
@@ -705,6 +722,193 @@ static void avfile_decode_example(const char *filename, int isSDLshow)
 		fclose(fv);
 	}
 	avformat_free_context(c);
+
+}
+
+static void avfile_playback_example(const char *filename, int enable_audio,
+		int enable_video)
+{
+	AVFormatContext *c;
+	AVPacket avpkt, ainpkt, vinpkt, apkt, vpkt;
+	char str[128];
+	int i;
+	int audioidx, videoidx;
+	FILE *fp;
+	int running, read_new_frame;
+
+	AVCodec *acodec, *vcodec;
+	AVCodecContext *ac = NULL;
+	AVCodecContext *vc = NULL;
+	int len, ending;
+	uint8_t audioinbuf[AUDIODATAIN_SIZE];
+	uint8_t videoinbuf[AUDIODATAIN_SIZE];
+	AVFrame *decoded_audio_frame = NULL;
+
+	int audio_ending = FALSE;
+
+	printf(" avfile playback start ... \n");
+
+	memset(audioinbuf, 0, AUDIODATAIN_SIZE);
+
+	fp = fopen("tmpfile", "wb");
+	if (!fp)
+	{
+		fprintf(stderr, "could not open ./tmpfile to write .");
+		exit(1);
+	}
+
+	// AVFORMAT
+	c = avformat_alloc_context();
+	if (avformat_open_input(&c, filename, NULL, 0) < 0)
+	{
+		fprintf(stderr, "could not open file\n");
+		return;
+	}
+	c->flags |= AVFMT_FLAG_GENPTS;
+
+	if (avformat_find_stream_info(c, 0) < 0)
+	{
+		fprintf(stderr, "find stream failed. \n");
+		return;
+	}
+
+	log("nb_streams is %d\n", c->nb_streams);
+	for (i = 0; i < c->nb_streams; i++)
+	{
+		printf("\nStream #%d: \n ", i);
+		switch (c->streams[i]->codec->codec_type)
+		{
+		case AVMEDIA_TYPE_VIDEO:
+			videoidx = i;
+			printf("Video: ");
+			break;
+		case AVMEDIA_TYPE_AUDIO:
+			audioidx = i;
+			printf("Audio: ");
+			break;
+		}
+		printf("codec_name:%s. id:%05xH. tag:%08xH",
+				c->streams[i]->codec->codec_name,
+				c->streams[i]->codec->codec_id,
+				&(c->streams[i]->codec->codec_tag));
+	}
+	printf("\n");
+
+	// AVCODEC
+	av_init_packet(&apkt);
+	/* find the mpeg audio decoder */
+	acodec = avcodec_find_decoder(c->streams[audioidx]->codec->codec_id);
+	if (!acodec)
+	{
+		fprintf(stderr, "acodec not found\n");
+		exit(1);
+	}
+	ac = avcodec_alloc_context3(acodec);
+	/* open it */
+	if (avcodec_open(ac, acodec) < 0)
+	{
+		fprintf(stderr, "could not open acodec\n");
+		exit(1);
+	}
+
+	// Demux start
+	if (!(decoded_audio_frame = avcodec_alloc_frame()))
+	{
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	running = TRUE;
+	read_new_frame = TRUE;
+	apkt.data = audioinbuf;
+	apkt.size = 0;
+
+	while (running == TRUE)
+	{
+		int got_frame = 0;
+		int len;
+
+		// Read Frame
+		if (read_new_frame)
+		{
+			if (av_read_frame(c, &avpkt) >= 0)
+			{
+				if (avpkt.stream_index == videoidx)
+				{
+					log("get video stream %d bytes.\n", avpkt.size);
+					vinpkt = avpkt;
+				}
+				if (avpkt.stream_index == audioidx)
+				{
+					log("get audio stream %d bytes.\n", avpkt.size);
+					read_new_frame = FALSE;
+					ainpkt = avpkt;
+				}
+			}
+			else
+			{ // reach EOF.
+				running = FALSE;
+				continue;
+			}
+		}
+
+		// Prepare Packets.
+		if (ainpkt.size > 0 && (ainpkt.size + apkt.size) < AUDIODATAIN_SIZE)
+		{
+			log("Prepare audio packet, before:%d.", apkt.size);
+			memmove(audioinbuf, apkt.data, apkt.size);
+			apkt.data = audioinbuf;
+			memcpy(audioinbuf + apkt.size, ainpkt.data, ainpkt.size);
+			apkt.size += ainpkt.size;
+			ainpkt.size = 0;
+			read_new_frame = TRUE;
+			log("after:%d.\n", apkt.size);
+		}
+
+		// Decode
+		if (apkt.size > 0)
+		{
+			avcodec_get_frame_defaults(decoded_audio_frame);
+			got_frame = 0;
+			len = avcodec_decode_audio4(ac, decoded_audio_frame, &got_frame,
+					&apkt);
+			if (len <= 0)
+			{
+				log("audio avpkt.size  %d bytes left.\n", apkt.size);
+				log( "Error while audio decoding\n");
+				if (audio_ending == TRUE)
+				{
+					apkt.size = 0;
+					break;
+				}
+				apkt.size -= 1; // Skip error. as libmad.
+				apkt.data += 1;
+//			continue;
+			}
+
+			if (got_frame)
+			{
+				log(
+						"audio stream: ch:%d, samples:%d, fmt:%d\n",
+						ac->channels, decoded_audio_frame->nb_samples, ac->sample_fmt);
+				/* if a frame has been decoded, output it */
+				int data_size = av_samples_get_buffer_size(NULL, ac->channels,
+						decoded_audio_frame->nb_samples, ac->sample_fmt, 1);
+				fwrite(decoded_audio_frame->data[0], 1, data_size, fp);
+				log("get decoded pcm data %d bytes. \n", data_size);
+			}
+			apkt.size -= len;
+			apkt.data += len;
+		}
+
+	}
+
+	avcodec_close(ac);
+	av_free(ac);
+	av_free(decoded_audio_frame);
+
+	avformat_free_context(c);
+	fclose(fp);
 
 }
 
@@ -766,7 +970,13 @@ int main(int argc, char **argv)
 // Decode pure mpeg1video stream file into yuv420 data file.
 //	video_decode_example("/tmp/test%d.pgm", "./love_mv.mpeg1video");
 // demux av file
-	avfile_decode_example("/srv/stream/love_mv.mpg", 0);
+//	avfile_demux_example("/srv/stream/love_mv.mpg", 0);
+
+//	audio_decode_example("./out.pcm", "/srv/stream/love_mv.mpg.audiostream");
+	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 1);
+
 #endif
+
+	printf("\nffplay lite exit.\n");
 	return 0;
 }
