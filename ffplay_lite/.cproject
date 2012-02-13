@@ -31,7 +31,9 @@
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.1567868663" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.582293378" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
+									<listOptionValue builtIn="false" value="/usr/include/SDL"/>
 								</option>
+								<option id="gnu.c.compiler.option.misc.other.575797401" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 `sdl-config --cflags`" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2113606843" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.2018983035" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
@@ -45,6 +47,7 @@
 									<listOptionValue builtIn="false" value="avdevice"/>
 									<listOptionValue builtIn="false" value="avfilter"/>
 								</option>
+								<option id="gnu.c.link.option.ldflags.1240156696" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="`sdl-config --libs`" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.300304441" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
