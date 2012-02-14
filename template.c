@@ -2,10 +2,10 @@
 *
 *    Template.c    -   Template source file
 *
-*    Copyright (c) 2007 xxx 
+*    Copyright (c) 2012 Tommy 
 *    All Rights Reserved.
 *
-*    Use of xxx Inc. Lrd. code is governed by terms and conditions
+*    Use of Tommy's code is governed by terms and conditions
 *    stated in the accompanying licensing statement.
 *
 *    Description: 
@@ -14,7 +14,7 @@
 * ------------------------------------------------------------------------------
 *    Name            Date            Summary
 * ------------------------------------------------------------------------------
-*    Tommy  2/27/2007  created this file.
+*    Tommy  2/27/2012  created this file.
 *
 *	$Id$
 *******************************************************************************/
