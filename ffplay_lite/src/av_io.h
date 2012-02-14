@@ -54,6 +54,7 @@ extern "C" {
 int AVIO_Init();
 int AVIO_Exit();
 int AVIO_InitAudio(int ch, int srate, int bps, void *callback);
+int AVIO_PauseAudio(int pause);
 
 /******************************************************************************/
 /*  End of Header file                                                        */
