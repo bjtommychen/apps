@@ -2,10 +2,10 @@
 *
 *    Template.h    -    Template header file
 *
-*    Copyright (c) 2007 xxx
+*    Copyright (c) 2012 Tommy
 *    All Rights Reserved.
 *
-*    Use of xxx Inc. Ltd. code is governed by terms and conditions
+*    Use of Tommy's code is governed by terms and conditions
 *    stated in the accompanying licensing statement.
 *
 *    Description:
@@ -53,6 +53,7 @@ extern "C" {
 /******************************************************************************/
 int AVIO_Init();
 int AVIO_Exit();
+
 int AVIO_InitAudio(int ch, int srate, int bps, void *callback);
 int AVIO_PauseAudio(int pause);
 

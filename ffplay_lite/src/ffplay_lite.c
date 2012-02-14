@@ -223,6 +223,9 @@ printf	("Audio decoding...writing to %s.\n", outfilename);
 		exit(1);
 	}
 
+	// Tommy: here, c have to be allocated. because we don't use avformat.
+	// for mp3, as mpeg header contain all the audio informations, so if not init c, still decode ok.
+	// but for aac, if input pure stream, not contain ADTS header, we MUST init c to make decode ok.
 	c = avcodec_alloc_context3(codec);
 
 	/* open it */
@@ -757,9 +760,9 @@ static int ringbuff_filldata(RINGBUFF *rb, char *stream, int len)
 				memcpy(rb->bufstart + (rb->index + rb->len), stream, len);
 			}
 			else
-			{	// len > tailfree
+			{ // len > tailfree
 				memcpy(rb->bufstart + (rb->index + rb->len), stream, tailfree);
-				memcpy(rb->bufstart, stream+tailfree, (len-tailfree));
+				memcpy(rb->bufstart, stream + tailfree, (len - tailfree));
 			}
 
 		}
@@ -787,12 +790,12 @@ static int ringbuff_getdata(RINGBUFF *rb, char *stream, int len)
 		tailfree = rb->size - rb->index;
 		if (len < tailfree)
 		{
-			memcpy(stream, rb->bufstart+rb->index, len);
+			memcpy(stream, rb->bufstart + rb->index, len);
 		}
 		else
 		{
-			memcpy(stream, rb->bufstart+rb->index, tailfree);
-			memcpy(stream+tailfree, rb->bufstart, (len-tailfree));
+			memcpy(stream, rb->bufstart + rb->index, tailfree);
+			memcpy(stream + tailfree, rb->bufstart, (len - tailfree));
 		}
 		rb->index = (rb->index + len) % rb->size;
 		rb->len -= len;
@@ -835,7 +838,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	int audio_ending = FALSE;
 	int got_audio_info = FALSE;
 
-	printf(" avfile playback start ... \n");
+	printf("avfile playback start ... \n");
 
 	memset(audioinbuf, 0, AUDIO_DATAIN_SIZE);
 
@@ -864,7 +867,10 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	log("nb_streams is %d\n", c->nb_streams);
 	for (i = 0; i < c->nb_streams; i++)
 	{
-		printf("\nStream #%d: \n ", i);
+		AVStream *st = c->streams[i];
+		char buf[256];
+
+		printf("\n\tStream #%d: \n ", i);
 		switch (c->streams[i]->codec->codec_type)
 		{
 		case AVMEDIA_TYPE_VIDEO:
@@ -876,14 +882,17 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 			printf("Audio: ");
 			break;
 		default:
-			printf("AVMEDIA TYPE %d: ", c->streams[i]->codec->codec_type);
+			printf("AVMEDIA TYPE %d: ", st->codec->codec_type);
 		}
-		printf("codec_name:%s. id:%05xH. tag:%08xH",
-				c->streams[i]->codec->codec_name,
-				c->streams[i]->codec->codec_id,
-				&(c->streams[i]->codec->codec_tag));
+		avcodec_string(buf, sizeof(buf), st->codec, 1);
+		printf("[0x%x]:%s, codec_name:'%s'. id:%05xH. tag:%08xH", st->id, buf,
+				st->codec->codec_name, st->codec->codec_id,
+				&(st->codec->codec_tag));
+//		av_dump_format(c, i, "test", 1);
+
 	}
 	printf("\n");
+//	return;
 
 	// AVCODEC
 	av_init_packet(&apkt);
@@ -894,13 +903,19 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 		fprintf(stderr, "acodec not found\n");
 		exit(1);
 	}
-	ac = avcodec_alloc_context3(acodec);
+
+	// Tommy: dont' alloc ac, because we already got ac from avformat.
+//	ac = avcodec_alloc_context3(acodec);
+	ac = c->streams[audioidx]->codec;
+
 	/* open it */
 	if (avcodec_open(ac, acodec) < 0)
 	{
 		fprintf(stderr, "could not open acodec\n");
 		exit(1);
 	}
+
+//	return;
 
 	// PLAYBACK start
 	if (!(decoded_audio_frame = avcodec_alloc_frame()))
@@ -922,7 +937,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	aoutbuff.size = AUDIO_OUTBUF_SIZE;
 
 	i = 0;
-	while (running == TRUE)//  && i++ < 20)
+	while (running == TRUE) //  && i++ < 20)
 	{
 		int got_frame = 0;
 		int len;
@@ -964,7 +979,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 			read_new_frame = TRUE;
 		}
 
-		// Decode
+		// Decode Audio
 		if (apkt.size > 0)
 		{
 			avcodec_get_frame_defaults(decoded_audio_frame);
@@ -980,9 +995,18 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 					apkt.size = 0;
 					break;
 				}
-				apkt.size -= 1; // Skip error. as libmad.
-				apkt.data += 1;
-//			continue;
+
+				// Skip error. as libmad.
+				if (ac->codec_id == CODEC_ID_MP3)
+				{
+					apkt.size -= 1;
+					apkt.data += 1;
+					continue;
+				}
+				else
+				{ // skip this packet. copy from ffplay.c
+					apkt.size = 0;
+				}
 			}
 
 			if (got_frame)
@@ -994,7 +1018,8 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 
 				if (got_audio_info == 0)
 				{
-					AVIO_InitAudio(0, 0, 0, (void*) audio_mixer);
+					AVIO_InitAudio(ac->channels, ac->sample_rate, 0,
+							(void*) audio_mixer);
 					AVIO_PauseAudio(0);
 					got_audio_info = 1;
 				}
@@ -1004,15 +1029,18 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 						decoded_audio_frame->nb_samples, ac->sample_fmt, 1);
 				log("get decoded pcm data %d bytes. \n", data_size);
 				//				fwrite(decoded_audio_frame->data[0], 1, data_size, fp);
-			    while (ringbuff_filldata(&aoutbuff,decoded_audio_frame->data[0], data_size) == 1)
-				{
+				while (ringbuff_filldata(&aoutbuff,
+						decoded_audio_frame->data[0], data_size) == 1)
+				{	// Wait until some audio data used, and free some space in the output buffer.
 //					AVIO_PauseAudio(0);
 					SDL_Delay(10);
 				}
+
+				apkt.size -= len;
+				apkt.data += len;
 			}
-			apkt.size -= len;
-			apkt.data += len;
-		}
+
+		} // Audio
 
 		SDL_Delay(1);
 	}
@@ -1021,7 +1049,6 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	free(aoutbuff.bufstart);
 
 	avcodec_close(ac);
-	av_free(ac);
 	av_free(decoded_audio_frame);
 
 	avformat_free_context(c);
@@ -1082,15 +1109,22 @@ int main(int argc, char **argv)
 #else
 // Decode mp3 to pcm file.
 //	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
+	//	audio_decode_example("./out.pcm", "/srv/stream/love_mv.mpg.audiostream");
+	//	audio_decode_example("./out.pcm", "/home/tommy/Desktop/share/vs.mp4.audiostream.aac");
+
 // Encode pcm to mpeg1 audio file.
 //	audio_encode_example("./out.mp3", "./out.pcm");
+
 // Decode pure mpeg1video stream file into yuv420 data file.
 //	video_decode_example("/tmp/test%d.pgm", "./love_mv.mpeg1video");
-// demux av file
-//	avfile_demux_example("/srv/stream/love_mv.mpg", 0);
 
-//	audio_decode_example("./out.pcm", "/srv/stream/love_mv.mpg.audiostream");
-	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 1);
+// Demux av file into files.
+//	avfile_demux_example("/srv/stream/love_mv.mpg", 0);
+//	avfile_demux_example("/srv/stream/vs.mp4", 0);
+
+// Playback av file using SDL.
+	//	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 1);
+	avfile_playback_example("/srv/stream/vs.mp4", 1, 1);
 
 #endif
 
