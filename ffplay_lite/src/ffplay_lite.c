@@ -50,6 +50,8 @@
 
 #include "libavutil/avutil.h"
 
+#include "SDL.h"
+#include "SDL_main.h"
 #include "av_io.h"
 
 /******************************************************************************/
@@ -60,14 +62,16 @@
 /*  Local Macro Definitions                                                   */
 /******************************************************************************/
 #define INBUF_SIZE 4096
-#define AUDIO_INBUF_SIZE 20480
+#define AUDIO_INBUF_SIZE (1024*32)
 #define AUDIO_REFILL_THRESH 4096
 
+#define VIDEO_INBUF_SIZE (1024*200)
+
 #define AUDIO_DATAIN_SIZE (AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE)
-#define VIDEO_DATAIN_SIZE (INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE)
+#define VIDEO_DATAIN_SIZE (VIDEO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE)
 
 #define AUDIO_OUTBUF_SIZE		(1024*20)
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define log(a, b...)	fprintf(stdout, "FFPLAY:"a, ##b)
@@ -97,17 +101,17 @@
 /******************************************************************************/
 typedef struct RINGBUFF
 {
-	unsigned char id;
-	unsigned char *bufstart; //buffer start point. readonly.
-	unsigned int size; // total buffer len.
-	unsigned int index; //vaild data index from buffer start.
-	unsigned int len; //valid data len.
+	int id;
+	uint8_t *bufstart; //buffer start point. readonly.
+	int size; // total buffer len.
+	int index; //vaild data index from buffer start.
+	int len; //valid data len.
 } RINGBUFF;
 
 /******************************************************************************/
 /*  Local Variables                                                           */
 /******************************************************************************/
-RINGBUFF aoutbuff;
+RINGBUFF rb_aout;
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -123,7 +127,7 @@ static void audio_encode_example(const char *outfilename, const char *filename)
 	int frame_size, i, j, out_size, outbuf_size;
 	FILE *f, *outfile;
 	short *samples;
-	float t, tincr;
+//	float t, tincr;
 	uint8_t *outbuf;
 
 	printf("Audio encoding...writing to %s\n", outfilename);
@@ -145,7 +149,7 @@ static void audio_encode_example(const char *outfilename, const char *filename)
 	c->sample_fmt = AV_SAMPLE_FMT_S16;
 
 	/* open it */
-	if (avcodec_open(c, codec) < 0)
+	if (avcodec_open2(c, codec, 0) < 0)
 	{
 		fprintf(stderr, "could not open codec\n");
 		exit(1);
@@ -229,7 +233,7 @@ printf	("Audio decoding...writing to %s.\n", outfilename);
 	c = avcodec_alloc_context3(codec);
 
 	/* open it */
-	if (avcodec_open(c, codec) < 0)
+	if (avcodec_open2(c, codec, 0) < 0)
 	{
 		fprintf(stderr, "could not open codec\n");
 		exit(1);
@@ -369,7 +373,7 @@ static void video_encode_example(const char *filename, int codec_id)
 		av_opt_set(c->priv_data, "preset", "slow", 0);
 
 	/* open it */
-	if (avcodec_open(c, codec) < 0)
+	if (avcodec_open2(c, codec, 0) < 0)
 	{
 		fprintf(stderr, "could not open codec\n");
 		exit(1);
@@ -520,7 +524,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
 	 available in the bitstream. */
 
 	/* open it */
-	if (avcodec_open(c, codec) < 0)
+	if (avcodec_open2(c, codec, 0) < 0)
 	{
 		fprintf(stderr, "could not open codec\n");
 		exit(1);
@@ -680,6 +684,9 @@ static void avfile_demux_example(const char *filename, int isSDLshow)
 			audioidx = i;
 			printf("Audio.");
 			break;
+		default:
+			printf("OTHER AVMEDIA. ");
+			break;
 		}
 		printf("codec_name:%s. id:%xH. tag:%xH",
 				c->streams[i]->codec->codec_name,
@@ -740,7 +747,12 @@ static void avfile_demux_example(const char *filename, int isSDLshow)
 
 }
 
-static int ringbuff_filldata(RINGBUFF *rb, char *stream, int len)
+static int ringbuff_init(RINGBUFF *rb)
+{
+	memset(rb, 0, sizeof(RINGBUFF));
+}
+
+static int ringbuff_filldata(RINGBUFF *rb, unsigned char *stream, int len)
 {
 	int tailfree;
 
@@ -780,7 +792,7 @@ static int ringbuff_filldata(RINGBUFF *rb, char *stream, int len)
 	return 0;
 }
 
-static int ringbuff_getdata(RINGBUFF *rb, char *stream, int len)
+static int ringbuff_getdata(RINGBUFF *rb, unsigned char *stream, int len)
 {
 	int tailfree;
 
@@ -814,7 +826,8 @@ static int ringbuff_getdata(RINGBUFF *rb, char *stream, int len)
 static int audio_mixer(unsigned char *stream, int len)
 {
 	log("mixer. need %d bytes.\n", len);
-	ringbuff_getdata(&aoutbuff, stream, len);
+	ringbuff_getdata(&rb_aout, stream, len);
+	return 0;
 }
 
 static void avfile_playback_example(const char *filename, int enable_audio,
@@ -822,8 +835,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 {
 	AVFormatContext *c;
 	AVPacket avpkt, ainpkt, vinpkt, apkt, vpkt;
-	char str[128];
-	int i;
+	int i, frame;
 	int audioidx, videoidx;
 	FILE *fp;
 	int running;
@@ -832,13 +844,15 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	AVCodec *acodec, *vcodec;
 	AVCodecContext *ac = NULL;
 	AVCodecContext *vc = NULL;
-	int len, ending;
 	uint8_t audioinbuf[AUDIO_DATAIN_SIZE];
 	uint8_t videoinbuf[VIDEO_DATAIN_SIZE];
-	AVFrame *decoded_audio_frame = NULL;
+	AVFrame *dec_aframe = NULL;
+	AVFrame *picture;
 
 	int audio_ending = FALSE;
 	int got_audio_info = FALSE;
+	int video_ending = FALSE;
+	int got_video_info = FALSE;
 
 	printf("avfile playback start ... \n");
 
@@ -899,6 +913,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 
 	// AVCODEC
 	av_init_packet(&apkt);
+	av_init_packet(&vpkt);
 	/* find the mpeg audio decoder */
 	acodec = avcodec_find_decoder(c->streams[audioidx]->codec->codec_id);
 	if (!acodec)
@@ -918,12 +933,12 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	vc = c->streams[videoidx]->codec;
 
 	/* open it */
-	if (avcodec_open(ac, acodec) < 0)
+	if (avcodec_open2(ac, acodec, 0) < 0)
 	{
 		fprintf(stderr, "could not open acodec\n");
 		exit(1);
 	}
-	if (avcodec_open(vc, acodec) < 0)
+	if (avcodec_open2(vc, vcodec, 0) < 0)
 	{
 		fprintf(stderr, "could not open vcodec\n");
 		exit(1);
@@ -931,13 +946,20 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 //	return;
 
 	// PLAYBACK start
-	if (!(decoded_audio_frame = avcodec_alloc_frame()))
+	if (!(dec_aframe = avcodec_alloc_frame()))
 	{
-		fprintf(stderr, "out of memory\n");
+		fprintf(stderr, "failed alloc avframe, out of memory\n");
+		exit(1);
+	}
+
+	if (!(picture = avcodec_alloc_frame()))
+	{
+		fprintf(stderr, "failed alloc avframe, out of memory\n");
 		exit(1);
 	}
 
 	running = TRUE;
+	frame = 0;
 	read_new_audio_frame = TRUE;
 	read_new_video_frame = TRUE;
 	apkt.data = audioinbuf;
@@ -946,34 +968,35 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 	vpkt.size = 0;
 
 	AVIO_Init();
-	aoutbuff.id = 0;
-	aoutbuff.index = 0;
-	aoutbuff.len = 0;
-	aoutbuff.bufstart = malloc(AUDIO_OUTBUF_SIZE);
-	aoutbuff.size = AUDIO_OUTBUF_SIZE;
+	ringbuff_init(&rb_aout);
+	rb_aout.id = 0;
+	rb_aout.bufstart = malloc(AUDIO_OUTBUF_SIZE);
+	rb_aout.size = AUDIO_OUTBUF_SIZE;
 
 	/*
 	 *  Main Loop
 	 */
-	i = 0;
-	while (running == TRUE) //  && i++ < 20)
+	while (running == TRUE)//  && frame < 2000)
 	{
 		int got_audio_frame = 0;
 		int len;
 
 		// Read Frame
-		if (read_new_audio_frame)
+		if (read_new_audio_frame || read_new_video_frame)
 		{
 			if (av_read_frame(c, &avpkt) >= 0)
 			{
 				if (avpkt.stream_index == videoidx)
 				{
 					log("get video stream %d bytes.\n", avpkt.size);
+					read_new_video_frame = FALSE;
 					vinpkt = avpkt;
+					printf("^");
 				}
-				if (avpkt.stream_index == audioidx)
+				else if (avpkt.stream_index == audioidx)
 				{
 					log("get audio packet %d bytes.\n", avpkt.size);
+//					if (enable_audio)
 					read_new_audio_frame = FALSE;
 					ainpkt = avpkt;
 				}
@@ -984,11 +1007,81 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 				continue;
 			}
 		}
+		else
+		{
+			log("skip");
+		}
 
-		if (enable_audio)
+		// VIDEO OUT
+		if (1)
+		{
+			int got_picture;
+
+			// Prepare Packets.
+			if (vinpkt.size > 0 && (vinpkt.size + vpkt.size) < VIDEO_INBUF_SIZE)
+			{
+				log("prepare video packet, before:%d, after:%d.\n",
+						vpkt.size, (vpkt.size +vinpkt.size));
+				memmove(videoinbuf, vpkt.data, vpkt.size);
+				vpkt.data = videoinbuf;
+				memcpy(videoinbuf + vpkt.size, vinpkt.data, vinpkt.size);
+				vpkt.size += vinpkt.size;
+				vinpkt.size = 0;
+				read_new_video_frame = TRUE;
+				printf("p");
+			}
+
+			if (vpkt.size > 0)
+			{
+				len = avcodec_decode_video2(vc, picture, &got_picture, &vpkt);
+				if (len < 0)
+				{
+					fprintf(stderr, "Error while decoding frame %d\n", frame);
+					exit(1);
+				}
+
+				vpkt.size -= len;
+				vpkt.data += len;
+
+				if (got_picture)
+				{
+					/* the picture is allocated by the decoder. no need to
+					 free it */
+					if (frame == 0)
+					{
+						printf("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n",
+								picture->width, picture->height,
+								picture->linesize[0], picture->linesize[1],
+								picture->linesize[2]);
+					}
+//					picture_yuv420_save(outfile, picture, c->width, c->height);
+					if (enable_video)
+					{
+						if (got_video_info == 0)
+						{
+							AVIO_InitYUV420(picture->width*3/2, picture->height*3/2,
+									"avfile playback. ");
+							got_video_info = 1;
+//							SDL_Delay(2000);
+//							running = FALSE;
+						}
+						AVIO_ShowYUV420(picture->data, picture->linesize,
+								picture->width, picture->height, 0);
+						printf("d");
+//						SDL_Delay(1);
+					}
+					frame++;
+				}
+
+			}
+
+		}
+		// AUDIO OUT
+		if (1)
 		{
 			// Prepare Packets.
-			if (ainpkt.size > 0 && (ainpkt.size + apkt.size) < AUDIO_DATAIN_SIZE)
+			// Input buffer need padding zeros FF_INPUT_BUFFER_PADDING_SIZE. check tutorial for help on this.
+			if (ainpkt.size > 0 && (ainpkt.size + apkt.size) < AUDIO_INBUF_SIZE)
 			{
 //			log("prepare audio packet, before:%d, after:%d.\n",
 //					apkt.size, (apkt.size +ainpkt.size));
@@ -1003,10 +1096,10 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 			// Decode Audio
 			if (apkt.size > 0)
 			{
-				avcodec_get_frame_defaults(decoded_audio_frame);
+				avcodec_get_frame_defaults(dec_aframe);
 				got_audio_frame = 0;
-				len = avcodec_decode_audio4(ac, decoded_audio_frame,
-						&got_audio_frame, &apkt);
+				len = avcodec_decode_audio4(ac, dec_aframe, &got_audio_frame,
+						&apkt);
 				if (len <= 0)
 				{
 //				log("audio avpkt.size  %d bytes left.\n", apkt.size);
@@ -1032,47 +1125,55 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 
 				if (got_audio_frame)
 				{
-					char fmt_str[128] = "";
-//				log(
-//						"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
-//						ac->channels, ac->sample_rate, decoded_audio_frame->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
 
-					if (got_audio_info == 0)
-					{
-						AVIO_InitAudio(ac->channels, ac->sample_rate, 0,
-								(void*) audio_mixer);
-						AVIO_PauseAudio(0);
-						got_audio_info = 1;
-					}
-
-					/* if a frame has been decoded, output it */
-					int data_size = av_samples_get_buffer_size(NULL,
-							ac->channels, decoded_audio_frame->nb_samples,
-							ac->sample_fmt, 1);
-//				log("get decoded pcm data %d bytes. \n", data_size);
-					while (ringbuff_filldata(&aoutbuff,
-							decoded_audio_frame->data[0], data_size) == 1)
-					{ // Wait until some audio data used, and free some space in the output buffer.
-//					AVIO_PauseAudio(0);
-						SDL_Delay(10);
-					}
-
+					// remove the used data.
 					apkt.size -= len;
 					apkt.data += len;
+
+//					char fmt_str[128] = "";
+//				log(
+//						"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
+//						ac->channels, ac->sample_rate, dec_aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
+
+					if (enable_audio)
+					{
+						if (got_audio_info == 0)
+						{
+							AVIO_InitAudio(ac->channels, ac->sample_rate, 0,
+									(void*) audio_mixer);
+							AVIO_PauseAudio(0);
+							got_audio_info = 1;
+						}
+
+						/* if a frame has been decoded, output it */
+						int data_size = av_samples_get_buffer_size(NULL,
+								ac->channels, dec_aframe->nb_samples,
+								ac->sample_fmt, 1);
+//				log("get decoded pcm data %d bytes. \n", data_size);
+						while (ringbuff_filldata(&rb_aout, dec_aframe->data[0],
+								data_size) == 1)
+						{ // Wait until some audio data used, and free some space in the output buffer.
+//					AVIO_PauseAudio(0);
+							SDL_Delay(1);
+						}
+					}
+
 				}
 
 			} // Audio
 		}
-
-		SDL_Delay(1);
+		if(AVIO_CheckESC())
+			running = FALSE;
+//		SDL_Delay(1);
 	}
 
 	AVIO_Exit();
-	free(aoutbuff.bufstart);
+	free(rb_aout.bufstart);
 
 	avcodec_close(ac);
-	av_free(decoded_audio_frame);
-
+	avcodec_close(vc);
+	av_free(dec_aframe);
+	av_free(picture);
 	avformat_free_context(c);
 	fclose(fp);
 
@@ -1145,8 +1246,10 @@ int main(int argc, char **argv)
 //	avfile_demux_example("/srv/stream/vs.mp4", 0);
 
 // Playback av file using SDL.
-	//	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 1);
-	avfile_playback_example("/srv/stream/vs.mp4", 0, 1);
+//	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 1);
+	avfile_playback_example("/srv/stream/vs.mp4", 1, 1);
+//	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 0, 1);
+//	avfile_playback_example("/srv/stream/VIDEO0001.3gp", 1, 1);
 
 #endif
 
