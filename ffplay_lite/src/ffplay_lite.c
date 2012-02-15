@@ -270,10 +270,11 @@ printf	("Audio decoding...writing to %s.\n", outfilename);
 		else
 			avcodec_get_frame_defaults(decoded_frame);
 
+		// len is the used bytes from the input stream.
 		len = avcodec_decode_audio4(c, decoded_frame, &got_audio_frame, &avpkt);
 		if (len < 0)
 		{
-			printf("avpkt.size  %d bytes left.\n", avpkt.size);
+			log("avpkt.size  %d bytes left.\n", avpkt.size);
 			fprintf(stderr, "Error while decoding\n");
 			if (ending == TRUE)
 			{
@@ -489,8 +490,8 @@ static void video_decode_example(const char *outfilename, const char *filename)
 	FILE *f, *outfile = NULL;
 	AVFrame *picture;
 	char buf[1024];
-	uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];AVPacket
-	avpkt;
+	uint8_t inbuf[VIDEO_DATAIN_SIZE];
+	AVPacket avpkt;
 
 	av_init_packet(&avpkt);
 
