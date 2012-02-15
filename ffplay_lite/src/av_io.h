@@ -1,29 +1,30 @@
 /*******************************************************************************
-*
-*    Template.h    -    Template header file
-*
-*    Copyright (c) 2012 Tommy
-*    All Rights Reserved.
-*
-*    Use of Tommy's code is governed by terms and conditions
-*    stated in the accompanying licensing statement.
-*
-*    Description:
-*
-*    Rivision Table
-* ------------------------------------------------------------------------------
-*    Name        Date        Summary
-* ------------------------------------------------------------------------------
-*    Tommy  2/27/2007  created this file.
-*
-*	$Id$
-*******************************************************************************/
+ *
+ *    Template.h    -    Template header file
+ *
+ *    Copyright (c) 2012 Tommy
+ *    All Rights Reserved.
+ *
+ *    Use of Tommy's code is governed by terms and conditions
+ *    stated in the accompanying licensing statement.
+ *
+ *    Description:
+ *
+ *    Rivision Table
+ * ------------------------------------------------------------------------------
+ *    Name        Date        Summary
+ * ------------------------------------------------------------------------------
+ *    Tommy  2/27/2007  created this file.
+ *
+ *	$Id$
+ *******************************************************************************/
 
 #ifndef _AV_IO_H_
 #define _AV_IO_H_
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 //#include <xxxxxxxxxxxx.h>
@@ -32,21 +33,17 @@ extern "C" {
 /*  Macro Definitions                                                         */
 /******************************************************************************/
 
-
 /******************************************************************************/
 /*  Type Definitions                                                          */
 /******************************************************************************/
-
 
 /******************************************************************************/
 /*  Enums Definitions                                                         */
 /******************************************************************************/
 
-
 /******************************************************************************/
 /*  Structures Definitions                                                    */
 /******************************************************************************/
-
 
 /******************************************************************************/
 /*  Function Declarations                                                     */
@@ -56,6 +53,10 @@ int AVIO_Exit();
 
 int AVIO_InitAudio(int ch, int srate, int bps, void *callback);
 int AVIO_PauseAudio(int pause);
+int AVIO_InitYUV420(int w, int h, char *title);
+int AVIO_ShowYUV420(char *data[], int linesize[], int xsize, int ysize,
+		int format);
+int AVIO_CheckESC();
 
 /******************************************************************************/
 /*  End of Header file                                                        */

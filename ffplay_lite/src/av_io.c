@@ -13,7 +13,7 @@
 /******************************************************************************/
 /*  Local Macro Definitions                                                   */
 /******************************************************************************/
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define log(a, b...)	fprintf(stdout, "AVIO: "a, ##b)
@@ -25,6 +25,9 @@ enum YUVFORMAT
 {
 	YUV_420 = 0, YUV_422,
 };
+
+#define TRUE 1
+#define FALSE 0
 
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
@@ -71,7 +74,7 @@ static int avio_get_frame_yuv420(char *data[], int linesize[], int xsize,
 	for (y = 0; y < ysize; y++)
 	{
 		dst = overlay->pixels[0] + overlay->pitches[0] * y;
-		memcpy(dst, src, linesize[0]);
+		memcpy(dst, src, xsize);
 		src += linesize[0];
 	}
 
@@ -79,17 +82,17 @@ static int avio_get_frame_yuv420(char *data[], int linesize[], int xsize,
 	src = data[1];
 	for (y = 0; y < ysize / 2; y++)
 	{
-		dst = overlay->pixels[1] + overlay->pitches[0] * y;
-		memcpy(dst, src, linesize[1]);
+		dst = overlay->pixels[1] + overlay->pitches[1] * y;
+		memcpy(dst, src, xsize / 2);
 		src += linesize[1];
 	}
 
 	// V
 	src = data[2];
-	for (y = 0; y < ysize; y++)
+	for (y = 0; y < ysize/ 2; y++)
 	{
-		dst = overlay->pixels[2] + overlay->pitches[0] * y;
-		memcpy(dst, src, linesize[2]);
+		dst = overlay->pixels[2] + overlay->pitches[2] * y;
+		memcpy(dst, src, xsize / 2);
 		src += linesize[2];
 	}
 
@@ -125,6 +128,9 @@ int AVIO_Exit()
 	return 0;
 }
 
+/*
+ * Init SDL Audio, notice the callback setting.
+ */
 int AVIO_InitAudio(int ch, int srate, int bps, void *callback)
 {
 	/* setup audio */
@@ -266,6 +272,28 @@ int AVIO_InitYUV420(int w, int h, char *title)
 	overlay_format = SDL_IYUV_OVERLAY; // YUYV
 	overlay = SDL_CreateYUVOverlay(w, h, overlay_format, screen);
 
+//	SDL_FillRect(screen, 0, SDL_MapRGB(screen->format, 0,55,0));
+
+	SDL_LockYUVOverlay(overlay);
+	// SDL deault set YUV to green.
+//	memset(overlay->pixels[0], 0,  overlay->pitches[0] * overlay->h);
+//	memset(overlay->pixels[1], 128,  overlay->pitches[1] * overlay->h/2);
+//	memset(overlay->pixels[2], 128,  overlay->pitches[2] * overlay->h/2);
+	SDL_UnlockYUVOverlay(overlay);
+
+	/* show */
+	{
+		SDL_Rect rect;
+
+		rect.w = overlay->w;
+		rect.h = overlay->h;
+		rect.x = 0;
+		rect.y = 0;
+		SDL_DisplayYUVOverlay(overlay, &rect);
+	}
+
+	SDL_Delay(100);
+
 	log(
 			"Created %dx%dx%d %s %s overlay\n",
 			overlay->w, overlay->h, overlay->planes, overlay->hw_overlay ? "hardware" : "software", overlay->format == SDL_YV12_OVERLAY ? "YV12" : overlay->format == SDL_IYUV_OVERLAY ? "IYUV" : overlay->format == SDL_YUY2_OVERLAY ? "YUY2" : overlay->format == SDL_UYVY_OVERLAY ? "UYVY" : overlay->format == SDL_YVYU_OVERLAY ? "YVYU" : "Unknown");
@@ -280,7 +308,7 @@ int AVIO_InitYUV420(int w, int h, char *title)
  * xsize, ysize is the decoded yuv display size.
  */
 
-int AVIO_showYUV420(char *data[], int linesize[], int xsize, int ysize,
+int AVIO_ShowYUV420(char *data[], int linesize[], int xsize, int ysize,
 		int format)
 {
 	SDL_LockYUVOverlay(overlay);
@@ -309,3 +337,33 @@ int AVIO_showYUV420(char *data[], int linesize[], int xsize, int ysize,
 
 }
 
+int AVIO_CheckESC()
+{
+	int bExit = FALSE;
+
+	// Wait key input
+	SDL_Event event;
+	if (SDL_PollEvent(&event))
+	{
+		/* GLOBAL KEYS / EVENTS */
+		switch (event.type)
+		{
+		case SDL_KEYDOWN:
+			switch (event.key.keysym.sym)
+			{
+			case SDLK_ESCAPE:
+				bExit = TRUE;
+				break;
+			default:
+				break;
+			}
+			break;
+
+		case SDL_QUIT:
+			bExit = TRUE;
+			break;
+		}
+	}
+
+	return bExit;
+}
