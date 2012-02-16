@@ -79,13 +79,13 @@
 #define log(a, b...)
 #endif
 
-#ifdef DEBUG
+#if 0//def DEBUG
 #define logd(a, b...)	fprintf(stderr, a, ##b)
 #else
 #define logd(a, b...)
 #endif
 
-#ifdef DEBUG
+#if 1//def DEBUG
 #define logi(a, b...)	fprintf(stdout, a, ##b)
 #else
 #define logi(a, b...)
@@ -881,35 +881,33 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 		return;
 	}
 
-	log("nb_streams is %d\n", c->nb_streams);
+	logi("nb_streams is %d\n", c->nb_streams);
 	for (i = 0; i < c->nb_streams; i++)
 	{
 		AVStream *st = c->streams[i];
 		char buf[256];
 
-		printf("\n\tStream #%d: \n ", i);
+		logi("Stream #%d: \n", i);
 		switch (c->streams[i]->codec->codec_type)
 		{
 		case AVMEDIA_TYPE_VIDEO:
 			videoidx = i;
-			printf("Video: ");
+			logi("Video: ");
 			break;
 		case AVMEDIA_TYPE_AUDIO:
 			audioidx = i;
-			printf("Audio: ");
+			logi("Audio: ");
 			break;
 		default:
-			printf("AVMEDIA TYPE %d: ", st->codec->codec_type);
+			logi("AVMEDIA TYPE %d: ", st->codec->codec_type);
 		}
 		avcodec_string(buf, sizeof(buf), st->codec, 1);
-		printf("[0x%x]:%s, codec_name:'%s'. id:%05xH. tag:%08xH", st->id, buf,
-				st->codec->codec_name, st->codec->codec_id,
-				&(st->codec->codec_tag));
+		logi("[0x%x]:%s, \n\tcodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n", st->id, buf,
+				st->codec->codec_name, st->codec->codec_id, (st->codec->codec_tag), st->codec->time_base.num,st->codec->time_base.den
+				);
 //		av_dump_format(c, i, "test", 1);
 
 	}
-	printf("\n");
-//	return;
 
 	// AVCODEC
 	av_init_packet(&apkt);
@@ -988,15 +986,13 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 			{
 				if (avpkt.stream_index == videoidx)
 				{
-					log("get video stream %d bytes.\n", avpkt.size);
+					logd("get video stream %d bytes.\n", avpkt.size);
 					read_new_video_frame = FALSE;
 					vinpkt = avpkt;
-					printf("^");
 				}
 				else if (avpkt.stream_index == audioidx)
 				{
-					log("get audio packet %d bytes.\n", avpkt.size);
-//					if (enable_audio)
+					logd("get audio packet %d bytes.\n", avpkt.size);
 					read_new_audio_frame = FALSE;
 					ainpkt = avpkt;
 				}
@@ -1009,7 +1005,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 		}
 		else
 		{
-			log("skip");
+			logd("skip");
 		}
 
 		// VIDEO OUT
@@ -1020,7 +1016,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 			// Prepare Packets.
 			if (vinpkt.size > 0 && (vinpkt.size + vpkt.size) < VIDEO_INBUF_SIZE)
 			{
-				log("prepare video packet, before:%d, after:%d.\n",
+				logd("prepare video packet, before:%d, after:%d.\n",
 						vpkt.size, (vpkt.size +vinpkt.size));
 				memmove(videoinbuf, vpkt.data, vpkt.size);
 				vpkt.data = videoinbuf;
@@ -1028,7 +1024,6 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 				vpkt.size += vinpkt.size;
 				vinpkt.size = 0;
 				read_new_video_frame = TRUE;
-				printf("p");
 			}
 
 			if (vpkt.size > 0)
@@ -1045,29 +1040,26 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 
 				if (got_picture)
 				{
+					log("pkt_pts:%lld, %lld, av_gettime:%lld\n ", picture->pkt_pts, picture->pkt_pts,  av_gettime());
 					/* the picture is allocated by the decoder. no need to
 					 free it */
 					if (frame == 0)
 					{
-						printf("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n",
+						logd("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n",
 								picture->width, picture->height,
 								picture->linesize[0], picture->linesize[1],
 								picture->linesize[2]);
 					}
-//					picture_yuv420_save(outfile, picture, c->width, c->height);
 					if (enable_video)
 					{
 						if (got_video_info == 0)
 						{
-							AVIO_InitYUV420(picture->width*3/2, picture->height*3/2,
-									"avfile playback. ");
+							AVIO_InitYUV420(picture->width, picture->height,
+									 filename);
 							got_video_info = 1;
-//							SDL_Delay(2000);
-//							running = FALSE;
 						}
 						AVIO_ShowYUV420(picture->data, picture->linesize,
 								picture->width, picture->height, 0);
-						printf("d");
 //						SDL_Delay(1);
 					}
 					frame++;
@@ -1091,7 +1083,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 				apkt.size += ainpkt.size;
 				ainpkt.size = 0;
 				read_new_audio_frame = TRUE;
-			}
+}
 
 			// Decode Audio
 			if (apkt.size > 0)
@@ -1156,6 +1148,7 @@ static void avfile_playback_example(const char *filename, int enable_audio,
 //					AVIO_PauseAudio(0);
 							SDL_Delay(1);
 						}
+						printf("$");
 					}
 
 				}
@@ -1246,9 +1239,9 @@ int main(int argc, char **argv)
 //	avfile_demux_example("/srv/stream/vs.mp4", 0);
 
 // Playback av file using SDL.
-//	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 1);
-	avfile_playback_example("/srv/stream/vs.mp4", 1, 1);
-//	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 0, 1);
+	avfile_playback_example("/srv/stream/love_mv.mpg", 0, 1);
+//	avfile_playback_example("/srv/stream/vs.mp4", 1, 1);
+//	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 1);
 //	avfile_playback_example("/srv/stream/VIDEO0001.3gp", 1, 1);
 
 #endif
