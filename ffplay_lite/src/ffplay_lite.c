@@ -71,6 +71,10 @@
 #define VIDEO_DATAIN_SIZE (VIDEO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE)
 
 #define AUDIO_OUTBUF_SIZE		(1024*20)
+
+// SDL
+#define FF_REFRESH_EVENT (SDL_USEREVENT + 0)
+
 #define DEBUG
 
 #ifdef DEBUG
@@ -746,8 +750,8 @@ static int ringbuff_filldata(RINGBUFF *rb, unsigned char *stream, int len)
 {
 	int tailfree;
 
-//	log("ringbuffer#%d, fill %d bytes.  index:%d, len:%d\n",
-//			rb->id, len, rb->index, rb->len);
+	log("ringbuffer#%d, fill %d bytes.  index:%d, len:%d\n",
+			rb->id, len, rb->index, rb->len);
 	if ((rb->len + len) < rb->size)
 	{ // have free space.
 		if ((rb->index + rb->len) > rb->size)
@@ -785,9 +789,9 @@ static int ringbuff_getdata(RINGBUFF *rb, unsigned char *stream, int len)
 {
 	int tailfree;
 
-//	log("ringbuffer#%d, get %d bytes.  index:%d, len:%d\n",
-//			rb->id, len, rb->index, rb->len);
-	if (len < rb->len)
+	log("ringbuffer#%d, get %d bytes.  index:%d, len:%d\n",
+			rb->id, len, rb->index, rb->len);
+	if (len <= rb->len)
 	{ // have enough data.
 		tailfree = rb->size - rb->index;
 		if (len < tailfree)
@@ -801,12 +805,12 @@ static int ringbuff_getdata(RINGBUFF *rb, unsigned char *stream, int len)
 		}
 		rb->index = (rb->index + len) % rb->size;
 		rb->len -= len;
-//		log("ringbuffer#%d, get done.  index:%d, len:%d\n",
-//				rb->id, rb->index, rb->len);
+		log("ringbuffer#%d, get done.  index:%d, len:%d\n",
+				rb->id, rb->index, rb->len);
 	}
 	else
 	{
-		logd("ringbuffer, underflow !!!\n");
+		log("ringbuffer, underflow !!!\n");
 		return 1;
 	}
 	return 0;
@@ -819,11 +823,20 @@ static int audio_mixer(unsigned char *stream, int len)
 	return 0;
 }
 
+static Uint32 sdl_refresh_timer_cb(Uint32 interval, void *opaque)
+{
+	SDL_Event event;
+	event.type = FF_REFRESH_EVENT;
+	event.user.data1 = opaque;
+	SDL_PushEvent(&event);
+	return 0; /* 0 means stop timer */
+}
+
 static void avfile_playback_example(const char *filename, int enable_audio, int enable_video)
 {
 	AVFormatContext *c;
 	AVPacket avpkt, ainpkt, vinpkt, apkt, vpkt;
-	int i, frame;
+	int i, frame, pic_displayed;
 	int audioidx, videoidx;
 	FILE *fp;
 	int running;
@@ -861,7 +874,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		fprintf(stderr, "could not open file\n");
 		return;
 	}
-	c->flags |= AVFMT_FLAG_GENPTS;
+//	c->flags |= AVFMT_FLAG_GENPTS;
 
 	if (avformat_find_stream_info(c, 0) < 0)
 	{
@@ -946,6 +959,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 	running = TRUE;
 	frame = 0;
+	pic_displayed = 1;
 	read_new_audio_frame = TRUE;
 	read_new_video_frame = TRUE;
 	apkt.data = audioinbuf;
@@ -968,15 +982,16 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		int len;
 
 		// Read Frame
-		if (read_new_audio_frame || read_new_video_frame)
+		if ((read_new_audio_frame || read_new_video_frame))
 		{
 			if (av_read_frame(c, &avpkt) >= 0)
 			{
-				if (avpkt.stream_index == videoidx)
+				if (avpkt.stream_index == videoidx && pic_displayed)
 				{
-					logd("get video stream %d bytes.\n", avpkt.size);
+					log("get video stream %d bytes.\n", avpkt.size);
 					read_new_video_frame = FALSE;
 					vinpkt = avpkt;
+					logd("avpkt pts:%lld, dts:%lld, \n ", avpkt.pts, avpkt.dts);
 				}
 				else if (avpkt.stream_index == audioidx)
 				{
@@ -1014,7 +1029,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 				read_new_video_frame = TRUE;
 			}
 
-			if (vpkt.size > 0)
+			if (vpkt.size > 0 && pic_displayed)
 			{
 				len = avcodec_decode_video2(vc, picture, &got_picture, &vpkt);
 				if (len < 0)
@@ -1026,6 +1041,8 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 				vpkt.size -= len;
 				vpkt.data += len;
 
+				logd("vpkt pts:%lld, dts:%lld, \n ", vpkt.pts, vpkt.dts);
+				logd("pkt_pts:%lld, %lld, av_gettime:%lld\n ", picture->pkt_pts, picture->pkt_dts, av_gettime());
 				if (got_picture)
 				{
 					/* the picture is allocated by the decoder. no need to
@@ -1039,14 +1056,15 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 					}
 					if (enable_video)
 					{
-						logd("pkt_pts:%lld, %lld, av_gettime:%lld\n ", picture->pkt_pts, picture->pkt_pts, av_gettime());
 						if (got_video_info == 0)
 						{
 							AVIO_InitYUV420(picture->width, picture->height, filename);
 							got_video_info = 1;
 						}
-						AVIO_ShowYUV420(picture->data, picture->linesize, picture->width, picture->height, 0);
-						SDL_Delay(1);
+						SDL_AddTimer(33, sdl_refresh_timer_cb, 0);
+						pic_displayed = 0;
+//						AVIO_ShowYUV420(picture->data, picture->linesize, picture->width, picture->height, 0);
+//						SDL_Delay(1);
 					}
 					frame++;
 				}
@@ -1117,6 +1135,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 							AVIO_InitAudio(ac->channels, ac->sample_rate, 0, (void*) audio_mixer);
 							AVIO_PauseAudio(0);
+							AVIO_ShowYUV420(picture->data, picture->linesize, picture->width, picture->height, 0);
 							got_audio_info = 1;
 						}
 
@@ -1128,12 +1147,12 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 						if (ac->sample_fmt != AV_SAMPLE_FMT_S16)
 						{ // Need format convert, check swr_convert() for details.
 							struct SwrContext *swr_ctx;
-							unsigned char swr_tmpbuff[(1024 * 10)];unsigned
-							char *in[] =
+							unsigned char swr_tmpbuff[AUDIO_OUTBUF_SIZE];
+							int len2;
+							unsigned char *in[] =
 							{ dec_aframe->data[0] };
 							unsigned char *out[] =
 							{ swr_tmpbuff };
-							int len2;
 
 							logd("enter resample !\n");
 							swr_ctx = swr_alloc_set_opts(NULL, ac->channel_layout, AV_SAMPLE_FMT_S16, ac->sample_rate,
@@ -1163,9 +1182,36 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 			} // Audio
 		}
-		if (AVIO_CheckESC())
-			running = FALSE;
-//		SDL_Delay(1);
+
+		SDL_Event event;
+		if (SDL_PollEvent(&event))
+		{
+			/* GLOBAL KEYS / EVENTS */
+			switch (event.type)
+			{
+			case FF_REFRESH_EVENT:
+				AVIO_ShowYUV420(picture->data, picture->linesize, picture->width, picture->height, 0);
+				pic_displayed = 1;
+				break;
+			case SDL_KEYDOWN:
+				switch (event.key.keysym.sym)
+				{
+				case SDLK_ESCAPE:
+					running = FALSE;
+					break;
+				default:
+					break;
+				}
+				break;
+
+			case SDL_QUIT:
+				running = FALSE;
+				break;
+			}
+		}
+		//		if (AVIO_CheckESC())
+		//			running = FALSE;
+		//		SDL_Delay(1);
 	}
 
 	AVIO_Exit();
@@ -1248,8 +1294,8 @@ int main(int argc, char **argv)
 
 // Playback av file using SDL.
 //	avfile_playback_example("/srv/stream/love_mv.mpg", 0, 1);
-//	avfile_playback_example("/srv/stream/vs.mp4", 1, 1);
-	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 1);
+	avfile_playback_example("/srv/stream/vs.mp4", 1, 1);
+//	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 0, 1);
 //	avfile_playback_example("/srv/stream/VIDEO0001.3gp", 1, 1);
 
 #endif
