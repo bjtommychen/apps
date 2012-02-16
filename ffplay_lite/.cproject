@@ -46,6 +46,7 @@
 									<listOptionValue builtIn="false" value="avformat"/>
 									<listOptionValue builtIn="false" value="avdevice"/>
 									<listOptionValue builtIn="false" value="avfilter"/>
+									<listOptionValue builtIn="false" value="swresample"/>
 								</option>
 								<option id="gnu.c.link.option.ldflags.1240156696" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="`sdl-config --libs`" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.300304441" superClass="cdt.managedbuild.tool.gnu.c.linker.input">

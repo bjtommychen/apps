@@ -47,8 +47,8 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/samplefmt.h"
 #include "libavformat/avformat.h"
-
 #include "libavutil/avutil.h"
+#include "libswresample/swresample.h"
 
 #include "SDL.h"
 #include "SDL_main.h"
@@ -1046,7 +1046,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 							got_video_info = 1;
 						}
 						AVIO_ShowYUV420(picture->data, picture->linesize, picture->width, picture->height, 0);
-//						SDL_Delay(1);
+						SDL_Delay(1);
 					}
 					frame++;
 				}
@@ -1102,20 +1102,19 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 				if (got_audio_frame)
 				{
-
 					// remove the used data.
 					apkt.size -= len;
 					apkt.data += len;
-
-					char fmt_str[128] = "";
-					log(
-							"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
-							ac->channels, ac->sample_rate, dec_aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
 
 					if (enable_audio)
 					{
 						if (got_audio_info == 0)
 						{
+							char fmt_str[128] = "";
+							log(
+									"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
+									ac->channels, ac->sample_rate, dec_aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
+
 							AVIO_InitAudio(ac->channels, ac->sample_rate, 0, (void*) audio_mixer);
 							AVIO_PauseAudio(0);
 							got_audio_info = 1;
@@ -1124,11 +1123,39 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 						/* if a frame has been decoded, output it */
 						int data_size = av_samples_get_buffer_size(NULL, ac->channels, dec_aframe->nb_samples,
 								ac->sample_fmt, 1);
-//				log("get decoded pcm data %d bytes. \n", data_size);
-						while (ringbuff_filldata(&rb_aout, dec_aframe->data[0], data_size) == 1)
-						{ // Wait until some audio data used, and free some space in the output buffer.
-//					AVIO_PauseAudio(0);
-							SDL_Delay(1);
+						logd("get decoded pcm data %d bytes. \n", data_size);
+
+						if (ac->sample_fmt != AV_SAMPLE_FMT_S16)
+						{ // Need format convert, check swr_convert() for details.
+							struct SwrContext *swr_ctx;
+							unsigned char swr_tmpbuff[(1024 * 10)];unsigned
+							char *in[] =
+							{ dec_aframe->data[0] };
+							unsigned char *out[] =
+							{ swr_tmpbuff };
+							int len2;
+
+							logd("enter resample !\n");
+							swr_ctx = swr_alloc_set_opts(NULL, ac->channel_layout, AV_SAMPLE_FMT_S16, ac->sample_rate,
+									ac->channel_layout, ac->sample_fmt, ac->sample_rate, 0, NULL);
+							swr_init(swr_ctx);
+							len2 = swr_convert(swr_ctx, out,
+									sizeof(swr_tmpbuff) / ac->channels / av_get_bytes_per_sample(AV_SAMPLE_FMT_S16), in,
+									dec_aframe->nb_samples);
+							swr_free(&swr_ctx);
+							logd("resample output %d samples.\n", len2);
+							while (ringbuff_filldata(&rb_aout, swr_tmpbuff,
+									len2 * ac->channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16)) == 1)
+							{ // Wait until some audio data used, and free some space in the output buffer.
+								SDL_Delay(1);
+							}
+						}
+						else
+						{
+							while (ringbuff_filldata(&rb_aout, dec_aframe->data[0], data_size) == 1)
+							{ // Wait until some audio data used, and free some space in the output buffer.
+								SDL_Delay(1);
+							}
 						}
 					}
 
@@ -1222,7 +1249,7 @@ int main(int argc, char **argv)
 // Playback av file using SDL.
 //	avfile_playback_example("/srv/stream/love_mv.mpg", 0, 1);
 //	avfile_playback_example("/srv/stream/vs.mp4", 1, 1);
-	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 0);
+	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 1);
 //	avfile_playback_example("/srv/stream/VIDEO0001.3gp", 1, 1);
 
 #endif
