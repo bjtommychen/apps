@@ -13,6 +13,9 @@
 /******************************************************************************/
 /*  Local Macro Definitions                                                   */
 /******************************************************************************/
+//#define USE2YUVOVERLAY
+//#define USERGBSURFACE
+
 //#define DEBUG
 
 #ifdef DEBUG
@@ -29,6 +32,10 @@ enum YUVFORMAT
 #define TRUE 1
 #define FALSE 0
 
+/* SDL audio buffer size, in samples. Should be small to have precise
+ A/V sync as SDL does not have hardware buffer fullness info. */
+#define SDL_AUDIO_BUFFER_SIZE 1024
+
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
 /******************************************************************************/
@@ -39,6 +46,7 @@ enum YUVFORMAT
 SDL_AudioSpec *desired, *obtained;
 SDL_Surface *screen, *bitmap;
 SDL_Overlay *overlay = 0;
+SDL_Overlay *overlay1 = 0;
 
 // Audio
 int chNum = 2, SampleRate = 44100, Bits_per_Sample = 16;
@@ -47,6 +55,23 @@ int outputAudioabufferSize = 0;
 unsigned char *abuff = NULL;
 
 // Video
+
+// RGB
+#if 0   // RGB565
+Uint32 bitmapbpp = 16;
+Uint32 bitmaprmask = 0x0000F800;
+Uint32 bitmapgmask = 0x000007E0;
+Uint32 bitmapbmask = 0x0000001F;
+#else   // RGB888
+Uint32 bitmapbpp = 24;
+Uint32 bitmaprmask = 0x00FF0000;
+Uint32 bitmapgmask = 0x0000FF00;
+Uint32 bitmapbmask = 0x000000FF;
+#endif
+Uint32 bitmapamask = 0x00000000;
+Uint32 bitmapflags = 0;
+int bitmapw = 320;
+int bitmaph = 240;
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -63,8 +88,8 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
 	log("leave sdl_audio_callback().\n");
 }
 
-static int avio_get_frame_yuv420(char *data[], int linesize[], int xsize,
-		int ysize)
+static int avio_get_frame_yuv420(SDL_Overlay *overlay, char *data[],
+		int linesize[], int xsize, int ysize)
 {
 	int x, y;
 	unsigned char *src, *dst;
@@ -89,7 +114,7 @@ static int avio_get_frame_yuv420(char *data[], int linesize[], int xsize,
 
 	// V
 	src = data[2];
-	for (y = 0; y < ysize/ 2; y++)
+	for (y = 0; y < ysize / 2; y++)
 	{
 		dst = overlay->pixels[2] + overlay->pitches[2] * y;
 		memcpy(dst, src, xsize / 2);
@@ -170,7 +195,7 @@ int AVIO_InitAudio(int ch, int srate, int bps, void *callback)
 	 * abuffersize of 11025 bytes, if your sdl.dll is approx. 1 Mb in stead of 220 Kb, download
 	 * v1.2.8 of SDL or better...)
 	 */
-	desired->samples = 2048;
+	desired->samples = SDL_AUDIO_BUFFER_SIZE;
 
 	/* Our callback function */
 	desired->callback = sdl_audio_callback;
@@ -246,13 +271,25 @@ int AVIO_InitYUV420(int w, int h, char *title)
 	desired_bpp = 0;
 
 	/* Initialize the display */
-	screen = SDL_SetVideoMode(w, h, desired_bpp, video_flags);
+#ifndef USE2YUVOVERLAY
+	screen = SDL_SetVideoMode(w , h , desired_bpp, video_flags);
+#else
+	screen = SDL_SetVideoMode(w * 2, h * 2, desired_bpp, video_flags);
+#endif
+
+#ifdef USERGBSURFACE
+	bitmap = SDL_CreateRGBSurface(bitmapflags, bitmapw, bitmaph, bitmapbpp,
+			bitmaprmask, bitmapgmask, bitmapbmask, bitmapamask);
+#endif
+
 	if (screen == NULL)
 	{
 		fprintf(stderr, " Couldn 't set %dx%dx%d video mode: %s\n", w, h,
 				desired_bpp, SDL_GetError());
 		exit(1);
-	}log(
+	}
+
+	log(
 			"Set%s %dx%dx%d mode\n",
 			screen->flags & SDL_FULLSCREEN ? " fullscreen" : "", screen->w, screen->h, screen->format->BitsPerPixel);
 	log("(video surface located in %s memory)\n",
@@ -271,28 +308,31 @@ int AVIO_InitYUV420(int w, int h, char *title)
 	/* Create the overlay */
 	overlay_format = SDL_IYUV_OVERLAY; // YUYV
 	overlay = SDL_CreateYUVOverlay(w, h, overlay_format, screen);
+#ifdef USE2YUVOVERLAY
+	overlay1 = SDL_CreateYUVOverlay(w, h, overlay_format, screen);
+#endif
 
 //	SDL_FillRect(screen, 0, SDL_MapRGB(screen->format, 0,55,0));
 
-	SDL_LockYUVOverlay(overlay);
+//	SDL_LockYUVOverlay(overlay);
 	// SDL deault set YUV to green.
 //	memset(overlay->pixels[0], 0,  overlay->pitches[0] * overlay->h);
 //	memset(overlay->pixels[1], 128,  overlay->pitches[1] * overlay->h/2);
 //	memset(overlay->pixels[2], 128,  overlay->pitches[2] * overlay->h/2);
-	SDL_UnlockYUVOverlay(overlay);
+//	SDL_UnlockYUVOverlay(overlay);
 
 	/* show */
-	{
-		SDL_Rect rect;
-
-		rect.w = overlay->w;
-		rect.h = overlay->h;
-		rect.x = 0;
-		rect.y = 0;
-		SDL_DisplayYUVOverlay(overlay, &rect);
-	}
-
-	SDL_Delay(100);
+//	{
+//		SDL_Rect rect;
+//
+//		rect.w = overlay->w;
+//		rect.h = overlay->h;
+//		rect.x = 0;
+//		rect.y = 0;
+//		SDL_DisplayYUVOverlay(overlay, &rect);
+//	}
+//
+//	SDL_Delay(5000);
 
 	log(
 			"Created %dx%dx%d %s %s overlay\n",
@@ -301,6 +341,7 @@ int AVIO_InitYUV420(int w, int h, char *title)
 	{
 		log("  plane %d: pitch=%d\n", i, overlay->pitches[i]);
 	}
+
 	return 0;
 }
 
@@ -317,9 +358,8 @@ int AVIO_ShowYUV420(char *data[], int linesize[], int xsize, int ysize,
 	{
 //	case YUV_420:
 	default:
-		avio_get_frame_yuv420(data, linesize, xsize, ysize);
+		avio_get_frame_yuv420(overlay, data, linesize, xsize, ysize);
 		break;
-
 	}
 
 	SDL_UnlockYUVOverlay(overlay);
@@ -334,6 +374,50 @@ int AVIO_ShowYUV420(char *data[], int linesize[], int xsize, int ysize,
 		rect.y = 0;
 		SDL_DisplayYUVOverlay(overlay, &rect);
 	}
+
+#ifdef USE2YUVOVERLAY
+	SDL_LockYUVOverlay(overlay1);
+
+	avio_get_frame_yuv420(overlay1, data, linesize, xsize, ysize);
+
+	SDL_UnlockYUVOverlay(overlay1);
+
+	{
+		SDL_Rect rect;
+
+		rect.w = overlay1->w;
+		rect.h = overlay1->h;
+		rect.x = overlay1->w;
+		rect.y = overlay1->h;
+		SDL_DisplayYUVOverlay(overlay1, &rect);
+	}
+#endif
+
+#ifdef USERGBSURFACE
+
+	{
+		SDL_Rect rect;
+		SDL_LockSurface(screen);
+
+//		rect.w = bitmap->w;
+//		rect.h = bitmap->h;
+//		rect.x = 0;
+//		rect.y = overlay->h;
+//		SDL_FillRect(screen, &rect, SDL_MapRGB(bitmap->format, 0, 0, 0));
+
+		rect.w = rand() % bitmap->w;
+		rect.h = rand() % bitmap->h;
+		rect.x = 0;
+		rect.y = overlay->h;
+		SDL_FillRect(screen, &rect, SDL_MapRGB(bitmap->format, rand()%255, rand()%255, rand()%255));
+
+		SDL_UnlockSurface(screen);
+//		SDL_UpdateRect(screen, 0, 0, 0, 0);
+		rect.w = bitmap->w;
+		rect.h = bitmap->h;
+		SDL_UpdateRects(screen, 1, &rect);
+	}
+#endif
 
 }
 
