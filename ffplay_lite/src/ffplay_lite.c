@@ -78,28 +78,27 @@
 // SDL
 #define FF_REFRESH_EVENT (SDL_USEREVENT + 0)
 
-#define DEBUG
+//#define DEBUG
 
-#ifdef DEBUG
+#if 1//def DEBUG
 #define log(a, b...)	fprintf(stdout, "FFPLAY:"a, ##b)
 #else
 #define log(a, b...)
 #endif
 
-#if 1//def DEBUG
-#define logd(a, b...)	fprintf(stdout, a, ##b)
+#ifdef DEBUG
+#define logd(a, b...)	fprintf(stdout,  "FFPLAY:"a, ##b)
 #else
 #define logd(a, b...)
 #endif
 
 #if 1//def DEBUG
-#define logi(a, b...)	fprintf(stdout, a, ##b)
+#define logi(a, b...)	fprintf(stdout,  "FFPLAY info: "a, ##b)
 #else
 #define logi(a, b...)
 #endif
 
 #define loge(a, b...)	fprintf(stderr, a, ##b)
-
 
 #define TRUE 1
 #define FALSE 0
@@ -796,6 +795,8 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt)
 {
 
 	AVPacketList *pkt1;
+
+	logd("pkt data pointer is %p\n", pkt->data);
 	if (av_dup_packet(pkt) < 0)
 	{
 		return -1;
@@ -991,6 +992,11 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 //			is->audio_clock += (double) data_size / (double) (n * is->audio_st->codec->sample_rate);
 
 			/* We have decoded data, return it and come back for more later */
+			//		char fmt_str[128] = "";
+			//		log(
+			//				"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
+			//				is->ac->channels, is->ac->sample_rate, is->aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), is->ac->sample_fmt));
+
 			/* if a frame has been decoded, output it */
 			data_size = av_samples_get_buffer_size(NULL, is->ac->channels, is->aframe->nb_samples, is->ac->sample_fmt,
 					1);
@@ -1002,7 +1008,7 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 		//Tommy: all data in packet used, it's time to free it.
 		if (pkt->data)
 		{
-			log("free audio packet.\n");
+			logd("free audio packet.\n");
 			av_free_packet(pkt);
 		}
 
@@ -1080,7 +1086,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 				is->audio_buf_size = audio_size;
 			}
 			is->audio_buf_index = 0; //Tommy: reset index.
-			log("audio_decode_frame got %d bytes.\n", audio_size);
+			logd("audio_decode_frame got %d bytes.\n", audio_size);
 		}
 
 		//Tommy: get valid data size.
@@ -1098,37 +1104,10 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 static void avfile_playback_example(const char *filename, int enable_audio, int enable_video)
 {
 	AVFormatContext *c;
-	AVPacket avpkt, ainpkt, vinpkt, apkt, vpkt;
 	int i, frame, pic_displayed;
-	FILE *fp;
-	int running;
-	int read_new_audio_frame, read_new_video_frame;
 	AVPacket pkt1, *packet = &pkt1;
 
-//	AVCodec *acodec, *vcodec;
-//	AVCodecContext *ac = NULL;
-	AVCodecContext *vc = NULL;
-//	uint8_t audioinbuf[AUDIO_DATAIN_SIZE];
-//	uint8_t videoinbuf[VIDEO_DATAIN_SIZE];
-//	AVFrame *dec_aframe = NULL;
-//	AVFrame *picture;
-
-	int audio_ending = FALSE;
-	int got_audio_info = FALSE;
-	int video_ending = FALSE;
-	int got_video_info = FALSE;
-
 	printf("avfile playback start ... \n");
-
-//	memset(audioinbuf, 0, AUDIO_DATAIN_SIZE);
-//	memset(videoinbuf, 0, VIDEO_DATAIN_SIZE);
-
-	fp = fopen("tmpfile", "wb");
-	if (!fp)
-	{
-		fprintf(stderr, "could not open ./tmpfile to write .");
-		exit(1);
-	}
 
 	// AVFORMAT
 	c = avformat_alloc_context();
@@ -1156,27 +1135,21 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		{
 		case AVMEDIA_TYPE_VIDEO:
 			is->videoStream = i;
-			logi("Video: ");
 			break;
 		case AVMEDIA_TYPE_AUDIO:
 			is->audioStream = i;
-			logi("Audio: ");
 			break;
 		default:
 			logi("AVMEDIA TYPE %d: ", st->codec->codec_type);
 		}
 		avcodec_string(buf, sizeof(buf), st->codec, 1);
 		logi(
-				"[0x%x]:%s, \n\tcodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n",
+				"\n[0x%x]:%s, \ncodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n",
 				st->id, buf, st->codec->codec_name, st->codec->codec_id, (st->codec->codec_tag), st->codec->time_base.num, st->codec->time_base.den);
-//		av_dump_format(c, i, "test", 1);
-
 	}
 
 	// AVCODEC
-//	av_init_packet(&apkt);
-//	av_init_packet(&vpkt);
-
+	is->pFormatCtx = c;
 	is->ac = c->streams[is->audioStream]->codec;
 	is->vc = c->streams[is->videoStream]->codec;
 
@@ -1193,10 +1166,6 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		fprintf(stderr, "vcodec not found\n");
 		exit(1);
 	}
-	// Tommy: dont' alloc ac, because we already got ac from avformat.
-//	ac = avcodec_alloc_context3(acodec);
-//	ac = c->streams[is->audioStream]->codec;
-//	vc = c->streams[is->videoStream]->codec;
 
 	/* open it */
 	if (avcodec_open2(is->ac, is->acodec, 0) < 0)
@@ -1221,116 +1190,62 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	memset(&is->audio_pkt_dec, 0, sizeof(is->audio_pkt_dec));
 	packet_queue_init(&is->audioq);
 
-	if (enable_audio)
-	{
-//		char fmt_str[128] = "";
-//		log(
-//				"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
-//				is->ac->channels, is->ac->sample_rate, is->aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), is->ac->sample_fmt));
-
-		AVIO_InitAudio(is->ac->channels, is->ac->sample_rate, 16, (void*) audio_callback);
-		AVIO_PauseAudio(0);
-	}
-
-	// PLAYBACK start
-//	if (!(dec_aframe = avcodec_alloc_frame()))
-//	{
-//		fprintf(stderr, "failed alloc avframe, out of memory\n");
-//		exit(1);
-//	}
-
 	if (!(is->aframe = avcodec_alloc_frame()))
 	{
 		fprintf(stderr, "failed alloc avframe, out of memory\n");
 		exit(1);
 	}
 
-//	if (!(picture = avcodec_alloc_frame()))
-//	{
-//		fprintf(stderr, "failed alloc avframe, out of memory\n");
-//		exit(1);
-//	}
+	if (enable_audio)
+	{
+		AVIO_InitAudio(is->ac->channels, is->ac->sample_rate, 16, (void*) audio_callback);
+		AVIO_PauseAudio(0);
+	}
 
-	running = TRUE;
+//	running = TRUE;
+	is->quit = 0;
 	frame = 0;
-	pic_displayed = 1;
-	read_new_audio_frame = TRUE;
-	read_new_video_frame = TRUE;
-//	apkt.data = audioinbuf;
-//	apkt.size = 0;
-//	vpkt.data = videoinbuf;
-//	vpkt.size = 0;
-
-	ringbuff_init(&rb_aout);
-	rb_aout.id = 0;
-	rb_aout.bufstart = malloc(AUDIO_OUTBUF_SIZE);
-	rb_aout.size = AUDIO_OUTBUF_SIZE;
 
 	/*
 	 *  Main Loop
 	 */
-	while (running == TRUE) //  && frame < 2000)
+	while (is->quit == 0) //  && frame < 2000)
 	{
 		int got_audio_frame = 0;
 		int len;
 
-//		logd("main loop.\n");
-
 		// Read Frame
-		//if (1) // ((read_new_audio_frame || read_new_video_frame))
+		if (is->audioq.size > MAX_AUDIOQ_SIZE) // || is->videoq.size > MAX_VIDEOQ_SIZE)
 		{
-
-			if (is->audioq.size > MAX_AUDIOQ_SIZE) // || is->videoq.size > MAX_VIDEOQ_SIZE)
-			{
-				SDL_Delay(10);
-				log("audioq overflow!\n");
-				continue;
-			}
-
-			if (av_read_frame(c, packet) >= 0)
-			{
-				// Is this a packet from the video stream?
-				if (packet->stream_index == is->videoStream)
-				{
-//					packet_queue_put(&is->videoq, packet);
-					log("get video stream %d bytes.\n", packet->size);
-					av_free_packet(packet);
-				}
-				else if (packet->stream_index == is->audioStream)
-				{
-					log("get audio stream %d bytes.\n", packet->size);
-					packet_queue_put(&is->audioq, packet);
-				}
-				else
-				{
-					av_free_packet(packet);
-				}
-
-//				if (avpkt.stream_index == is->videoStream && pic_displayed)
-//				{
-//					log("get video stream %d bytes.\n", avpkt.size);
-//					read_new_video_frame = FALSE;
-//					vinpkt = avpkt;
-//					logd("avpkt pts:%lld, dts:%lld, \n ", avpkt.pts, avpkt.dts);
-//				}
-//				else if (avpkt.stream_index == is->audioStream)
-//				{
-//					logd("get audio packet %d bytes.\n", avpkt.size);
-//					read_new_audio_frame = FALSE;
-//					ainpkt = avpkt;
-//				}
-			}
-//			else
-//			{ // reach EOF.
-//				running = FALSE;
-//				continue;
-//			}
+			SDL_Delay(10);
+			logd("audioq overflow!\n");
+			continue;
 		}
-//		else
-//		{
-//			logd("skip");
-//		}
 
+		if (av_read_frame(c, packet) >= 0)
+		{
+			//Tommy: notice, packet  must be freed with av_free_packet after used.
+			// Is this a packet from the video stream?
+			if (packet->stream_index == is->videoStream)
+			{
+//					packet_queue_put(&is->videoq, packet);
+				logd("get video stream %d bytes.\n", packet->size);
+				av_free_packet(packet);
+			}
+			else if (packet->stream_index == is->audioStream)
+			{
+				logd("get audio stream %d bytes.\n", packet->size);
+				packet_queue_put(&is->audioq, packet);
+			}
+			else
+			{
+				av_free_packet(packet);
+			}
+		}
+		else
+		{
+			is->quit = 1;
+		}
 #if 0
 		// VIDEO OUT
 		if (0)
@@ -1521,7 +1436,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 				switch (event.key.keysym.sym)
 				{
 				case SDLK_ESCAPE:
-					running = FALSE;
+					is->quit = 1;
 					break;
 				default:
 					break;
@@ -1529,24 +1444,17 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 				break;
 
 			case SDL_QUIT:
-				running = FALSE;
+				is->quit = 1;
 				break;
 			}
 		}
-		//		if (AVIO_CheckESC())
-		//			running = FALSE;
-		//		SDL_Delay(1);
 	}
 
 	AVIO_Exit();
-//	free(rb_aout.bufstart);
 
-	avcodec_close(is->ac);
-	avcodec_close(is->vc);
-//	av_free(dec_aframe);
-//	av_free(picture);
+	av_free(is->aframe);
 	avformat_free_context(c);
-	fclose(fp);
+
 
 }
 
