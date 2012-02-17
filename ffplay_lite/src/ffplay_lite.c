@@ -953,6 +953,31 @@ static Uint32 sdl_refresh_timer_cb(Uint32 interval, void *opaque)
 	return 0; /* 0 means stop timer */
 }
 
+static int audio_resample_converter(char *dst, int len)
+{ // Need format convert, check swr_convert() for details.
+	struct SwrContext *swr_ctx;
+	unsigned char swr_tmpbuff[AUDIO_OUTBUF_SIZE];
+	int len2;
+	unsigned char *in[] =
+	{ is->aframe->data[0] };
+	unsigned char *out[] =
+	{ swr_tmpbuff };
+
+	logd("enter resample !\n");
+	swr_ctx = swr_alloc_set_opts(NULL, is->ac->channel_layout, AV_SAMPLE_FMT_S16, is->ac->sample_rate,
+			is->ac->channel_layout, is->ac->sample_fmt, is->ac->sample_rate, 0, NULL);
+	swr_init(swr_ctx);
+	len2 = swr_convert(swr_ctx, out,
+			sizeof(swr_tmpbuff) / is->ac->channels / av_get_bytes_per_sample(AV_SAMPLE_FMT_S16), in,
+			is->aframe->nb_samples);
+	swr_free(&swr_ctx);
+	logd("resample output %d samples.\n", len2);
+	len2 *= is->ac->channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
+	memcpy(dst, swr_tmpbuff, len2);
+
+	return len2;
+}
+
 int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double *pts_ptr)
 {
 	int len1, data_size, n;
@@ -998,7 +1023,16 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 			/* if a frame has been decoded, output it */
 			data_size = av_samples_get_buffer_size(NULL, is->ac->channels, is->aframe->nb_samples, is->ac->sample_fmt,
 					1);
-			memcpy(audio_buf, is->aframe->data[0], data_size);
+			if (is->ac->sample_fmt != AV_SAMPLE_FMT_S16)
+			{
+//				memcpy(audio_buf, is->aframe->data[0], data_size);
+				data_size = audio_resample_converter(audio_buf, data_size);
+			}
+			else
+			{ // No resample.
+				memcpy(audio_buf, is->aframe->data[0], data_size);
+			}
+
 			logd("get decoded pcm data %d bytes. \n", data_size);
 
 			return data_size;
@@ -1095,7 +1129,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 		len -= len1;
 		stream += len1;
 		is->audio_buf_index += len1;
-	} logd("leave audio_callback\n");
+	}logd("leave audio_callback\n");
 }
 
 static void avfile_playback_example(const char *filename, int enable_audio, int enable_video)
@@ -1106,7 +1140,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 	printf("avfile playback start ... \n");
 
-	// AVFORMAT
+// AVFORMAT
 	c = avformat_alloc_context();
 	if (avformat_open_input(&c, filename, NULL, 0) < 0)
 	{
@@ -1145,7 +1179,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 				st->id, buf, st->codec->codec_name, st->codec->codec_id, (st->codec->codec_tag), st->codec->time_base.num, st->codec->time_base.den);
 	}
 
-	// AVCODEC
+// AVCODEC
 	is->pFormatCtx = c;
 	is->ac = c->streams[is->audioStream]->codec;
 	is->vc = c->streams[is->videoStream]->codec;
@@ -1197,7 +1231,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	{
 		AVIO_InitAudio(is->ac->channels, is->ac->sample_rate, 16, (void*) audio_callback);
 		if (!enable_video)
-			AVIO_InitYUV420(320, 240, "press ESC to abort!");
+			AVIO_InitYUV420(640, 480, filename);
 		AVIO_PauseAudio(0);
 	}
 
@@ -1511,8 +1545,8 @@ int main(int argc, char **argv)
 #else
 // Decode mp3 to pcm file.
 //	audio_decode_example("./out.pcm", "/srv/stream/001.hero.mp3");
-	//	audio_decode_example("./out.pcm", "/srv/stream/love_mv.mpg.audiostream");
-	//	audio_decode_example("./out.pcm", "/home/tommy/Desktop/share/vs.mp4.audiostream.aac");
+//	audio_decode_example("./out.pcm", "/srv/stream/love_mv.mpg.audiostream");
+//	audio_decode_example("./out.pcm", "/home/tommy/Desktop/share/vs.mp4.audiostream.aac");
 
 // Encode pcm to mpeg1 audio file.
 //	audio_encode_example("./out.mp3", "./out.pcm");
@@ -1526,8 +1560,8 @@ int main(int argc, char **argv)
 
 // Playback av file using SDL.
 //	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 0);
-	avfile_playback_example("/srv/stream/vs.mp4", 1, 0);
-//	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 0, 1);
+//	avfile_playback_example("/srv/stream/vs.mp4", 1, 0);
+	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 0);
 //	avfile_playback_example("/srv/stream/VIDEO0001.3gp", 1, 1);
 
 #endif
