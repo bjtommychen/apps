@@ -87,7 +87,7 @@
 #endif
 
 #if 1//def DEBUG
-#define logd(a, b...)	fprintf(stderr, a, ##b)
+#define logd(a, b...)	fprintf(stdout, a, ##b)
 #else
 #define logd(a, b...)
 #endif
@@ -97,6 +97,9 @@
 #else
 #define logi(a, b...)
 #endif
+
+#define loge(a, b...)	fprintf(stderr, a, ##b)
+
 
 #define TRUE 1
 #define FALSE 0
@@ -126,9 +129,10 @@ typedef struct PacketQueue
 
 typedef struct VideoState
 {
-
 	AVFormatContext *pFormatCtx;
 	int videoStream, audioStream;
+
+	// Audio
 	AVStream *audio_st;
 	PacketQueue audioq;
 	uint8_t audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
@@ -137,17 +141,17 @@ unsigned	int audio_buf_size; // data size of last fill. won't change when using 
 	unsigned int audio_buf_index;// after fill data, set to 0, increased to audio_buf_size when using it.
 	AVPacket audio_pkt;
 	AVPacket audio_pkt_dec;
-//  uint8_t         *audio_pkt_data;
-//  int             audio_pkt_size;
-//
-//
-//  PacketQueue     videoq;
-
-	AVFrame *aframe;
-	AVFrame *picture;
+	AVCodec *acodec;
 	AVCodecContext *ac;
+	AVFrame *aframe;
+
+	// Video
+	PacketQueue videoq;
+	AVCodec *vcodec;
+	AVFrame *picture;
 	AVCodecContext *vc;
 
+	int quit;
 } VideoState;
 
 /******************************************************************************/
@@ -958,12 +962,8 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 
 	for (;;)
 	{
-//		while (is->audio_pkt_size > 0)
 		while (is->audio_pkt_dec.size > 0)
 		{
-//			data_size = buf_size;
-//			len1 = avcodec_decode_audio2(is->audio_st->codec, (int16_t *) audio_buf, &data_size, is->audio_pkt_data,
-//					is->audio_pkt_size);
 			avcodec_get_frame_defaults(is->aframe);
 			got_audio_frame = 0;
 
@@ -972,16 +972,12 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 			if (len1 < 0)
 			{
 				/* if error, skip frame */
-//				is->audio_pkt_size = 0;
 				is->audio_pkt_dec.size = 0;
 				break;
 			}
-//			is->audio_pkt_data += len1;
-//			is->audio_pkt_size -= len1;
 			is->audio_pkt_dec.data += len1;
 			is->audio_pkt_dec.size -= len1;
 
-//			if (data_size <= 0)
 			if (got_audio_frame == 0)
 			{
 				/* No data yet, get more frames */
@@ -999,7 +995,7 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 			data_size = av_samples_get_buffer_size(NULL, is->ac->channels, is->aframe->nb_samples, is->ac->sample_fmt,
 					1);
 			memcpy(audio_buf, is->aframe->data[0], data_size);
-			log("get decoded pcm data %d bytes. \n", data_size);
+			logd("get decoded pcm data %d bytes. \n", data_size);
 
 			return data_size;
 		}
@@ -1010,18 +1006,19 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 			av_free_packet(pkt);
 		}
 
-//		if (is->quit)
-//		{
-//			return -1;
-//		}
+		if (is->quit)
+		{
+			return -1;
+		}
 		/* next packet */
 		if (packet_queue_get(&is->audioq, pkt, 1) < 0)
 		{
 			return -1;
 		}
-//		is->audio_pkt_data = pkt->data;
-//		is->audio_pkt_size = pkt->size;
-		is->audio_pkt_dec = *pkt; //Tommy: Backup, audio_pkt_dec will be modified when decoding.
+
+		//Tommy: Backup, audio_pkt_dec will be modified when decoding.
+		is->audio_pkt_dec = *pkt;
+
 		/* if update, update the audio clock w/pts */
 //		if (pkt->pts != AV_NOPTS_VALUE)
 //		{
@@ -1037,6 +1034,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 	int len1, audio_size;
 	double pts;
 
+#if 0
 	if (0)
 	{
 		static FILE *fp = 0;
@@ -1060,8 +1058,9 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 		}
 		return;
 	}
+#endif
 
-	log("enter audio_callback, need %d bytes\n", len);
+	logd("enter audio_callback, need %d bytes\n", len);
 	while (len > 0)
 	{ //Tommy: loop to make sure all data got.
 		if (is->audio_buf_index >= is->audio_buf_size)
@@ -1093,7 +1092,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 		stream += len1;
 		is->audio_buf_index += len1;
 	}
-	log("leave audio_callback\n");
+	logd("leave audio_callback\n");
 }
 
 static void avfile_playback_example(const char *filename, int enable_audio, int enable_video)
@@ -1106,13 +1105,13 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	int read_new_audio_frame, read_new_video_frame;
 	AVPacket pkt1, *packet = &pkt1;
 
-	AVCodec *acodec, *vcodec;
-	AVCodecContext *ac = NULL;
+//	AVCodec *acodec, *vcodec;
+//	AVCodecContext *ac = NULL;
 	AVCodecContext *vc = NULL;
-	uint8_t audioinbuf[AUDIO_DATAIN_SIZE];
-	uint8_t videoinbuf[VIDEO_DATAIN_SIZE];
+//	uint8_t audioinbuf[AUDIO_DATAIN_SIZE];
+//	uint8_t videoinbuf[VIDEO_DATAIN_SIZE];
 //	AVFrame *dec_aframe = NULL;
-	AVFrame *picture;
+//	AVFrame *picture;
 
 	int audio_ending = FALSE;
 	int got_audio_info = FALSE;
@@ -1121,8 +1120,8 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 	printf("avfile playback start ... \n");
 
-	memset(audioinbuf, 0, AUDIO_DATAIN_SIZE);
-	memset(videoinbuf, 0, VIDEO_DATAIN_SIZE);
+//	memset(audioinbuf, 0, AUDIO_DATAIN_SIZE);
+//	memset(videoinbuf, 0, VIDEO_DATAIN_SIZE);
 
 	fp = fopen("tmpfile", "wb");
 	if (!fp)
@@ -1175,35 +1174,37 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	}
 
 	// AVCODEC
-	av_init_packet(&apkt);
-	av_init_packet(&vpkt);
+//	av_init_packet(&apkt);
+//	av_init_packet(&vpkt);
+
+	is->ac = c->streams[is->audioStream]->codec;
+	is->vc = c->streams[is->videoStream]->codec;
+
 	/* find the mpeg audio decoder */
-	acodec = avcodec_find_decoder(c->streams[is->audioStream]->codec->codec_id);
-	if (!acodec)
+	is->acodec = avcodec_find_decoder(is->ac->codec_id);
+	if (!is->acodec)
 	{
 		fprintf(stderr, "acodec not found\n");
 		exit(1);
 	}
-	vcodec = avcodec_find_decoder(c->streams[is->videoStream]->codec->codec_id);
-	if (!vcodec)
+	is->vcodec = avcodec_find_decoder(is->vc->codec_id);
+	if (!is->vcodec)
 	{
 		fprintf(stderr, "vcodec not found\n");
 		exit(1);
 	}
 	// Tommy: dont' alloc ac, because we already got ac from avformat.
 //	ac = avcodec_alloc_context3(acodec);
-	ac = c->streams[is->audioStream]->codec;
-	vc = c->streams[is->videoStream]->codec;
-	is->ac = ac;
-	is->vc = vc;
+//	ac = c->streams[is->audioStream]->codec;
+//	vc = c->streams[is->videoStream]->codec;
 
 	/* open it */
-	if (avcodec_open2(ac, acodec, 0) < 0)
+	if (avcodec_open2(is->ac, is->acodec, 0) < 0)
 	{
 		fprintf(stderr, "could not open acodec\n");
 		exit(1);
 	}
-	if (avcodec_open2(vc, vcodec, 0) < 0)
+	if (avcodec_open2(is->vc, is->vcodec, 0) < 0)
 	{
 		fprintf(stderr, "could not open vcodec\n");
 		exit(1);
@@ -1244,21 +1245,21 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		exit(1);
 	}
 
-	if (!(picture = avcodec_alloc_frame()))
-	{
-		fprintf(stderr, "failed alloc avframe, out of memory\n");
-		exit(1);
-	}
+//	if (!(picture = avcodec_alloc_frame()))
+//	{
+//		fprintf(stderr, "failed alloc avframe, out of memory\n");
+//		exit(1);
+//	}
 
 	running = TRUE;
 	frame = 0;
 	pic_displayed = 1;
 	read_new_audio_frame = TRUE;
 	read_new_video_frame = TRUE;
-	apkt.data = audioinbuf;
-	apkt.size = 0;
-	vpkt.data = videoinbuf;
-	vpkt.size = 0;
+//	apkt.data = audioinbuf;
+//	apkt.size = 0;
+//	vpkt.data = videoinbuf;
+//	vpkt.size = 0;
 
 	ringbuff_init(&rb_aout);
 	rb_aout.id = 0;
@@ -1513,7 +1514,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 			switch (event.type)
 			{
 			case FF_REFRESH_EVENT:
-				AVIO_ShowYUV420(picture->data, picture->linesize, picture->width, picture->height, 0);
+//				AVIO_ShowYUV420(picture->data, picture->linesize, picture->width, picture->height, 0);
 				pic_displayed = 1;
 				break;
 			case SDL_KEYDOWN:
@@ -1540,10 +1541,10 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	AVIO_Exit();
 //	free(rb_aout.bufstart);
 
-	avcodec_close(ac);
-	avcodec_close(vc);
+	avcodec_close(is->ac);
+	avcodec_close(is->vc);
 //	av_free(dec_aframe);
-	av_free(picture);
+//	av_free(picture);
 	avformat_free_context(c);
 	fclose(fp);
 
