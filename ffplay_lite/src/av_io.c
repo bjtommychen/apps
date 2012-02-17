@@ -80,16 +80,15 @@ int bitmaph = 240;
 //void (SDLCALL *callback)(void *userdata, Uint8 *stream, int len);
 static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
 {
-	int (*filldata)(Uint8 *stream, int len);
+	int (*filldata)(void*userdata, Uint8 *stream, int len);
 
 	log("enter sdl_audio_callback().\n");
 	filldata = userdata;
-	(*filldata)(stream, len);
+	(*filldata)(userdata, stream, len);
 	log("leave sdl_audio_callback().\n");
 }
 
-static int avio_get_frame_yuv420(SDL_Overlay *overlay, char *data[],
-		int linesize[], int xsize, int ysize)
+static int avio_get_frame_yuv420(SDL_Overlay *overlay, char *data[], int linesize[], int xsize, int ysize)
 {
 	int x, y;
 	unsigned char *src, *dst;
@@ -167,8 +166,7 @@ int AVIO_InitAudio(int ch, int srate, int bps, void *callback)
 	if (bps)
 		Bits_per_Sample = bps;
 
-	log("Init SDL Audio, ch:%d, srate:%d, bps:%d\n",
-			chNum, SampleRate, Bits_per_Sample);
+	log("Init SDL Audio, ch:%d, srate:%d, bps:%d\n", chNum, SampleRate, Bits_per_Sample);
 
 	/* Allocate a desired SDL_AudioSpec */
 	desired = (SDL_AudioSpec *) malloc(sizeof(SDL_AudioSpec));
@@ -198,8 +196,8 @@ int AVIO_InitAudio(int ch, int srate, int bps, void *callback)
 	desired->samples = SDL_AUDIO_BUFFER_SIZE;
 
 	/* Our callback function */
-	desired->callback = sdl_audio_callback;
-	desired->userdata = callback;
+	desired->callback = callback; //sdl_audio_callback;
+	desired->userdata = 0; //callback;
 
 	desired->channels = chNum;
 
@@ -211,10 +209,8 @@ int AVIO_InitAudio(int ch, int srate, int bps, void *callback)
 		return (1);
 	}
 
-	log("Obtained samples:%d, freq:%dHz, channel:%d \n",
-			obtained->samples, obtained->freq, obtained->channels);
-	log(
-			"Obtained->format: %s %d bits\n",
+	log("Obtained samples:%d, freq:%dHz, channel:%d \n", obtained->samples, obtained->freq, obtained->channels);
+	log( "Obtained->format: %s %d bits\n",
 			(obtained->format & 0x8000) ? "signed":"unsigned", (obtained->format & 0x00ff));
 
 	/* if the format is 16 bit, two bytes are written for every sample */
@@ -272,7 +268,7 @@ int AVIO_InitYUV420(int w, int h, char *title)
 
 	/* Initialize the display */
 #ifndef USE2YUVOVERLAY
-	screen = SDL_SetVideoMode(w , h , desired_bpp, video_flags);
+	screen = SDL_SetVideoMode(w, h, desired_bpp, video_flags);
 #else
 	screen = SDL_SetVideoMode(w * 2, h * 2, desired_bpp, video_flags);
 #endif
@@ -284,16 +280,13 @@ int AVIO_InitYUV420(int w, int h, char *title)
 
 	if (screen == NULL)
 	{
-		fprintf(stderr, " Couldn 't set %dx%dx%d video mode: %s\n", w, h,
-				desired_bpp, SDL_GetError());
+		fprintf(stderr, " Couldn 't set %dx%dx%d video mode: %s\n", w, h, desired_bpp, SDL_GetError());
 		exit(1);
 	}
 
-	log(
-			"Set%s %dx%dx%d mode\n",
+	log( "Set%s %dx%dx%d mode\n",
 			screen->flags & SDL_FULLSCREEN ? " fullscreen" : "", screen->w, screen->h, screen->format->BitsPerPixel);
-	log("(video surface located in %s memory)\n",
-			(screen->flags & SDL_HWSURFACE) ? "video" : "system");
+	log("(video surface located in %s memory)\n", (screen->flags & SDL_HWSURFACE) ? "video" : "system");
 	if (screen->flags & SDL_DOUBLEBUF)
 	{
 		log("Double-buffering enabled\n");
@@ -333,7 +326,6 @@ int AVIO_InitYUV420(int w, int h, char *title)
 //	}
 //
 //	SDL_Delay(5000);
-
 	log(
 			"Created %dx%dx%d %s %s overlay\n",
 			overlay->w, overlay->h, overlay->planes, overlay->hw_overlay ? "hardware" : "software", overlay->format == SDL_YV12_OVERLAY ? "YV12" : overlay->format == SDL_IYUV_OVERLAY ? "IYUV" : overlay->format == SDL_YUY2_OVERLAY ? "YUY2" : overlay->format == SDL_UYVY_OVERLAY ? "UYVY" : overlay->format == SDL_YVYU_OVERLAY ? "YVYU" : "Unknown");
@@ -349,8 +341,7 @@ int AVIO_InitYUV420(int w, int h, char *title)
  * xsize, ysize is the decoded yuv display size.
  */
 
-int AVIO_ShowYUV420(char *data[], int linesize[], int xsize, int ysize,
-		int format)
+int AVIO_ShowYUV420(char *data[], int linesize[], int xsize, int ysize, int format)
 {
 	SDL_LockYUVOverlay(overlay);
 
