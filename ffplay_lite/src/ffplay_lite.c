@@ -1138,13 +1138,13 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	int i, frame, pic_displayed;
 	AVPacket pkt1, *packet = &pkt1;
 
-	printf("avfile playback start ... \n");
+	printf("avfile playback %s start ... \n", filename);
 
 // AVFORMAT
 	c = avformat_alloc_context();
 	if (avformat_open_input(&c, filename, NULL, 0) < 0)
 	{
-		fprintf(stderr, "could not open file\n");
+		fprintf(stderr, "could not open file %s\n", filename);
 		return;
 	}
 	c->flags |= AVFMT_FLAG_GENPTS;
@@ -1492,7 +1492,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 static void show_banner(int argc, char **argv)
 {
-	printf("ffplay lite Version %s by %s\t", VERSION, AUTHOR);
+	printf("ffplay lite version %s by %s\t", VERSION, AUTHOR);
 	printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
 }
 
@@ -1561,8 +1561,12 @@ int main(int argc, char **argv)
 // Playback av file using SDL.
 //	avfile_playback_example("/srv/stream/love_mv.mpg", 1, 0);
 //	avfile_playback_example("/srv/stream/vs.mp4", 1, 0);
-	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 0);
+//	avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 0);
 //	avfile_playback_example("/srv/stream/VIDEO0001.3gp", 1, 1);
+
+	if (argv[1])
+		avfile_playback_example(argv[1], 1, 0);
+
 
 #endif
 
