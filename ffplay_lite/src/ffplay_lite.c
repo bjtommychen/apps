@@ -831,12 +831,11 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
 
 	for (;;)
 	{
-
-//		if (global_video_state->quit)
-//		{
-//			ret = -1;
-//			break;
-//		}
+		if (is->quit)
+		{
+			ret = -1;
+			break;
+		}
 
 		pkt1 = q->first_pkt;
 		if (pkt1)
@@ -996,7 +995,6 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 			//		log(
 			//				"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
 			//				is->ac->channels, is->ac->sample_rate, is->aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), is->ac->sample_fmt));
-
 			/* if a frame has been decoded, output it */
 			data_size = av_samples_get_buffer_size(NULL, is->ac->channels, is->aframe->nb_samples, is->ac->sample_fmt,
 					1);
@@ -1097,8 +1095,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 		len -= len1;
 		stream += len1;
 		is->audio_buf_index += len1;
-	}
-	logd("leave audio_callback\n");
+	} logd("leave audio_callback\n");
 }
 
 static void avfile_playback_example(const char *filename, int enable_audio, int enable_video)
@@ -1199,6 +1196,8 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	if (enable_audio)
 	{
 		AVIO_InitAudio(is->ac->channels, is->ac->sample_rate, 16, (void*) audio_callback);
+		if (!enable_video)
+			AVIO_InitYUV420(320, 240, "press ESC to abort!");
 		AVIO_PauseAudio(0);
 	}
 
@@ -1454,7 +1453,6 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 	av_free(is->aframe);
 	avformat_free_context(c);
-
 
 }
 
