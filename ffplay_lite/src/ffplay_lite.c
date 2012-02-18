@@ -147,6 +147,7 @@ unsigned	int audio_buf_size; // data size of last fill. won't change when using 
 	// Video
 	PacketQueue videoq;
 	AVCodec *vcodec;
+	AVStream *video_st;
 	AVFrame *picture;
 	AVCodecContext *vc;
 
@@ -342,7 +343,8 @@ printf	("Audio decoding...writing to %s.\n", outfilename);
 //			printf("^, ch:%d, samples:%d, fmt:%d\n", c->channels,
 //					decoded_frame->nb_samples, c->sample_fmt);
 			/* if a frame has been decoded, output it */
-			int data_size = av_samples_get_buffer_size(NULL, c->channels, decoded_frame->nb_samples, c->sample_fmt, 1);
+			int data_size = av_samples_get_buffer_size(NULL, c->channels,
+					decoded_frame->nb_samples, c->sample_fmt, 1);
 			fwrite(decoded_frame->data[0], 1, data_size, outfile);
 		}
 		avpkt.size -= len;
@@ -356,7 +358,8 @@ printf	("Audio decoding...writing to %s.\n", outfilename);
 			 * libavformat. */
 			memmove(inbuf, avpkt.data, avpkt.size);
 			avpkt.data = inbuf;
-			len = fread(avpkt.data + avpkt.size, 1, AUDIO_INBUF_SIZE - avpkt.size, f);
+			len = fread(avpkt.data + avpkt.size, 1,
+					AUDIO_INBUF_SIZE - avpkt.size, f);
 //			printf(" only %d left, read %d \n", avpkt.size, len);
 			if (len > 0)
 			{
@@ -437,7 +440,8 @@ static void video_encode_example(const char *filename, int codec_id)
 
 	/* the image can be allocated by any means and av_image_alloc() is
 	 * just the most convenient way if av_malloc() is to be used */
-	av_image_alloc(picture->data, picture->linesize, c->width, c->height, c->pix_fmt, 1);
+	av_image_alloc(picture->data, picture->linesize, c->width, c->height,
+			c->pix_fmt, 1);
 
 	/* encode 1 second of video */
 	for (i = 0; i < 25; i++)
@@ -458,7 +462,8 @@ static void video_encode_example(const char *filename, int codec_id)
 		{
 			for (x = 0; x < c->width / 2; x++)
 			{
-				picture->data[1][y * picture->linesize[1] + x] = 128 + y + i * 2;
+				picture->data[1][y * picture->linesize[1] + x] = 128 + y
+						+ i * 2;
 				picture->data[2][y * picture->linesize[2] + x] = 64 + x + i * 5;
 			}
 		}
@@ -499,7 +504,8 @@ static void video_encode_example(const char *filename, int codec_id)
  * Video decoding example
  */
 
-static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize, char *filename)
+static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
+		char *filename)
 {
 	FILE *f;
 	int i;
@@ -511,7 +517,8 @@ static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize, char *f
 	fclose(f);
 }
 
-static void picture_yuv420_save(FILE *fp, AVFrame *picture, int xsize, int ysize)
+static void picture_yuv420_save(FILE *fp, AVFrame *picture, int xsize,
+		int ysize)
 {
 	int i;
 
@@ -637,8 +644,10 @@ static void video_decode_example(const char *outfilename, const char *filename)
 //						c->height, buf);
 				if (frame == 0)
 				{
-					printf("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n", picture->width, picture->height,
-							picture->linesize[0], picture->linesize[1], picture->linesize[2]);
+					printf("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n",
+							picture->width, picture->height,
+							picture->linesize[0], picture->linesize[1],
+							picture->linesize[2]);
 				}
 				picture_yuv420_save(outfile, picture, c->width, c->height);
 
@@ -727,7 +736,9 @@ static void avfile_demux_example(const char *filename, int isSDLshow)
 			printf("OTHER AVMEDIA. ");
 			break;
 		}
-		printf("codec_name:%s. id:%xH. tag:%xH", c->streams[i]->codec->codec_name, c->streams[i]->codec->codec_id,
+		printf("codec_name:%s. id:%xH. tag:%xH",
+				c->streams[i]->codec->codec_name,
+				c->streams[i]->codec->codec_id,
 				&(c->streams[i]->codec->codec_tag));
 	}
 	printf("\n");
@@ -874,12 +885,14 @@ static int ringbuff_filldata(RINGBUFF *rb, unsigned char *stream, int len)
 {
 	int tailfree;
 
-	log("ringbuffer#%d, fill %d bytes.  index:%d, len:%d\n", rb->id, len, rb->index, rb->len);
+	log("ringbuffer#%d, fill %d bytes.  index:%d, len:%d\n",
+			rb->id, len, rb->index, rb->len);
 	if ((rb->len + len) < rb->size)
 	{ // have free space.
 		if ((rb->index + rb->len) > rb->size)
 		{ // ring back.
-			memcpy(rb->bufstart + (rb->index + rb->len - rb->size), stream, len);
+			memcpy(rb->bufstart + (rb->index + rb->len - rb->size), stream,
+					len);
 		}
 		else
 		{
@@ -912,7 +925,8 @@ static int ringbuff_getdata(RINGBUFF *rb, unsigned char *stream, int len)
 {
 	int tailfree;
 
-	log("ringbuffer#%d, get %d bytes.  index:%d, len:%d\n", rb->id, len, rb->index, rb->len);
+	log("ringbuffer#%d, get %d bytes.  index:%d, len:%d\n",
+			rb->id, len, rb->index, rb->len);
 	if (len <= rb->len)
 	{ // have enough data.
 		tailfree = rb->size - rb->index;
@@ -927,7 +941,8 @@ static int ringbuff_getdata(RINGBUFF *rb, unsigned char *stream, int len)
 		}
 		rb->index = (rb->index + len) % rb->size;
 		rb->len -= len;
-		log("ringbuffer#%d, get done.  index:%d, len:%d\n", rb->id, rb->index, rb->len);
+		log("ringbuffer#%d, get done.  index:%d, len:%d\n",
+				rb->id, rb->index, rb->len);
 	}
 	else
 	{
@@ -964,11 +979,15 @@ static int audio_resample_converter(char *dst, int len)
 	{ swr_tmpbuff };
 
 	logd("enter resample !\n");
-	swr_ctx = swr_alloc_set_opts(NULL, is->ac->channel_layout, AV_SAMPLE_FMT_S16, is->ac->sample_rate,
-			is->ac->channel_layout, is->ac->sample_fmt, is->ac->sample_rate, 0, NULL);
+	swr_ctx = swr_alloc_set_opts(NULL, is->ac->channel_layout,
+			AV_SAMPLE_FMT_S16, is->ac->sample_rate, is->ac->channel_layout,
+			is->ac->sample_fmt, is->ac->sample_rate, 0, NULL);
 	swr_init(swr_ctx);
-	len2 = swr_convert(swr_ctx, out,
-			sizeof(swr_tmpbuff) / is->ac->channels / av_get_bytes_per_sample(AV_SAMPLE_FMT_S16), in,
+	len2 = swr_convert(
+			swr_ctx,
+			out,
+			sizeof(swr_tmpbuff) / is->ac->channels
+					/ av_get_bytes_per_sample(AV_SAMPLE_FMT_S16), in,
 			is->aframe->nb_samples);
 	swr_free(&swr_ctx);
 	logd("resample output %d samples.\n", len2);
@@ -978,7 +997,8 @@ static int audio_resample_converter(char *dst, int len)
 	return len2;
 }
 
-int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double *pts_ptr)
+int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size,
+		double *pts_ptr)
 {
 	int len1, data_size, n;
 	AVPacket *pkt = &is->audio_pkt;
@@ -992,7 +1012,8 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 			avcodec_get_frame_defaults(is->aframe);
 			got_audio_frame = 0;
 
-			len1 = avcodec_decode_audio4(is->audio_st->codec, is->aframe, &got_audio_frame, &is->audio_pkt_dec);
+			len1 = avcodec_decode_audio4(is->audio_st->codec, is->aframe,
+					&got_audio_frame, &is->audio_pkt_dec);
 
 			if (len1 < 0)
 			{
@@ -1021,8 +1042,8 @@ int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, double 
 			//				"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n",
 			//				is->ac->channels, is->ac->sample_rate, is->aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), is->ac->sample_fmt));
 			/* if a frame has been decoded, output it */
-			data_size = av_samples_get_buffer_size(NULL, is->ac->channels, is->aframe->nb_samples, is->ac->sample_fmt,
-					1);
+			data_size = av_samples_get_buffer_size(NULL, is->ac->channels,
+					is->aframe->nb_samples, is->ac->sample_fmt, 1);
 			if (is->ac->sample_fmt != AV_SAMPLE_FMT_S16)
 			{
 //				memcpy(audio_buf, is->aframe->data[0], data_size);
@@ -1104,7 +1125,8 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 		if (is->audio_buf_index >= is->audio_buf_size)
 		{
 			/* We have already sent all our data; get more */
-			audio_size = audio_decode_frame(is, is->audio_buf, sizeof(is->audio_buf), &pts);
+			audio_size = audio_decode_frame(is, is->audio_buf,
+					sizeof(is->audio_buf), &pts);
 
 			if (audio_size < 0)
 			{
@@ -1132,13 +1154,17 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 	}logd("leave audio_callback\n");
 }
 
-static void avfile_playback_example(const char *filename, int enable_audio, int enable_video)
+static void avfile_playback_example(const char *filename, int enable_audio,
+		int enable_video)
 {
 	AVFormatContext *c;
 	int i, frame, pic_displayed;
 	AVPacket pkt1, *packet = &pkt1;
 
 	printf("avfile playback %s start ... \n", filename);
+
+//	if (!enable_audio && !enable_video)
+//		return;
 
 // AVFORMAT
 	c = avformat_alloc_context();
@@ -1210,16 +1236,18 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		exit(1);
 	}
 
-	AVIO_Init();
+
 
 //    is->audioStream = stream_index;
 	is->audio_st = c->streams[is->audioStream]; //pFormatCtx->streams[stream_index];
+	is->video_st = c->streams[is->videoStream]; //pFormatCtx->streams[stream_index];
 	is->audio_buf_size = 0;
 	is->audio_buf_index = 0;
 
 	memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
 	memset(&is->audio_pkt_dec, 0, sizeof(is->audio_pkt_dec));
 	packet_queue_init(&is->audioq);
+	packet_queue_init(&is->videoq);
 
 	if (!(is->aframe = avcodec_alloc_frame()))
 	{
@@ -1227,12 +1255,26 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		exit(1);
 	}
 
+	if (!(is->picture = avcodec_alloc_frame()))
+	{
+		fprintf(stderr, "failed alloc picture, out of memory\n");
+		exit(1);
+	}
+
+	AVIO_Init();
+
 	if (enable_audio)
 	{
-		AVIO_InitAudio(is->ac->channels, is->ac->sample_rate, 16, (void*) audio_callback);
+		AVIO_InitAudio(is->ac->channels, is->ac->sample_rate, 16,
+				(void*) audio_callback);
 		if (!enable_video)
 			AVIO_InitYUV420(640, 480, filename);
 		AVIO_PauseAudio(0);
+	}
+
+	if (enable_video)
+	{
+		AVIO_InitYUV420(640, 480, filename);
 	}
 
 //	running = TRUE;
@@ -1248,7 +1290,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		int len;
 
 		// Read Frame
-		if (is->audioq.size > MAX_AUDIOQ_SIZE) // || is->videoq.size > MAX_VIDEOQ_SIZE)
+		if (is->audioq.size > MAX_AUDIOQ_SIZE || is->videoq.size > MAX_VIDEOQ_SIZE)
 		{
 			SDL_Delay(10);
 			logd("audioq overflow!\n");
@@ -1263,12 +1305,18 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 			{
 //					packet_queue_put(&is->videoq, packet);
 				logd("get video stream %d bytes.\n", packet->size);
-				av_free_packet(packet);
+				if (enable_video)
+					packet_queue_put(&is->videoq, packet);
+				else
+					av_free_packet(packet);
 			}
 			else if (packet->stream_index == is->audioStream)
 			{
 				logd("get audio stream %d bytes.\n", packet->size);
-				packet_queue_put(&is->audioq, packet);
+				if (enable_audio)
+					packet_queue_put(&is->audioq, packet);
+				else
+					av_free_packet(packet);
 			}
 			else
 			{
@@ -1278,6 +1326,42 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		else
 		{
 			is->quit = 1;
+		}
+
+
+		{
+			int got_picture;
+
+			len = avcodec_decode_video2(vc, picture, &got_picture, &vpkt);
+			if (len < 0)
+			{
+				fprintf(stderr, "Error while decoding frame %d\n", frame);
+				exit(1);
+			}
+
+			vpkt.size -= len;
+			vpkt.data += len;
+
+			if (got_picture)
+			{
+				/* the picture is allocated by the decoder. no need to
+				 free it */
+				if (frame == 0)
+				{
+					logd("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n",
+							picture->width, picture->height,
+							picture->linesize[0], picture->linesize[1],
+							picture->linesize[2]);
+					AVIO_InitYUV420(picture->width, picture->height, filename);
+				}
+
+				if (enable_video)
+				{
+					SDL_AddTimer(33, sdl_refresh_timer_cb, 0);
+					pic_displayed = 0;
+				}
+				frame++;
+			}
 		}
 #if 0
 		// VIDEO OUT
@@ -1373,6 +1457,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 	AVIO_Exit();
 
 	av_free(is->aframe);
+	av_free(is->picture);
 	avformat_free_context(c);
 
 }
@@ -1450,8 +1535,8 @@ int main(int argc, char **argv)
 	else
 	{
 // Playback av file using SDL.
-//		avfile_playback_example("/srv/stream/love_mv.mpg", 1, 0);
-		avfile_playback_example("/srv/stream/vs.mp4", 1, 0);
+		avfile_playback_example("/srv/stream/love_mv.mpg", 0, 1);
+//		avfile_playback_example("/srv/stream/vs.mp4", 1, 0);
 //		avfile_playback_example("/srv/stream/CSI.Season11.EP10_S-Files.rmvb", 1, 0);
 //		avfile_playback_example("/srv/stream/VIDEO0001.3gp", 1, 1);
 	}
