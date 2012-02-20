@@ -124,6 +124,7 @@ typedef struct PacketQueue
 	AVPacketList *first_pkt, *last_pkt;
 	int nb_packets;
 	int size;
+    int abort_request;
 	SDL_mutex *mutex;
 	SDL_cond *cond;
 } PacketQueue;
@@ -840,11 +841,10 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
 
 	for (;;)
 	{
-		if (is->quit)
-		{
-			ret = -1;
-			break;
-		}
+        if (q->abort_request) {
+            ret = -1;
+            break;
+        }
 
 		pkt1 = q->first_pkt;
 		if (pkt1)
@@ -873,6 +873,42 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
 	SDL_UnlockMutex(q->mutex);
 	return ret;
 }
+
+static void packet_queue_flush(PacketQueue *q)
+{
+    AVPacketList *pkt, *pkt1;
+
+    SDL_LockMutex(q->mutex);
+    for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
+        pkt1 = pkt->next;
+        av_free_packet(&pkt->pkt);
+        av_freep(&pkt);
+    }
+    q->last_pkt = NULL;
+    q->first_pkt = NULL;
+    q->nb_packets = 0;
+    q->size = 0;
+    SDL_UnlockMutex(q->mutex);
+}
+
+static void packet_queue_end(PacketQueue *q)
+{
+    packet_queue_flush(q);
+    SDL_DestroyMutex(q->mutex);
+    SDL_DestroyCond(q->cond);
+}
+
+static void packet_queue_abort(PacketQueue *q)
+{
+    SDL_LockMutex(q->mutex);
+
+    q->abort_request = 1;
+
+    SDL_CondSignal(q->cond);
+
+    SDL_UnlockMutex(q->mutex);
+}
+
 
 static int ringbuff_init(RINGBUFF *rb)
 {
@@ -1061,8 +1097,6 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, int buf_size, 
 		/* next packet */
 		if (packet_queue_get(&is->audioq, pkt, 1) < 0)
 		{
-			if (is->eof)
-				is->quit = 1;
 			return -1;
 		}
 		else
@@ -1201,6 +1235,9 @@ static int video_thread(void *arg)
 
 	for (;;)
 	{
+		if(is->quit)
+			break;
+
 		pts = 0;
 
 		ret = get_video_frame(is, is->picture, 0, packet);
@@ -1218,7 +1255,7 @@ static int video_thread(void *arg)
 static void avfile_playback_example(const char *filename, int enable_audio, int enable_video)
 {
 	AVFormatContext *c;
-	int i, frame, pic_displayed;
+	int i, frame;
 	AVPacket pkt1, *packet = &pkt1;
 
 	printf("avfile playback %s start ... \n", filename);
@@ -1339,7 +1376,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 
 	is->quit = 0;
 	frame = 0;
-	pic_displayed = 1;
+
 
 	/*
 	 *  Main Loop
@@ -1379,8 +1416,11 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 				}
 			}
 			else
-			{
-				is->eof = 1;
+			{ // Read frame failed.
+
+				logd("q size %d, %d\n", is->audioq.size,is->videoq.size);
+				if (is->audioq.size == 0 && is->videoq.size == 0)
+					is->quit = 1;
 			}
 		}
 		else
@@ -1404,7 +1444,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 			case FF_REFRESH_EVENT:
 				logd("got event FF_REFRESH_EVENT\n");
 				AVIO_ShowYUV420(is->picture->data, is->picture->linesize, is->picture->width, is->picture->height, 0);
-				pic_displayed = 1;
+
 				break;
 
 			case SDL_KEYDOWN:
@@ -1426,11 +1466,23 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		SDL_Delay(1);
 	}
 
+
+
+    packet_queue_abort(&is->audioq);
+    packet_queue_end(&is->audioq);
+
+	packet_queue_abort(&is->videoq);
+    SDL_WaitThread(is->video_tid, NULL);
+    packet_queue_end(&is->videoq);
+
+	SDL_Delay(100);
 	AVIO_Exit();
+
 
 	av_free(is->aframe);
 	av_free(is->picture);
 	avformat_free_context(c);
+
 
 }
 
@@ -1503,7 +1555,7 @@ int main(int argc, char **argv)
 //	avfile_demux_example("/srv/stream/vs.mp4", 0);
 
 	if (argv[1])
-		avfile_playback_example(argv[1], 1, 0);
+		avfile_playback_example(argv[1], 1, 1);
 	else
 	{
 // Playback av file using SDL.
