@@ -1207,8 +1207,15 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
 
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
 {
+	double frame_delay;
+	static int avg_delay = 0;
+	static int delayms = 0;
+	static int64_t timer_start = 0;
+    int64_t cur_time;
+    float t = 0; 			// in ms.
+
 	if (is->bmp == NULL)
-	{
+	{	// Init YUV display.
 		SDL_Event event;
 		event.type = FF_ALLOC_EVENT;
 		event.user.data1 = 0;
@@ -1217,9 +1224,44 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 		is->bmp = 1;
 	}
 
+	if (avg_delay == 0)
+		avg_delay =1000/av_q2d(is->video_st->avg_frame_rate);
+
+#if 0
+	if (timer_start == 0)
+	{
+		timer_start = av_gettime();
+		t = avg_delay;
+	}
+	else
+	{
+		cur_time = av_gettime();
+		t = (cur_time - timer_start) / 1000.0;
+		timer_start = cur_time;
+	}
+
+	if((int)t > avg_delay)
+	{
+		delayms -= 1;
+		log(" -1 \n");
+	}
+	if((int)t < avg_delay)
+	{
+		delayms += 1;
+		log(" +1 \n");
+	}
+	frame_delay = delayms;
+
+    /* for MPEG2, the frame can be repeated, so we update the
+       clock accordingly */
+//    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
+    log("delay %f ms, diff:%f\n", frame_delay, (t-avg_delay));
+#endif
+
 	sdl_refresh_timer_cb(0, 0);
-	SDL_Delay(1000 / 24);
-	return 0;
+	SDL_Delay(avg_delay);		// frame_delay
+
+    return 0;
 }
 
 static int video_thread(void *arg)
