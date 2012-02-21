@@ -29,13 +29,13 @@ CC := arm-eabi-gcc -mcpu=cortex-a8
 AS := arm-eabi-gcc 
 AR := arm-eabi-ar -rc
 LD := arm-eabi-gcc -mcpu=cortex-a8 
-SIZE := size -t
+SIZE := arm-eabi-size -t
 ZDB := gdb
 
 #------------------------------------------------------------------------------
 # Target defines
 #------------------------------------------------------------------------------
-TARGET_CFLAGS := -I/usr/local/include -D_MSC_VER --sysroot /srv/android-ndk-r5b/platforms/android-5/arch-arm -fPIC -mandroid -DANDROID -DOS_ANDROID
+TARGET_CFLAGS := -I/usr/local/include --sysroot /srv/android-ndk-r5b/platforms/android-5/arch-arm -fPIC -mandroid -DANDROID -DOS_ANDROID
 TARGET_ASFLAGS := 
-TARGET_LDFLAGS := --sysroot /srv/android-ndk-r5b/platforms/android-5/arch-arm -fPIC    -mandroid -DANDROID -DOS_ANDROID
+TARGET_LDFLAGS := --sysroot /srv/android-ndk-r5b/platforms/android-5/arch-arm -fPIC -mandroid -DANDROID -DOS_ANDROID
 TARGET_DEFINES :=

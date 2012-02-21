@@ -8,24 +8,10 @@
 # Special defines and rules for release
 #
 #------------------------------------------------------------------------------
-#
-# This document contains proprietary information of VeriSilicon Microelectronics
-# Co., Ltd. The information contained herein is confidential and
-# is not to be used by or disclosed to third parties.
-#
-# Copyright (C) 2001 Verisilicon Microelectronics Co., Ltd. 
-# All rights reserved.
-#
-#------------------------------------------------------------------------------
-# Change History
-#
-# $Id: extension.mk,v 1.4 2010/08/23 01:54:27 cn9011 Exp $
-#------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
 # Directories
 #------------------------------------------------------------------------------
-ZVIEW_INCLUDE_DIR := $(subst //,/,$(subst \,/,$(SDSP_HOME))/ide/include)
 ROOT_NAME := $(notdir $(abspath $(ROOT)))
 REF_ROOT := $(ROOT)/ref/
 DOC_ROOT:= $(ROOT)/doc/

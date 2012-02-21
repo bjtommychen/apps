@@ -8,21 +8,6 @@
 # Common defines and rules
 #
 #------------------------------------------------------------------------------
-#
-# This document contains proprietary information of VeriSilicon Microelectronics
-# Co., Ltd. The information contained herein is confidential and
-# is not to be used by or disclosed to third parties.
-#
-# Copyright (C) 2001 Verisilicon Microelectronics Co., Ltd. 
-# All rights reserved.
-#
-#------------------------------------------------------------------------------
-# Change History
-#
-# $Id: common.mk,v 1.6 2010/08/23 01:54:27 cn9011 Exp $
-#------------------------------------------------------------------------------
-
-#------------------------------------------------------------------------------
 # Control options
 #
 # debug - When set to non zero, file will be compiled with -g 
@@ -40,7 +25,7 @@
 recurse ?= 1
 
 # target
-target = zsp800
+target = arm
 
 #------------------------------------------------------------------------------
 # Directories
@@ -60,12 +45,12 @@ BINARY_DIR ?= $(patsubst %/,%,$(ROOT)/exe/$(target))
 #------------------------------------------------------------------------------
 # Target tools
 #------------------------------------------------------------------------------
-CC := zdcc
-AS := zdcc
-AR := zdar -rc
-LD := zdcc
-SIZE := zdsize -t
-MAKE := zdmake
+CC := cc
+AS := cc
+AR := ar -rc
+LD := cc
+SIZE := size -t
+MAKE := make
 
 #------------------------------------------------------------------------------
 # Target specific defines
