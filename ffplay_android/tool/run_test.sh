@@ -1,2 +1,4 @@
-time ../test/example/example.out /srv/stream/spring_mud.mp3 test.wav
+adb push ../test/example/ffplay_android.out /sdcard/work/test/
+adb shell /sdcard/work/test/ffplay_android.out
+
 
