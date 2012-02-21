@@ -41,6 +41,7 @@
 									<listOptionValue builtIn="false" value="/usr/local/lib"/>
 								</option>
 								<option id="gnu.c.link.option.libs.1692709015" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="SDL"/>
 									<listOptionValue builtIn="false" value="avcodec"/>
 									<listOptionValue builtIn="false" value="avutil"/>
 									<listOptionValue builtIn="false" value="avformat"/>
@@ -48,7 +49,7 @@
 									<listOptionValue builtIn="false" value="avfilter"/>
 									<listOptionValue builtIn="false" value="swresample"/>
 								</option>
-								<option id="gnu.c.link.option.ldflags.1240156696" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="`sdl-config --libs`" valueType="string"/>
+								<option id="gnu.c.link.option.ldflags.1240156696" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-L/usr/lib " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.300304441" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
