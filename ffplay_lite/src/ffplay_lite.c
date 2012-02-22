@@ -1438,7 +1438,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 		AVIO_InitAudio(is->ac->channels, is->ac->sample_rate, 16, (void*) audio_callback);
 		if (!enable_video)
 			AVIO_InitYUV420(640, 480, filename);
-		AVIO_PauseAudio(0);
+//		AVIO_PauseAudio(0);
 	}
 
 	if (enable_video)
@@ -1511,6 +1511,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 						"yuv420 init: w:%d, h:%d, linesize:%d,%d,%d\n",
 						is->picture->width, is->picture->height, is->picture->linesize[0], is->picture->linesize[1], is->picture->linesize[2]);
 				AVIO_InitYUV420(is->picture->width, is->picture->height, filename);
+				AVIO_PauseAudio(0);
 				is->bmp = 1;
 				break;
 
