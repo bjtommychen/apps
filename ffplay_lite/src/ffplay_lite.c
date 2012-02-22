@@ -1220,8 +1220,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 		event.type = FF_ALLOC_EVENT;
 		event.user.data1 = 0;
 		SDL_PushEvent(&event);
-		SDL_Delay(10);
-		is->bmp = 1;
+		while(is->bmp == NULL)
+			SDL_Delay(1);
 	}
 
 	if (avg_delay == 0)
@@ -1259,7 +1259,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 #endif
 
 	sdl_refresh_timer_cb(0, 0);
-	SDL_Delay(avg_delay);		// frame_delay
+//	SDL_Delay(avg_delay);		// frame_delay
 
     return 0;
 }
@@ -1272,8 +1272,18 @@ static int video_thread(void *arg)
 	double pts;
 	int64_t pos;
 	int ret;
+	int decmore = 1;
+	float avg_delayms;
+	int avg_delay;
+	int64_t tstart, tstop;
+	float tdiff;
 
 	pFrame = avcodec_alloc_frame();
+
+	// Get the average delay ms.
+	avg_delayms =1000/av_q2d(is->video_st->avg_frame_rate);
+	avg_delay = avg_delayms;
+	tstart = 0;
 
 	for (;;)
 	{
@@ -1286,7 +1296,27 @@ static int video_thread(void *arg)
 		av_free_packet(packet);
 
 		if (ret == 0)
-			ret = queue_picture(is, pFrame, pts, pos);
+		{
+			while(1)
+			{	// Check the time diff, until > point, or very close to it.
+				if (tstart == 0)
+					tstart = tstop;
+				tstop = av_gettime();
+				tdiff = (tstop - tstart)/1000.;
+				if (tdiff > avg_delayms || (avg_delayms - tdiff) < 3.0)
+					break;
+//				printf(" diff %.2f ", tdiff);
+				SDL_Delay(5);
+			}
+			tstart = tstop;
+			queue_picture(is, pFrame, pts, pos);
+//			printf(" diff %.2f ms.\n", tdiff-avg_delayms);
+//			SDL_Delay(avg_delay);
+		}
+		else
+		{
+			SDL_Delay(0);
+		}
 	}
 
 	av_free(pFrame);
@@ -1481,6 +1511,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 						"yuv420 init: w:%d, h:%d, linesize:%d,%d,%d\n",
 						is->picture->width, is->picture->height, is->picture->linesize[0], is->picture->linesize[1], is->picture->linesize[2]);
 				AVIO_InitYUV420(is->picture->width, is->picture->height, filename);
+				is->bmp = 1;
 				break;
 
 			case FF_REFRESH_EVENT:
@@ -1505,7 +1536,7 @@ static void avfile_playback_example(const char *filename, int enable_audio, int 
 				break;
 			}
 		}
-		SDL_Delay(1);
+		SDL_Delay(0);
 	}
 
 
