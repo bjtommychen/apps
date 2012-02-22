@@ -2,7 +2,7 @@ echo Build
 make clean -C Debug
 make all -C Debug
 echo Run
-./Debug/ffplay_lite 
+#./Debug/ffplay_lite 
 echo Test
 
 #showmount -e 10.10.32.179
