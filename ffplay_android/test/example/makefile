@@ -30,8 +30,8 @@ ROOT := $(shell echo $(MODULE) | sed 's/[a-zA-Z0-9_]\+/../g')
 # Preset variables
 #------------------------------------------------------------------------------
 MODULE_SOURCES := example.c
-MODULE_LIBRARIES := ffplay_lib ffmpeg_armv7_neon
-MODULE_INCLUDE_DIR :=
+MODULE_LIBRARIES := ffplay_lib avformat  avcodec  avutil m c z
+MODULE_INCLUDE_DIR := /home/tommy/ffmpeg/android/armv7_neon/lib/
 
 MODULE_NAME := ffplay_android
 
@@ -40,7 +40,7 @@ MODULE_DEFINES = HAVE_CONFIG_H
 MODULE_DEFINES += $(COMMAND_DEFINES)
 MODULE_CFLAGS := -Wunused-function -DNDEBUG -O2
 MODULE_ASFLAGS := -Wunused-function -O3 -masm_opt
-MODULE_LDFLAGS := -Wl,-Map,example.map
+MODULE_LDFLAGS := -Wl,-Map,example.map 
 
 
 BINARY_DIR = $(CURDIR)
