@@ -37,7 +37,7 @@
 
 #include "time.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <android/log.h>
 
 #if DEBUG
@@ -119,7 +119,7 @@ int FFNDK_showlibinfo()
 	return 0;
 }
 
-void FFNDK_decode_video(const char *filename, int write_output)
+void FFNDK_decode_videostream(const char *filename, int write_output)
 {
 	AVCodec *codec;
 	AVCodecContext *c = NULL;
@@ -184,7 +184,20 @@ void FFNDK_decode_video(const char *filename, int write_output)
 		/* NOTE1: some codecs are stream based (mpegvideo, mpegaudio)
 		 and this is the only method to use them because you cannot
 		 know the compressed data size before analysing it.
+		 void FFNDK_decode_video(const char *filename, int write_output)
+		 {
+		 AVCodec *codec;
+		 AVCodecContext *c = NULL;
+		 int frame, got_picture, len;
+		 FILE *f, *outfile = NULL;
+		 AVFrame *picture;
+		 char buf[1024];
+		 uint8_t inbuf[VIDEO_DATAIN_SIZE];
+		 AVPacket avpkt;
 
+		 av_init_packet(&avpkt);
+
+		 /* set end of buffer to 0 (this ensures that n
 		 BUT some other codecs (msmpeg4, mpeg4) are inherently frame
 		 based, so you must call them with all the data for one
 		 frame exactly. You must also initialize 'width' and
@@ -250,7 +263,7 @@ void FFNDK_decode_video(const char *filename, int write_output)
 //			break;
 	}
 	time_stop = av_gettime();
-	time_diff = (time_stop-time_start)/1000.0;
+	time_diff = (time_stop - time_start) / 1000.0;
 
 	fclose(f);
 	if (outfile)
@@ -260,10 +273,186 @@ void FFNDK_decode_video(const char *filename, int write_output)
 	av_free(c);
 	av_free(picture);
 
-	printf("Total %d frames. last %.2f s.\nSpeed is %.2f fps.\n ", frame,  time_diff/1000.0, (float)frame*1000.0/time_diff);
+	printf("Total %d frames. last %.2f s.\nSpeed is %.2f fps.\n ", frame, time_diff / 1000.0,
+			(float) frame * 1000.0 / time_diff);
 }
 
-#if 0
+void FFNDK_decode_avfile(const char *filename, int write_output)
+{
+	AVCodec *codec;
+	AVCodecContext *c = NULL;
+	int frame, got_picture, len;
+	FILE *f, *outfile = NULL;
+	AVFrame *picture;
+	char buf[1024];
+//	uint8_t inbuf[VIDEO_DATAIN_SIZE];
+	AVPacket avpkt;
+
+	AVFormatContext *fc;
+	int i;
+	int audioidx, videoidx;
+
+	av_init_packet(&avpkt);
+
+	/* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
+//	memset(inbuf, 0, VIDEO_DATAIN_SIZE);
+
+	printf(" avfile decoding ... \n");
+
+	fc = avformat_alloc_context();
+	if (avformat_open_input(&fc, filename, NULL, 0) < 0)
+	{
+		fprintf(stderr, "could not open file\n");
+		return;
+	}
+	fc->flags |= AVFMT_FLAG_GENPTS;
+
+	if (avformat_find_stream_info(fc, 0) < 0)
+	{
+		fprintf(stderr, "find stream failed. \n");
+		return;
+	}
+
+	log("nb_streams is %d\n", fc->nb_streams);
+	for (i = 0; i < fc->nb_streams; i++)
+	{
+		AVStream *st = fc->streams[i];
+		printf("Stream #%d: \n", i);
+		switch (fc->streams[i]->codec->codec_type)
+		{
+		case AVMEDIA_TYPE_VIDEO:
+			videoidx = i;
+			printf("Video.");
+			break;
+		case AVMEDIA_TYPE_AUDIO:
+			audioidx = i;
+			printf("Audio.");
+			break;
+		default:
+			printf("OTHER AVMEDIA. ");
+			break;
+		}
+		avcodec_string(buf, sizeof(buf), st->codec, 1);
+		printf("\n[0x%x]:%s, \ncodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n", st->id, buf,
+				st->codec->codec_name, st->codec->codec_id, (st->codec->codec_tag), st->codec->time_base.num,
+				st->codec->time_base.den);
+	}
+	printf("\n");
+
+	/* find the mpeg1 video decoder */
+	codec = avcodec_find_decoder(fc->streams[videoidx]->codec->codec_id);
+//	codec = avcodec_find_decoder(CODEC_ID_H264);
+	if (!codec)
+	{
+		fprintf(stderr, "codec not found\n");
+		exit(1);
+	}
+
+//	c = avcodec_alloc_context3(codec);
+	c = fc->streams[videoidx]->codec;
+	picture = avcodec_alloc_frame();
+
+	if (codec->capabilities & CODEC_CAP_TRUNCATED
+	)
+		c->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+
+	/* For some codecs, such as msmpeg4 and mpeg4, width and height
+	 MUST be initialized there because this information is not
+	 available in the bitstream. */
+
+	/* open it */
+	if (avcodec_open(c, codec) < 0)
+	{
+		fprintf(stderr, "could not open codec\n");
+		exit(1);
+	}
+
+	/* the codec gives us the frame size, in samples */
+
+	f = fopen(filename, "rb");
+	if (!f)
+	{
+		fprintf(stderr, "could not open %s\n", filename);
+		exit(1);
+	}
+
+	time_start = av_gettime();
+	frame = 0;
+
+	while (av_read_frame(fc, &avpkt) >= 0)
+	{
+//		if (avpkt.stream_index != videoidx)
+//			continue;
+
+		while (avpkt.size > 0 && avpkt.stream_index == videoidx)
+		{
+			got_picture = 0;
+			len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
+//			D("avpkt.size:%d, decode_use_size:%d. \n", avpkt.size, len);
+
+			if (len < 0)
+			{
+				fprintf(stderr, "Error while decoding frame %d\n", frame);
+				exit(1);
+			}
+			if (got_picture)
+			{
+				if (frame % 1000 == 0)
+				{
+					printf("saving frame %3d\n", frame);
+				}
+
+				if (outfile == NULL && write_output)
+				{
+					buf[0] = 0;
+					sprintf(buf, "./%dx%d.yuv", c->width, c->height);
+					outfile = fopen(buf, "wb");
+					if (!outfile)
+					{
+						fprintf(stderr, "could not open %s\n", buf);
+						exit(1);
+					}
+					printf("writing yuv data to %s\n", buf);
+
+					buf[0] = 0;
+				}
+				/* the picture is allocated by the decoder. no need to
+				 free it */
+				if (frame == 0)
+				{
+					printf("yuv420 save: w:%d, h:%d, linesize:%d,%d,%d\n", picture->width, picture->height,
+							picture->linesize[0], picture->linesize[1], picture->linesize[2]);
+				}
+				if (write_output)
+					picture_yuv420_save(outfile, picture, c->width, c->height);
+
+				frame++;
+			} // got pic
+
+			avpkt.size -= len;
+			avpkt.data += len;
+		}
+
+//		if (frame > 1000)
+//			break;
+	}
+
+	time_stop = av_gettime();
+	time_diff = (time_stop - time_start) / 1000.0;
+
+	fclose(f);
+	if (outfile)
+		fclose(outfile);
+
+	avcodec_close(c);
+	av_free(c);
+	av_free(picture);
+
+	printf("Total %d frames. last %.2f s.\nSpeed is %.2f fps.\n ", frame, time_diff / 1000.0,
+			(float) frame * 1000.0 / time_diff);
+}
+
+#if 1
 void FFNDK_demux_example(const char *filename, int isSDLshow)
 {
 
@@ -296,15 +485,15 @@ void FFNDK_demux_example(const char *filename, int isSDLshow)
 		printf("\nStream #%d: \n ", i);
 		switch (c->streams[i]->codec->codec_type)
 		{
-			case AVMEDIA_TYPE_VIDEO:
+		case AVMEDIA_TYPE_VIDEO:
 			videoidx = i;
 			printf("Video.");
 			break;
-			case AVMEDIA_TYPE_AUDIO:
+		case AVMEDIA_TYPE_AUDIO:
 			audioidx = i;
 			printf("Audio.");
 			break;
-			default:
+		default:
 			printf("OTHER AVMEDIA. ");
 			break;
 		}
@@ -346,12 +535,13 @@ void FFNDK_demux_example(const char *filename, int isSDLshow)
 		{
 			if (avpkt.stream_index == videoidx)
 			{
-				fwrite(avpkt.data, 1, avpkt.size, fv);
-//				log("write audio %d bytes.\n", avpkt.size);
+//				fwrite(avpkt.data, 1, avpkt.size, fv);
+				printf("write video %d bytes.\n", avpkt.size);
 			}
 			if (avpkt.stream_index == audioidx)
 			{
-				fwrite(avpkt.data, 1, avpkt.size, fa);
+//				fwrite(avpkt.data, 1, avpkt.size, fa);
+				printf("write audio %d bytes.\n", avpkt.size);
 			}
 
 		}
