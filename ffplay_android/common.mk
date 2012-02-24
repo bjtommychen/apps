@@ -137,11 +137,13 @@ checkdir: $(OBJECT_DIR) $(LIBRARY_DIR) $(BINARY_DIR) $(CHECK_RECURSE)
 
 # exe
 exe: $(OBJECTS)
+	@echo
+	@echo [ Making exe $(BINARY) ]
 	$(LD) $(OBJECTS) $(LDFLAGS) -o $(BINARY)
 
 # lib
 lib: $(LIBRARY_CURRENT) $(ALL_RECURSE)
-	$(ECHO) \\nLibraries were updated succesfully.\\n
+	$(ECHO) \\nLibraries were updated successfully.\\n
 
 # clean
 clean: $(CLEAN_RECURSE)
