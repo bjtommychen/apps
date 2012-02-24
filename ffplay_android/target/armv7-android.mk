@@ -37,5 +37,5 @@ ZDB := gdb
 #------------------------------------------------------------------------------
 TARGET_CFLAGS := -I/usr/local/include --sysroot /srv/android-ndk-r5b/platforms/android-5/arch-arm -fPIC -mandroid -DANDROID -DOS_ANDROID
 TARGET_ASFLAGS := 
-TARGET_LDFLAGS := --sysroot /srv/android-ndk-r5b/platforms/android-5/arch-arm -fPIC -mandroid -DANDROID -DOS_ANDROID
+TARGET_LDFLAGS := -L/home/tommy/ffmpeg/android/armv7_neon/lib/ --sysroot /srv/android-ndk-r5b/platforms/android-5/arch-arm -fPIC -mandroid -DANDROID -DOS_ANDROID
 TARGET_DEFINES :=
