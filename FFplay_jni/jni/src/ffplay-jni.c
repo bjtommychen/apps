@@ -35,6 +35,13 @@
  jfloat      f;
  jdouble     d;
  jobject     l;
+ jstring     t = (*env)->NewStringUTF(env, "Hello from JNI !");
+ jbyteArray jarray = (*env)->NewByteArray(env, nOutSize);
+ char *str = GetStringUTFChars(env, jstring, 0);
+ (env)->ReleaseStringUTFChars(env, jstring, str);
+
+ http://www.360doc.com/content/10/1229/17/5116642_82372464.shtml
+
  */
 
 /******************************************************************************/
@@ -209,7 +216,7 @@ jbyteArray Java_com_tommy_test_audiotest_AudioTest_mp3decGetOutputPcmBuff(
 	(*env)->ReleaseByteArrayElements(env, buf, elems, 0);
 	return buf;
 #else
-	// ÔÚjniÖÐÖ±½ÓnewÒ»¸öbyteÊý×é£¬È»ºóµ÷ÓÃº¯Êý(*env)->SetByteArrayRegion(env, bytearray, 0, len, buffer);½«bufferµÄÖµcopyµ½bytearrayÖÐ£¬º¯ÊýÖ±½Óreturn bytearray¾Í¿ÉÒÔÁË
+	// ï¿½ï¿½jniï¿½ï¿½Ö±ï¿½ï¿½newÒ»ï¿½ï¿½byteï¿½ï¿½ï¿½é£¬È»ï¿½ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½(*env)->SetByteArrayRegion(env, bytearray, 0, len, buffer);ï¿½ï¿½bufferï¿½ï¿½Öµcopyï¿½ï¿½bytearrayï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½return bytearrayï¿½Í¿ï¿½ï¿½ï¿½ï¿½ï¿½
 	jbyte *outbuf = (jbyte*)pcm->pOutBuffer;
 	int nOutSize = pcm->length * pcm->channels * 2;
 	jbyteArray jarray = (*env)->NewByteArray(env, nOutSize);
