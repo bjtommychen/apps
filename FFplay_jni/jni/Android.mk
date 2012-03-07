@@ -21,6 +21,6 @@ LOCAL_SRC_FILES := src/ffplay-jni.c
 				   
 
 # for logging
-LOCAL_LDLIBS    += -Lprebuilt  -llog -lavformat  -lavcodec  -lavutil -lm -lc -lz
+LOCAL_LDLIBS    += -Lprebuilt  -llog -lavformat  -lavcodec  -lavutil -lz
 
 include $(BUILD_SHARED_LIBRARY)
