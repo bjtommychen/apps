@@ -107,6 +107,7 @@ int audioidx, videoidx;
 int frame, got_picture, len;
 FILE *f = NULL;
 char buf[1024];
+char streaminfo[1024] = "streaminfo";
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -115,6 +116,12 @@ char buf[1024];
 /******************************************************************************/
 /*  Function Definitions                                                      */
 /******************************************************************************/
+jstring
+Java_com_tommy_ffplayer_FFplay_FFplayGetStreamInfo( JNIEnv* env,
+                                                  jobject thiz )
+{
+    return (*env)->NewStringUTF(env, streaminfo);
+}
 
 /*
  * Init
@@ -179,30 +186,31 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 		return 1;
 	}
 
-	I("nb_streams is %d\n", fc->nb_streams);
+	streaminfo[0]=0;
+	sprintf(streaminfo, "nb_streams is %d\n", streaminfo, fc->nb_streams);
 	for (i = 0; i < fc->nb_streams; i++)
 	{
 		AVStream *st = fc->streams[i];
-		I("Stream #%d: \n", i);
+		sprintf(streaminfo, "%sStream #%d: \n", streaminfo, i);
 		switch (fc->streams[i]->codec->codec_type)
 		{
 		case AVMEDIA_TYPE_VIDEO:
 			videoidx = i;
-			I("Video.");
+			sprintf(streaminfo, "%sVideo. ", streaminfo);
 			break;
 		case AVMEDIA_TYPE_AUDIO:
 			audioidx = i;
-			I("Audio.");
+			sprintf(streaminfo, "%sAudio. ", streaminfo);
 			break;
 		default:
 			I("OTHER AVMEDIA. ");
 			break;
 		}
 		avcodec_string(buf, sizeof(buf), st->codec, 1);
-		I(
-				"\n[0x%x]:%s, \ncodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n", st->id, buf, st->codec->codec_name, st->codec->codec_id, (st->codec->codec_tag), st->codec->time_base.num, st->codec->time_base.den);
+		sprintf(streaminfo,"%s\n[0x%x]:%s, \ncodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n", streaminfo,  st->id, buf, st->codec->codec_name, st->codec->codec_id, (st->codec->codec_tag), st->codec->time_base.num, st->codec->time_base.den);
 	};
 
+	I("%s", streaminfo);
 	vc = fc->streams[videoidx]->codec;
 	ac = fc->streams[audioidx]->codec;
 
@@ -228,22 +236,14 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 	if (avcodec_open2(ac, acodec, 0) < 0)
 	{
 		E( "could not open acodec.");
-//		return (1);
+		return (1);
 	}
 	if (avcodec_open2(vc, vcodec, 0) < 0)
 	{
 		E( "could not open vcodec.");
-//		return (1);
+		return (1);
 	}
 
-	/* the codec gives us the frame size, in samples */
-
-//	f = fopen(filename, "rb");
-//	if (!f)
-//	{
-//		E( "could not open %s\n", filename);
-//		return (1);
-//	}
 	I( "OpenFile done.");
 	return 0;
 }
@@ -253,7 +253,6 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
  */
 jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 {
-	fclose(f);
 	avcodec_close(ac);
 	av_free(ac);
 	avcodec_close(vc);
@@ -280,6 +279,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 			continue;
 		}
 
+		// Decode Audio
 		while (avpkt.size > 0 && avpkt.stream_index == audioidx)
 		{
 			int got_audio_frame = 0;
@@ -302,11 +302,12 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				avpkt.data += 1;
 				continue;
 			}
-			{
-				char fmt_str[128] = "";
-				I(
-						"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n", ac->channels, ac->sample_rate, aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
-			}
+
+//			{
+//				char fmt_str[128] = "";
+//				I(
+//						"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n", ac->channels, ac->sample_rate, aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
+//			}
 
 			if (got_audio_frame)
 			{
@@ -318,10 +319,6 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				(*env)->SetByteArrayRegion(env, jarray, 0, outsize, outbuf);
 
 				return jarray;
-
-				/* if a frame has been decoded, output it */
-
-//				fwrite(decoded_frame->data[0], 1, data_size, outfile);
 			}
 
 			avpkt.size -= len;
@@ -337,119 +334,3 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 	return NULL;
 }
 
-#if 0
-/*
- * Note: split original decode_input_read() into below 2 function: GetInputDataLen() and FillData().
- * Get 16-bit short length need to read from mp3 files. will be called in android app.
- * len: in short.
- */
-jint Java_com_tommy_test_audiotest_AudioTest_mp3decGetInputDataLen(JNIEnv* env,
-		jobject thiz)
-{
-	MP3_PLAYER *pplayer = &player;
-	struct MP3DEC_STREAM *stream = &lstream;
-	int len = 0, need_len;
-
-	need_len = MIN(INPUT_BUFSZ - stream->unusedsize, MAXLEN_READ);
-
-	if (stream->pb_unused)
-	{
-		memmove(pplayer->input_data, stream->pb_unused, stream->unusedsize
-				* sizeof(unsigned short));
-	}
-
-	return need_len;
-}
-/*
- * Fill mp3dec internal buffer with mp3 data.
- * len : in bytes.
- */
-jint Java_com_tommy_test_audiotest_AudioTest_mp3decFillData(JNIEnv* env,
-		jobject thiz, jbyteArray buf, jint len)
-{
-	MP3_PLAYER *pplayer = &player;
-	struct MP3DEC_STREAM *stream = &lstream;
-	short *ptr = pplayer->input_data + stream->unusedsize;
-	//    int len=env->GetArrayLength(buf);
-	// 	  jint elems[10];
-	//	 (*env)->GetIntArrayRegion(env, buf, 0, len, elems);   //a2[]
-	jbyte *elems = (*env)->GetByteArrayElements(env, buf, NULL);
-
-	// Copy Data from elems to ptr.
-	memcpy(ptr, elems, len);
-	D("mp3decFillData fill %d bytes!\n", len);
-
-	// info core the buff pointer with new data available.
-	stream->pb_stream = pplayer->input_data;
-	pplayer->input_length = stream->unusedsize + len / 2;
-	stream->streamsize = pplayer->input_length;
-
-	//	ReferenceTable overflow (max=1024)
-	(*env)->ReleaseByteArrayElements(env, buf, elems, 0);
-	return 0;
-
-}
-
-/*
- * Run mp3 decoder.
- */
-jint Java_com_tommy_test_audiotest_AudioTest_mp3decRun(JNIEnv* env,
-		jobject thiz)
-{
-
-	lpcm.pOutBuffer = player.output_data;
-	lpcm.OutBufferSize = OUTPUT_BUFSZ;
-
-	result = mp3decoder_run(decoder, &lstream, &lpcm);
-	if (result != MP3D_STATUS_SUCCESS)
-	{
-		error_time++;
-		D("\nmp3decoder_run result is %d, total is %d !\n", result, error_time);
-		return 1;
-	}
-	D("\nmp3decoder_run OK !");
-
-	return 0;
-}
-
-/*
- * Get PCM output len in bytes.
- * return value:
- * size : pcm output size in 8-bit byte.
- */
-jint Java_com_tommy_test_audiotest_AudioTest_mp3decGetOutputPcmLen(JNIEnv* env,
-		jobject thiz)
-{
-	struct MP3DEC_PCM *pcm = &lpcm;
-	//	decode_output(&player, &lpcm);
-	//    len = fwrite(pcm->pOutBuffer, 1, pcm->length * pcm->channels * 2, player->output_fd);
-	return (pcm->length * pcm->channels * 2);
-}
-
-/*
- * Get PCM output.
- * size : pcm output size in 8-bit byte.
- */
-jbyteArray Java_com_tommy_test_audiotest_AudioTest_mp3decGetOutputPcmBuff(
-		JNIEnv* env, jobject thiz, jbyteArray buf)
-{
-	struct MP3DEC_PCM *pcm = &lpcm;
-#if 0
-	// Copy mp3dec internal output buffer to Android app's buffer.
-	jbyte *elems = (*env)->GetByteArrayElements(env, buf, NULL);
-
-	memcpy(elems, pcm->pOutBuffer, pcm->length * pcm->channels * 2);
-
-	//	ReferenceTable overflow (max=1024)
-	(*env)->ReleaseByteArrayElements(env, buf, elems, 0);
-	return buf;
-#else
-	// 锟斤拷jni锟斤拷直锟斤拷new一锟斤拷byte锟斤拷锟介，然锟斤拷锟斤拷煤锟斤拷锟�*env)->SetByteArrayRegion(env, bytearray, 0, len, buffer);锟斤拷buffer锟斤拷值copy锟斤拷bytearray锟叫ｏ拷锟斤拷锟斤拷直锟斤拷return bytearray锟酵匡拷锟斤拷锟斤拷
-	jbyte *outbuf = (jbyte*)pcm->pOutBuffer;
-	int nOutSize = pcm->length * pcm->channels * 2;
-	jbyteArray jarray = (*env)->NewByteArray(env, nOutSize);
-	(*env)->SetByteArrayRegion(env, jarray, 0, nOutSize, outbuf);
-	return jarray;
-#endif
-}
-#endif
