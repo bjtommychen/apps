@@ -123,7 +123,7 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayInit(JNIEnv* env, jobject thiz)
 {
 	D("FFplayInit called ! ");
 
-	I("\n**************************Android******************************\n");
+	I("\n**************************Android*******************************\n");
 	I(
 			"*  FFplayer based on libffmpeg, build time: %s %s \n", __DATE__, __TIME__);
 #ifdef OPT_TOMMY_NEON
@@ -166,7 +166,7 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 	fc = avformat_alloc_context();
 	if (avformat_open_input(&fc, filename, NULL, 0) < 0)
 	{
-		I( "could not open file\n");
+		E( "could not open file\n");
 		return 1;
 	}
 	(*env)->ReleaseStringUTFChars(env, fname, filename);
@@ -175,7 +175,7 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 
 	if (avformat_find_stream_info(fc, 0) < 0)
 	{
-		I( "find stream failed. \n");
+		E( "find stream failed. \n");
 		return 1;
 	}
 
@@ -210,7 +210,7 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 	acodec = avcodec_find_decoder(ac->codec_id);
 	if (!acodec || !vcodec)
 	{
-		I( "codec not found\n");
+		E( "codec not found\n");
 		return (1);
 	}
 
@@ -227,19 +227,23 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 	/* open it */
 	if (avcodec_open2(ac, acodec, 0) < 0)
 	{
-		I( "could not open codec.");
-		return (1);
+		E( "could not open acodec.");
+//		return (1);
+	}
+	if (avcodec_open2(vc, vcodec, 0) < 0)
+	{
+		E( "could not open vcodec.");
+//		return (1);
 	}
 
 	/* the codec gives us the frame size, in samples */
 
 //	f = fopen(filename, "rb");
-//	if (!f)-
+//	if (!f)
 //	{
-//		I( "could not open %s\n", filename);
+//		E( "could not open %s\n", filename);
 //		return (1);
 //	}
-
 	I( "OpenFile done.");
 	return 0;
 }
@@ -272,7 +276,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 	{
 		if (avpkt.stream_index == videoidx)
 		{
-			I("skip video frame.");
+			D("skip video frame.");
 			continue;
 		}
 
@@ -281,12 +285,13 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 			int got_audio_frame = 0;
 			AVFrame *decoded_frame = NULL;
 
+			D("Got audio frame. ");
 			avcodec_get_frame_defaults(aframe);
 
 			len = avcodec_decode_audio4(ac, aframe, &got_audio_frame, &avpkt);
 			if (len < 0)
 			{
-				I("avpkt.size  %d bytes left.\n", avpkt.size);
+				D("avpkt.size  %d bytes left.\n", avpkt.size);
 				E("Error while decoding\n");
 //				if (ending == TRUE)
 //				{
@@ -297,576 +302,22 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				avpkt.data += 1;
 				continue;
 			}
-
+			{
+				char fmt_str[128] = "";
+				I(
+						"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n", ac->channels, ac->sample_rate, aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
+			}
 
 			if (got_audio_frame)
 			{
-				I(
-						"^, ch:%d, samples:%d, fmt:%d\n", ac->channels, decoded_frame->nb_samples, ac->sample_fmt);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+				D("got audio frame. %d samples.", aframe->nb_samples);
 				jbyte *outbuf = (jbyte*) aframe->data[0];
 				int outsize = av_samples_get_buffer_size(NULL, ac->channels,
 						aframe->nb_samples, ac->sample_fmt, 1);
 				jbyteArray jarray = (*env)->NewByteArray(env, outsize);
 				(*env)->SetByteArrayRegion(env, jarray, 0, outsize, outbuf);
-				return jarray;
 
+				return jarray;
 
 				/* if a frame has been decoded, output it */
 
@@ -882,6 +333,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 //			break;
 	}
 
+	D("FFplayDecodeFrame done.");
 	return NULL;
 }
 

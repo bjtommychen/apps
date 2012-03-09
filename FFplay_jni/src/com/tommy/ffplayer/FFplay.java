@@ -71,89 +71,18 @@ public class FFplay extends Activity {
 		{
 			try
 			{
+//				FFplayInit();
 				FFplayOpenFile(new String("/mnt/sdcard/srv/stream/vs.mp4"));
-				
+				at.play();
 				while(true)
 				{
 					byte[] outpcm;
 					outpcm = FFplayDecodeFrame();
+					at.write(outpcm, 0, outpcm.length);
 					if(outpcm == null)
 						break;
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
 				}
+				at.stop();
 			} catch (Exception e)
 			{
 				// TODO Auto-generated catch block
