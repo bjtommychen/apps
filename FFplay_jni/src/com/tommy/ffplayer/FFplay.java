@@ -36,7 +36,9 @@ public class FFplay extends Activity
 	private int min_buf_size;
 	private boolean bRunning = false;
 	private Thread thPlay;
-
+	private int at_srate = 44100;
+	private int at_channel = AudioFormat.CHANNEL_OUT_STEREO;
+	
 	private Button mButton1, mButton2, mButton3;
 	private TextView tv1;
 
@@ -84,6 +86,8 @@ public class FFplay extends Activity
 
 			at.play();
 			FFplayOpenFile(new String("/mnt/sdcard/srv/stream/vs.mp4"));
+//			FFplayOpenFile(new String("/mnt/sdcard/srv/stream/VIDEO0001.3gp"));
+			
 			tv1.setText(FFplayGetStreamInfo());
 			bRunning = true;
 			thPlay = new Thread()
@@ -97,14 +101,21 @@ public class FFplay extends Activity
 						{
 							byte[] outpcm;
 							outpcm = FFplayDecodeFrame();
+
 							if (outpcm == null)
 							{
 								bRunning = false;
 								Log.i(TAG, "outpcm got null.");
-							}
-							else
+							} else
 							{
-								at.write(outpcm, 0, outpcm.length);
+								if (outpcm[0] == 1)
+								{	//If audio data.
+									at.write(outpcm, 40, outpcm.length - 40);
+								}
+								else
+								{
+									Log.d(TAG, "SKIP VIDEO DATA " + outpcm.length + " BYTES." );
+								}
 							}
 							Thread.sleep(1);
 						}
@@ -142,10 +153,10 @@ public class FFplay extends Activity
 	private void AudioTrack_init()
 	{
 		// Get Min Buffer Size
-		min_buf_size = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+		min_buf_size = AudioTrack.getMinBufferSize(at_srate, at_channel, AudioFormat.ENCODING_PCM_16BIT);
 
 		// New
-		at = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, min_buf_size * 2, AudioTrack.MODE_STREAM);
+		at = new AudioTrack(AudioManager.STREAM_MUSIC, at_srate, at_channel, AudioFormat.ENCODING_PCM_16BIT, min_buf_size * 2, AudioTrack.MODE_STREAM);
 		Log.d(TAG, "volume " + at.getMinVolume() + " -- " + at.getMaxVolume());
 		Log.d(TAG, "audio track's min. buffer is " + min_buf_size);
 	}

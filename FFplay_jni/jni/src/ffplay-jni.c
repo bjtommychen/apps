@@ -116,11 +116,10 @@ char streaminfo[1024] = "streaminfo";
 /******************************************************************************/
 /*  Function Definitions                                                      */
 /******************************************************************************/
-jstring
-Java_com_tommy_ffplayer_FFplay_FFplayGetStreamInfo( JNIEnv* env,
-                                                  jobject thiz )
+jstring Java_com_tommy_ffplayer_FFplay_FFplayGetStreamInfo(JNIEnv* env,
+		jobject thiz)
 {
-    return (*env)->NewStringUTF(env, streaminfo);
+	return (*env)->NewStringUTF(env, streaminfo);
 }
 
 /*
@@ -186,7 +185,7 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 		return 1;
 	}
 
-	streaminfo[0]=0;
+	streaminfo[0] = 0;
 	sprintf(streaminfo, "nb_streams is %d\n", streaminfo, fc->nb_streams);
 	for (i = 0; i < fc->nb_streams; i++)
 	{
@@ -207,7 +206,11 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 			break;
 		}
 		avcodec_string(buf, sizeof(buf), st->codec, 1);
-		sprintf(streaminfo,"%s\n[0x%x]:%s, \ncodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n", streaminfo,  st->id, buf, st->codec->codec_name, st->codec->codec_id, (st->codec->codec_tag), st->codec->time_base.num, st->codec->time_base.den);
+		sprintf(streaminfo,
+				"%s\n[0x%x]:%s, \ncodec_name:'%s'. id:%05xH. tag:%08xH. time_base:%d, %d\n",
+				streaminfo, st->id, buf, st->codec->codec_name,
+				st->codec->codec_id, (st->codec->codec_tag),
+				st->codec->time_base.num, st->codec->time_base.den);
 	};
 
 	I("%s", streaminfo);
@@ -265,43 +268,75 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 
 /*
  * DecodeFrame
- * return the decoded pcm data.
+ * return the decoded data.
+ * Tommy: use first 5 int for info header.
+ * int 0 : 1 for audio, 2 for video.
  */
 jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 		jobject thiz)
 {
 
+	static jint decinfo_header[10];
+
 	while (av_read_frame(fc, &avpkt) >= 0)
 	{
 		if (avpkt.stream_index == videoidx)
 		{
-			D("skip video frame.");
-			continue;
+			D("Got video frame.");
+			while (avpkt.size > 0)
+			{
+				len = avcodec_decode_video2(vc, vframe, &got_picture, &avpkt);
+				if (got_picture)
+				{
+					D(
+							"got video frame. %d x %d.", vframe->width, vframe->height);
+					jbyteArray jarray = (*env)->NewByteArray(env,
+							(vframe->width * vframe->height * 3 / 2)+40);
+
+					decinfo_header[0] = 2;
+					(*env)->SetByteArrayRegion(env, jarray, 0, 40, decinfo_header);
+					(*env)->SetByteArrayRegion(env, jarray, 40,
+							vframe->width * vframe->height, vframe->data[0]);
+					(*env)->SetByteArrayRegion(env, jarray,
+							vframe->width * vframe->height +40,
+							vframe->width * vframe->height / 4,
+							vframe->data[1]);
+					(*env)->SetByteArrayRegion(env, jarray,
+							vframe->width * vframe->height * 5 / 4 + 40,
+							vframe->width * vframe->height / 4,
+							vframe->data[2]);
+					return jarray;
+				}
+			}
+			break;
 		}
 
 		// Decode Audio
-		while (avpkt.size > 0 && avpkt.stream_index == audioidx)
+		if (avpkt.stream_index == audioidx)
 		{
-			int got_audio_frame = 0;
-			AVFrame *decoded_frame = NULL;
-
-			D("Got audio frame. ");
-			avcodec_get_frame_defaults(aframe);
-
-			len = avcodec_decode_audio4(ac, aframe, &got_audio_frame, &avpkt);
-			if (len < 0)
+			while (avpkt.size > 0)
 			{
-				D("avpkt.size  %d bytes left.\n", avpkt.size);
-				E("Error while decoding\n");
+				int got_audio_frame = 0;
+				AVFrame *decoded_frame = NULL;
+
+//				D("Got audio frame. ");
+				avcodec_get_frame_defaults(aframe);
+
+				len = avcodec_decode_audio4(ac, aframe, &got_audio_frame,
+						&avpkt);
+				if (len < 0)
+				{
+					D("avpkt.size  %d bytes left.\n", avpkt.size);
+					E("Error while decoding\n");
 //				if (ending == TRUE)
 //				{
 //					avpkt.size = 0;
 //					break;
 //				}
-				avpkt.size -= 1;
-				avpkt.data += 1;
-				continue;
-			}
+					avpkt.size -= 1;
+					avpkt.data += 1;
+					continue;
+				}
 
 //			{
 //				char fmt_str[128] = "";
@@ -309,22 +344,25 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 //						"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n", ac->channels, ac->sample_rate, aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
 //			}
 
-			if (got_audio_frame)
-			{
-				D("got audio frame. %d samples.", aframe->nb_samples);
-				jbyte *outbuf = (jbyte*) aframe->data[0];
-				int outsize = av_samples_get_buffer_size(NULL, ac->channels,
-						aframe->nb_samples, ac->sample_fmt, 1);
-				jbyteArray jarray = (*env)->NewByteArray(env, outsize);
-				(*env)->SetByteArrayRegion(env, jarray, 0, outsize, outbuf);
+				if (got_audio_frame)
+				{
+					D("got audio frame. %d samples.", aframe->nb_samples);
+					jbyte *outbuf = (jbyte*) aframe->data[0];
+					int outsize = av_samples_get_buffer_size(NULL, ac->channels,
+							aframe->nb_samples, ac->sample_fmt, 1);
+					jbyteArray jarray = (*env)->NewByteArray(env, outsize + 40);
+					decinfo_header[0] = 1;
+					(*env)->SetByteArrayRegion(env, jarray, 0, 40, decinfo_header);
+					(*env)->SetByteArrayRegion(env, jarray, 40, outsize, outbuf);
 
-				return jarray;
+					return jarray;
+				}
+
+				avpkt.size -= len;
+				avpkt.data += len;
 			}
-
-			avpkt.size -= len;
-			avpkt.data += len;
+			break;
 		}
-		break;
 
 //		if (frame > 1000)
 //			break;
