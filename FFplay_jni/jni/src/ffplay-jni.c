@@ -186,7 +186,8 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 	}
 
 	streaminfo[0] = 0;
-	sprintf(streaminfo, "nb_streams is %d\n", streaminfo, fc->nb_streams);
+	strcpy(streaminfo, "-------------------------------------------------\n");
+	sprintf(streaminfo, "%snb_streams is %d\n", streaminfo, fc->nb_streams);
 	for (i = 0; i < fc->nb_streams; i++)
 	{
 		AVStream *st = fc->streams[i];
@@ -276,7 +277,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 		jobject thiz)
 {
 
-	static jint decinfo_header[10];
+	static  jint decinfo_header[10];
 
 	while (av_read_frame(fc, &avpkt) >= 0)
 	{
@@ -294,7 +295,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 							(vframe->width * vframe->height * 3 / 2)+40);
 
 					decinfo_header[0] = 2;
-					(*env)->SetByteArrayRegion(env, jarray, 0, 40, decinfo_header);
+					(*env)->SetByteArrayRegion(env, jarray, 0, 40, (jbyte*)decinfo_header);
 					(*env)->SetByteArrayRegion(env, jarray, 40,
 							vframe->width * vframe->height, vframe->data[0]);
 					(*env)->SetByteArrayRegion(env, jarray,
@@ -352,7 +353,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 							aframe->nb_samples, ac->sample_fmt, 1);
 					jbyteArray jarray = (*env)->NewByteArray(env, outsize + 40);
 					decinfo_header[0] = 1;
-					(*env)->SetByteArrayRegion(env, jarray, 0, 40, decinfo_header);
+					(*env)->SetByteArrayRegion(env, jarray, 0, 40, (jbyte*)decinfo_header);
 					(*env)->SetByteArrayRegion(env, jarray, 40, outsize, outbuf);
 
 					return jarray;
