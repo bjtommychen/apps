@@ -125,7 +125,8 @@ public class FFplay extends Activity
 		@Override
 		public void onClick(View arg0)
 		{
-			String filename = new String("/mnt/sdcard/srv/stream/vs.mp4"); // ("/mnt/sdcard/srv/stream/VIDEO0001.3gp"));
+			String filename = new String("/mnt/sdcard/srv/stream/vs.mp4"); 
+//			String filename = new String("/mnt/sdcard/srv/stream/VIDEO0001.3gp");
 
 			if (bRunning)
 				return;
@@ -160,14 +161,12 @@ public class FFplay extends Activity
 								{ // If audio data.
 									at.write(outpcm, 40, outpcm.length - 40);
 								} else
-								{
+								{	// If video data.
+									handler.sendEmptyMessage(GUI_UPDATE_PROGRESS);
+									frame++;									
 									Log.d(TAG, "SKIP VIDEO DATA " + outpcm.length + " BYTES.");
 								}
 							}
-							if (frame % 5 == 0)
-								handler.sendEmptyMessage(GUI_UPDATE_PROGRESS);
-							frame++;
-
 							Thread.sleep(1);
 						}
 						at.stop();
