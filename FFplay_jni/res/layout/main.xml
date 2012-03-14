@@ -4,13 +4,13 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-        <TextView
+    <TextView
         android:id="@+id/TextView1"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:editable="true"
         android:text="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
-    
+
     <TextView
         android:id="@+id/TextView2"
         android:layout_width="fill_parent"
@@ -32,13 +32,15 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:editable="true"
-        android:text="@string/hello" />
-
+        android:text="@string/hello" android:maxLines="10" android:scrollbarAlwaysDrawVerticalTrack="true" android:scrollbars="vertical" android:scrollbarSize="9dip" android:scrollbarStyle="insideOverlay" android:isScrollContainer="true"/>
+
     <ProgressBar
         android:id="@+id/progressBar1"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:max="1000" android:progress="0"/>
+        android:layout_height="wrap_content"
+        android:max="1000"
+        android:progress="0" />
 
     <Button
         android:id="@+id/button1"
@@ -51,5 +53,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Stop playing." />
+
+    <SurfaceView
+        android:id="@+id/surfaceView1"
+        android:layout_width="304dp"
+        android:layout_height="210dp"
+        android:keepScreenOn="true"
+        android:visibility="visible" />
 
 </LinearLayout>

@@ -14,6 +14,15 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+
 public class FFplay extends Activity
 {
 	/** Called when the activity is first created. */
@@ -51,6 +60,9 @@ public class FFplay extends Activity
 	private Handler handler = null;
 	protected static final int GUI_UPDATE_PROGRESS = 0x100;
 	protected static final int GUI_PLAYEND = 0x101;
+	// SURFACE
+	private SurfaceView mSurfaceView1;
+	private SurfaceHolder mSurfaceHolder1;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -69,6 +81,31 @@ public class FFplay extends Activity
 		tv4 = (TextView) findViewById(R.id.TextView4);
 		progbar = (ProgressBar) findViewById(R.id.progressBar1);
 		Log.i(TAG, "ffplay oncreate !");
+
+		mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceView1);
+		mSurfaceHolder1 = mSurfaceView1.getHolder();
+//		mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+		mSurfaceHolder1.addCallback(new SurfaceHolder.Callback()
+		{
+
+			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
+			{
+				Log.v(TAG, "surfaceChanged format=" + format + ", width=" + width + ", height=" + height);
+			}
+
+			public void surfaceCreated(SurfaceHolder holder)
+			{
+				Log.v(TAG, "surfaceCreated");
+//				setSurface(holder.getSurface());
+			}
+
+			public void surfaceDestroyed(SurfaceHolder holder)
+			{
+				Log.v(TAG, "surfaceDestroyed");
+			}
+
+		});
 
 		initHandles();
 		AudioTrack_init();
@@ -105,6 +142,19 @@ public class FFplay extends Activity
 						if (progbar.getProgress() >= progbar.getMax())
 							progbar.setProgress(0);
 						progbar.incrementProgressBy(1);
+
+						if (false)
+						{
+							Canvas canvas = mSurfaceHolder1.lockCanvas();// 获取画布
+							if (canvas == null)
+								break;
+							Paint mPaint = new Paint();
+							mPaint.setColor(Color.BLUE);
+							canvas.drawRect(new RectF(40, 60, 80, 80), mPaint);
+							mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
+
+						}
+
 						break;
 
 					case GUI_PLAYEND:
@@ -125,8 +175,9 @@ public class FFplay extends Activity
 		@Override
 		public void onClick(View arg0)
 		{
-			String filename = new String("/mnt/sdcard/srv/stream/vs.mp4"); 
-//			String filename = new String("/mnt/sdcard/srv/stream/VIDEO0001.3gp");
+			String filename = new String("/mnt/sdcard/srv/stream/vs.mp4");
+			// String filename = new
+			// String("/mnt/sdcard/srv/stream/VIDEO0001.3gp");
 
 			if (bRunning)
 				return;
@@ -161,10 +212,11 @@ public class FFplay extends Activity
 								{ // If audio data.
 									at.write(outpcm, 40, outpcm.length - 40);
 								} else
-								{	// If video data.
+								{ // If video data.
 									handler.sendEmptyMessage(GUI_UPDATE_PROGRESS);
-									frame++;									
+									frame++;
 									Log.d(TAG, "SKIP VIDEO DATA " + outpcm.length + " BYTES.");
+
 								}
 							}
 							Thread.sleep(1);
