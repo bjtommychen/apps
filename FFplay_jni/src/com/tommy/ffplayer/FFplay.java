@@ -50,13 +50,13 @@ public class FFplay extends Activity
 	// AUDIO TRACK
 	private AudioTrack at = null;
 	private int min_buf_size;
-	private boolean bRunning = false;
+	private boolean bRunning = false, bOpenfile = false;
 	private Thread thPlay;
 	private int at_srate = 44100;
 	private int at_channel = AudioFormat.CHANNEL_OUT_STEREO;
 	private int frame;
 	// VIEW
-	private Button btn_play, btn_stop;
+	private Button btn_open, btn_play, btn_stop;
 	private TextView tv1, tv2, tv3, tv4;
 	private ProgressBar progbar;
 	// HANDLE
@@ -74,6 +74,8 @@ public class FFplay extends Activity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
+		btn_open = (Button) findViewById(R.id.button_open);
+		btn_open.setOnClickListener(handler_button3);
 		btn_play = (Button) findViewById(R.id.button_play);
 		btn_play.setOnClickListener(handler_button1);
 		btn_stop = (Button) findViewById(R.id.button_stop);
@@ -175,6 +177,23 @@ public class FFplay extends Activity
 		};
 	}
 
+	Button.OnClickListener handler_button3 = new Button.OnClickListener()
+	{
+		@Override
+		public void onClick(View arg0)
+		{
+			String filename = new String("/mnt/sdcard/srv/stream/vs.mp4");
+			// String("/mnt/sdcard/srv/stream/VIDEO0001.3gp");
+			if (bRunning)
+				return;
+
+			FFplayOpenFile(filename);
+			tv1.setText(filename);
+			tv4.setText(FFplayGetStreamInfo());
+			bOpenfile = true;
+		}
+	};
+
 	/*
 	 * playing wave
 	 */
@@ -183,19 +202,10 @@ public class FFplay extends Activity
 		@Override
 		public void onClick(View arg0)
 		{
-			String filename = new String("/mnt/sdcard/srv/stream/vs.mp4");
-			// String filename = new
-			// String("/mnt/sdcard/srv/stream/VIDEO0001.3gp");
-
-			if (bRunning)
+			if (bOpenfile == false)
 				return;
-
 			at.play();
-			FFplayOpenFile(filename);
-			tv1.setText(filename);
-			// FFplayOpenFile(new String
-
-			tv4.setText(FFplayGetStreamInfo());
+			tv4.setText("");
 			bRunning = true;
 			thPlay = new Thread()
 			{
@@ -209,7 +219,7 @@ public class FFplay extends Activity
 						{
 							byte[] outpcm;
 							int[] outyuv;
-							
+
 							outpcm = FFplayDecodeFrame();
 
 							if (outpcm == null)
@@ -221,7 +231,7 @@ public class FFplay extends Activity
 								if (outpcm[0] == 1)
 								{ // If audio data.
 									at.write(outpcm, 40, outpcm.length - 40);
-								} else
+								} else if (outpcm[0] == 2)
 								{ // If video data.
 									// Log.d(TAG, "SKIP VIDEO DATA " +
 									// outpcm.length + " BYTES.");
@@ -246,17 +256,21 @@ public class FFplay extends Activity
 												outyuv[vw * j + i] = Color.argb(0xff, c, c, c);
 											}
 										canvas.drawBitmap(outyuv, 0, linesize, 0, 0, cw, vh, false, null);
+										Paint mPaint = new Paint();
+										mPaint.setColor(Color.RED);
+										canvas.drawText("Demo", 10, 10, mPaint);
 										mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
 									}
 									if (frame % 5 == 0)
 										handler.sendEmptyMessage(GUI_UPDATE_PROGRESS);
-									frame++;									
+									frame++;
 								}
 							}
-//							Thread.sleep(1);
+							// Thread.sleep(1);
 						}
 						at.stop();
 						FFplayCloseFile();
+						bOpenfile = false;
 						bRunning = false;
 						handler.sendEmptyMessage(GUI_PLAYEND);
 
