@@ -290,7 +290,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				if (got_picture)
 				{
 					D(
-							"got video frame. %d x %d.", vframe->width, vframe->height);
+							"got video frame. %d x %d. linesize %d,%d,%d", vframe->width, vframe->height, vframe->linesize[0], vframe->linesize[1], vframe->linesize[2]);
 					jbyteArray jarray = (*env)->NewByteArray(env,
 							(vframe->width * vframe->height * 3 / 2)+40);
 
