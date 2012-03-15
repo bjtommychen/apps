@@ -32,7 +32,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:editable="true"
-        android:text="@string/hello" android:maxLines="10" android:scrollbarAlwaysDrawVerticalTrack="true" android:scrollbars="vertical" android:scrollbarSize="9dip" android:scrollbarStyle="insideOverlay" android:isScrollContainer="true"/>
+        android:text="@string/hello" android:scrollbarAlwaysDrawVerticalTrack="true" android:scrollbars="vertical" android:scrollbarSize="9dip" android:scrollbarStyle="insideOverlay" android:isScrollContainer="true"/>
 
     <ProgressBar
         android:id="@+id/progressBar1"
