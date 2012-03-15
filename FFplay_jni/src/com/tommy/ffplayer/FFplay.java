@@ -18,10 +18,13 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.RectF;
+import android.graphics.Bitmap.Config;
 
 public class FFplay extends Activity
 {
@@ -53,7 +56,7 @@ public class FFplay extends Activity
 	private int at_channel = AudioFormat.CHANNEL_OUT_STEREO;
 	private int frame;
 	// VIEW
-	private Button mButton1, mButton2, mButton3;
+	private Button btn_play, btn_stop;
 	private TextView tv1, tv2, tv3, tv4;
 	private ProgressBar progbar;
 	// HANDLE
@@ -71,10 +74,10 @@ public class FFplay extends Activity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
-		mButton1 = (Button) findViewById(R.id.button1);
-		mButton1.setOnClickListener(handler_button1);
-		mButton2 = (Button) findViewById(R.id.button2);
-		mButton2.setOnClickListener(handler_button2);
+		btn_play = (Button) findViewById(R.id.button_play);
+		btn_play.setOnClickListener(handler_button1);
+		btn_stop = (Button) findViewById(R.id.button_stop);
+		btn_stop.setOnClickListener(handler_button2);
 		tv1 = (TextView) findViewById(R.id.TextView1);
 		tv2 = (TextView) findViewById(R.id.TextView2);
 		tv3 = (TextView) findViewById(R.id.TextView3);
@@ -84,7 +87,8 @@ public class FFplay extends Activity
 
 		mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceView1);
 		mSurfaceHolder1 = mSurfaceView1.getHolder();
-//		mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		// mSurfaceHolder1.setFormat(PixelFormat.L_8);
+		// mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		mSurfaceHolder1.addCallback(new SurfaceHolder.Callback()
 		{
@@ -97,14 +101,13 @@ public class FFplay extends Activity
 			public void surfaceCreated(SurfaceHolder holder)
 			{
 				Log.v(TAG, "surfaceCreated");
-//				setSurface(holder.getSurface());
+				// setSurface(holder.getSurface());
 			}
 
 			public void surfaceDestroyed(SurfaceHolder holder)
 			{
 				Log.v(TAG, "surfaceDestroyed");
 			}
-
 		});
 
 		initHandles();
@@ -143,17 +146,22 @@ public class FFplay extends Activity
 							progbar.setProgress(0);
 						progbar.incrementProgressBy(1);
 
-						if (false)
-						{
-							Canvas canvas = mSurfaceHolder1.lockCanvas();// 获取画布
-							if (canvas == null)
-								break;
-							Paint mPaint = new Paint();
-							mPaint.setColor(Color.BLUE);
-							canvas.drawRect(new RectF(40, 60, 80, 80), mPaint);
-							mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
-
-						}
+						// if (false)
+						// {
+						// Canvas canvas = mSurfaceHolder1.lockCanvas();// 获取画布
+						// Bitmap bitmap = Bitmap.createBitmap(canvas.getWidth()
+						// / 2, canvas.getHeight() / 2, Config.ALPHA_8);
+						// if (canvas == null)
+						// break;
+						// Paint mPaint = new Paint();
+						// mPaint.setColor(Color.BLUE);
+						// canvas.drawRect(new RectF(0, 0, canvas.getWidth() /
+						// 2, canvas.getHeight() / 2), mPaint);
+						// mPaint.setColor(Color.RED);
+						// canvas.drawCircle(50, 50, 50, mPaint);
+						// mSurfaceHolder1.unlockCanvasAndPost(canvas);//
+						// 解锁画布，提交画好的图像
+						// }
 
 						break;
 
@@ -200,6 +208,8 @@ public class FFplay extends Activity
 						while (bRunning)
 						{
 							byte[] outpcm;
+							int[] outyuv;
+							
 							outpcm = FFplayDecodeFrame();
 
 							if (outpcm == null)
@@ -213,13 +223,37 @@ public class FFplay extends Activity
 									at.write(outpcm, 40, outpcm.length - 40);
 								} else
 								{ // If video data.
-									handler.sendEmptyMessage(GUI_UPDATE_PROGRESS);
-									frame++;
-									Log.d(TAG, "SKIP VIDEO DATA " + outpcm.length + " BYTES.");
-
+									// Log.d(TAG, "SKIP VIDEO DATA " +
+									// outpcm.length + " BYTES.");
+									if (true)
+									{
+										int i, j, vw, vh, cw, ch, w, h;
+										int linesize;
+										byte c;
+										Canvas canvas = mSurfaceHolder1.lockCanvas();// 获取画布
+										cw = canvas.getWidth();
+										ch = canvas.getHeight();
+										vw = 640; // linesize 672, 336
+										vh = 360;
+										linesize = 672;
+										if (canvas == null)
+											break;
+										outyuv = new int[vh * linesize];// [outpcm.length-40];
+										for (j = 0; j < vh; j++)
+											for (i = 0; i < vw; i++)
+											{
+												c = outpcm[40 + vw * j + i];
+												outyuv[vw * j + i] = Color.argb(0xff, c, c, c);
+											}
+										canvas.drawBitmap(outyuv, 0, linesize, 0, 0, cw, vh, false, null);
+										mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
+									}
+									if (frame % 5 == 0)
+										handler.sendEmptyMessage(GUI_UPDATE_PROGRESS);
+									frame++;									
 								}
 							}
-							Thread.sleep(1);
+//							Thread.sleep(1);
 						}
 						at.stop();
 						FFplayCloseFile();
