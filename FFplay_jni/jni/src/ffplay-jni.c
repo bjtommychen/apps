@@ -95,7 +95,7 @@
 #  define  V(...)  do {} while (0)
 #endif
 
-#define PCMOUTLEN			(16*1024)
+#define PCMOUTLEN			(24*1024)
 #define MAGIC_ID				(0xdeaf)
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
@@ -440,15 +440,26 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 		jobject thiz)
 {
 	int i, j;
-	jintArray jarray;
+	static jintArray jarray = 0;
+	static int jintArray_size = 0;
 	int len = vframe->height * vframe->linesize[0];
 	int *dst;
 	char *src = vframe->data[0];
 
 	if (vout == 0)
 	{
+		D("FFplayConvertRGB alloc mem done.");
 		vout = malloc(len * sizeof(int));
 	}
+	// Try to remove startGC, but can only remove some part.
+//	if (jarray == 0 || jintArray_size != len)
+//	{
+//		if (jarray != NULL)
+//			(*env)->DeleteLocalRef(env,jarray);
+//		jarray = (*env)->NewIntArray(env, len);
+//		jintArray_size = len;
+//		D("FFplayConvertRGB alloc jarray done.");
+//	}
 	jarray = (*env)->NewIntArray(env, len);
 	dst = (int*) vout;
 	for (j = 0; j < vframe->height; j++)
