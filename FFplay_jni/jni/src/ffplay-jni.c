@@ -446,7 +446,8 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 	for (j = 0; j < vframe->height; j++)
 		for (i = 0; i < vframe->linesize[0]; i++)
 		{
-			*dst++ = *src++;
+			*dst++ = (*src<<16)|(*src<<8)|(*src);
+			src++;
 		}
 
 	(*env)->SetIntArrayRegion(env, jarray, 0, len, (jint*) vout);
