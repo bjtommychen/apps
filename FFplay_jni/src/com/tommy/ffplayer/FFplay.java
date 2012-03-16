@@ -7,8 +7,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.util.Log;
 
@@ -19,6 +22,7 @@ import android.media.AudioTrack;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.Window;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -48,6 +52,8 @@ public class FFplay extends Activity
 
 	public native String FFplayGetStreamInfo();
 
+	public native int[] FFplayConvertRGB();
+
 	private final static String TAG = "ffplay-java";
 	// AUDIO TRACK
 	private AudioTrack at = null;
@@ -69,8 +75,10 @@ public class FFplay extends Activity
 	private SurfaceView mSurfaceView1;
 	private SurfaceHolder mSurfaceHolder1;
 
+	private String mSourceString;
 	private DecInfo decinfo;
 
+	// Add this class to emulate structure in C.
 	private class DecInfo
 	{
 		short magic; // must be MAGIC_ID
@@ -115,6 +123,7 @@ public class FFplay extends Activity
 	{
 
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);
 
 		btn_open = (Button) findViewById(R.id.button_open);
@@ -132,8 +141,8 @@ public class FFplay extends Activity
 
 		mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceView1);
 		mSurfaceHolder1 = mSurfaceView1.getHolder();
-		mSurfaceHolder1.setFormat(PixelFormat.RGBA_8888);
-		// mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+//		mSurfaceHolder1.setFormat(PixelFormat.RGBA_8888);
+//		mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		mSurfaceHolder1.addCallback(new SurfaceHolder.Callback()
 		{
@@ -155,6 +164,26 @@ public class FFplay extends Activity
 			}
 		});
 
+        // initialize content source spinner
+        Spinner sourceSpinner = (Spinner) findViewById(R.id.spinner1);
+        ArrayAdapter<CharSequence> sourceAdapter = ArrayAdapter.createFromResource(
+                this, R.array.source_array, android.R.layout.simple_spinner_item);
+        sourceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sourceSpinner.setAdapter(sourceAdapter);
+        sourceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                mSourceString = parent.getItemAtPosition(pos).toString();
+                Log.v(TAG, "onItemSelected " + mSourceString);
+            }
+
+            public void onNothingSelected(AdapterView<?> parent) {
+                Log.v(TAG, "onNothingSelected");
+                mSourceString = null;
+            }
+
+        });		
+		
 		decinfo = new DecInfo();
 		initHandles();
 		AudioTrack_init();
@@ -225,8 +254,9 @@ public class FFplay extends Activity
 		@Override
 		public void onClick(View arg0)
 		{
-			String filename = new String("/mnt/sdcard/srv/stream/vs.mp4");
-			// String("/mnt/sdcard/srv/stream/VIDEO0001.3gp");
+			
+			String filename = mSourceString;
+			
 			if (bRunning)
 				return;
 
@@ -283,6 +313,7 @@ public class FFplay extends Activity
 										int i, j, vw, vh, cw, ch, w, h;
 										int linesize;
 										byte c;
+										outyuv = FFplayConvertRGB();
 										Canvas canvas = mSurfaceHolder1.lockCanvas();// ªÒ»°ª≠≤º
 										cw = canvas.getWidth();
 										ch = canvas.getHeight();
@@ -291,15 +322,22 @@ public class FFplay extends Activity
 										linesize = decinfo.linesizeY;
 										if (canvas == null)
 											break;
-										outyuv = new int[vh * linesize];
-										for (j = 0; j < vh; j++)
-											for (i = 0; i < vw; i++)
-											{
-												c = outpcm[decinfo.header_len + vw * j + i];
-//												c = (byte) Math.min(c, 128);
-												outyuv[vw * j + i] = Color.rgb(c, c, c);
-											}
-										canvas.drawBitmap(outyuv, 0, linesize, 0, 0, cw, vh, false, null);
+//										if (false)
+//										{
+//											outyuv = new int[vh * linesize];
+//											for (j = 0; j < vh; j++)
+//												for (i = 0; i < vw; i++)
+//												{
+//													c = outpcm[decinfo.header_len + vw * j + i];
+//
+//													outyuv[vw * j + i] = Color.rgb(c, c, c);
+//												}
+//											canvas.drawBitmap(outyuv, 0, linesize, 0, 0, cw, vh, false, null);
+//										}
+//										else
+										{
+											canvas.drawBitmap(outyuv, 0, linesize, 0, 0, Math.min(cw, vw), Math.min(ch, vh), false, null);
+										}
 										Paint mPaint = new Paint();
 										mPaint.setColor(Color.RED);
 										canvas.drawText("Demo", 10, 10, mPaint);
@@ -312,6 +350,7 @@ public class FFplay extends Activity
 							}
 							// Thread.sleep(1);
 						}
+						at.flush();
 						at.stop();
 						FFplayCloseFile();
 						bOpenfile = false;
