@@ -130,8 +130,9 @@ char buf[1024];
 char streaminfo[1024] = "streaminfo";
 
 DecOutInfo decinfo;
-char *pcm;
+unsigned char *pcm;
 int pcmlen = 0;
+unsigned char *vout = 0;
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -291,6 +292,12 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 	av_free(vframe);
 	av_free(aframe);
 
+	if (vout)
+	{
+		free(vout);
+		vout = 0;
+	}
+
 	return 0;
 }
 
@@ -421,3 +428,27 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 	return NULL;
 }
 
+jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
+		jobject thiz)
+{
+	int i, j;
+	jintArray jarray;
+	int len = vframe->height * vframe->linesize[0];
+	int *dst;
+	char *src = vframe->data[0];
+
+	if (vout == 0)
+	{
+		vout = malloc(len*sizeof(int));
+	}
+	jarray = (*env)->NewIntArray(env, len);
+	dst = (int*)vout;
+	for (j = 0; j < vframe->height; j++)
+		for (i = 0; i < vframe->linesize[0]; i++)
+		{
+			*dst++ = *src++;
+		}
+
+	(*env)->SetIntArrayRegion(env, jarray, 0, len, (jint*) vout);
+	return jarray;
+}
