@@ -4,5 +4,10 @@
     <string name="hello">Hello World, FFplay!</string>
     <string name="app_name">ffplay_demo</string>
     <string name="act_name">activityname</string>
+    <string-array name="source_array">
+                <item>/mnt/sdcard/srv/stream/vs.mp4</item>
+                <item >/mnt/sdcard/srv/stream/love_mv.mpg</item>
+                <item >/mnt/sdcard/srv/stream/VIDEO0001.3gp</item>
+    </string-array>
 
 </resources>

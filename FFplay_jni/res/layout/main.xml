@@ -41,6 +41,11 @@
         android:layout_height="wrap_content"
         android:max="1000"
         android:progress="0" />
+
+    <Spinner
+        android:id="@+id/spinner1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
     <LinearLayout
         android:id="@+id/linearLayout1"
