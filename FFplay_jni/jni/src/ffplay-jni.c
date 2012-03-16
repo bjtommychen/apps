@@ -95,7 +95,7 @@
 #  define  V(...)  do {} while (0)
 #endif
 
-#define PCMOUTLEN			(8*1024)
+#define PCMOUTLEN			(16*1024)
 #define MAGIC_ID				(0xdeaf)
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
@@ -382,7 +382,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					jbyte *outbuf = (jbyte*) aframe->data[0];
 					int outsize = av_samples_get_buffer_size(NULL, ac->channels,
 							aframe->nb_samples, ac->sample_fmt, 1);
-
+#if 1
 					if ((pcmlen + outsize) > PCMOUTLEN)
 					{ //buffer full.
 						decinfo.channel = ac->channels;
@@ -411,6 +411,14 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 						(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
 								(jbyte*) &decinfo);
 					}
+#else
+					decinfo.type = 1;
+					jarray = (*env)->NewByteArray(env, outsize + hdr_len);
+					(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+							(jbyte*) &decinfo);
+					(*env)->SetByteArrayRegion(env, jarray, hdr_len, outsize,
+							(jbyte*) outbuf);
+#endif
 					return jarray;
 				}
 
@@ -439,14 +447,14 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 
 	if (vout == 0)
 	{
-		vout = malloc(len*sizeof(int));
+		vout = malloc(len * sizeof(int));
 	}
 	jarray = (*env)->NewIntArray(env, len);
-	dst = (int*)vout;
+	dst = (int*) vout;
 	for (j = 0; j < vframe->height; j++)
 		for (i = 0; i < vframe->linesize[0]; i++)
 		{
-			*dst++ = (*src<<16)|(*src<<8)|(*src);
+			*dst++ = (*src << 16) | (*src << 8) | (*src);
 			src++;
 		}
 
