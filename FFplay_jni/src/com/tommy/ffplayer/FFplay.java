@@ -1,5 +1,7 @@
 package com.tommy.ffplayer;
 
+import org.apache.http.util.ByteArrayBuffer;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -67,6 +69,47 @@ public class FFplay extends Activity
 	private SurfaceView mSurfaceView1;
 	private SurfaceHolder mSurfaceHolder1;
 
+	private DecInfo decinfo;
+
+	private class DecInfo
+	{
+		short magic; // must be MAGIC_ID
+		short header_len; // sizeof this structure.
+		short type; // 1: audio, 2:video
+		// Audio
+		short samplerate, channel, bitspersample;
+		// Video
+		short yuv_format;
+		short width, height;
+		short linesizeY, linesizeU, linesizeV;
+
+		public void parse(byte[] buf)
+		{
+			int i;
+			short v;
+			short[] hdr = new short[20];
+			for (i = 0; i < 12; i++)
+			{
+				hdr[i] = (short) (((short) buf[2 * i + 1] & 0xff) << 8 | (short) buf[2 * i] & 0xff);
+				// Log.v(TAG, "decinfo parse." + i + " value " +
+				// String.format("0x%x", hdr[i]));
+			}
+			magic = hdr[0];
+			header_len = hdr[1];
+			type = hdr[2];
+			samplerate = hdr[3];
+			channel = hdr[4];
+			bitspersample = hdr[5];
+			yuv_format = hdr[6];
+			width = hdr[7];
+			height = hdr[8];
+			linesizeY = hdr[9];
+			linesizeU = hdr[10];
+			linesizeV = hdr[11];
+			// Log.v(TAG, "decinfo parse." + header_len + " width " + width);
+		}
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -89,7 +132,7 @@ public class FFplay extends Activity
 
 		mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceView1);
 		mSurfaceHolder1 = mSurfaceView1.getHolder();
-		// mSurfaceHolder1.setFormat(PixelFormat.L_8);
+		mSurfaceHolder1.setFormat(PixelFormat.RGBA_8888);
 		// mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		mSurfaceHolder1.addCallback(new SurfaceHolder.Callback()
@@ -112,10 +155,10 @@ public class FFplay extends Activity
 			}
 		});
 
+		decinfo = new DecInfo();
 		initHandles();
 		AudioTrack_init();
 		FFplayInit();
-
 	}
 
 	/*
@@ -228,13 +271,13 @@ public class FFplay extends Activity
 								Log.i(TAG, "outpcm got null.");
 							} else
 							{
-								if (outpcm[0] == 1)
+								// parse the info header from ffmpeg
+								decinfo.parse(outpcm);
+								if (decinfo.type == 1)
 								{ // If audio data.
-									at.write(outpcm, 40, outpcm.length - 40);
-								} else if (outpcm[0] == 2)
+									at.write(outpcm, decinfo.header_len, outpcm.length - decinfo.header_len);
+								} else if (decinfo.type == 2)
 								{ // If video data.
-									// Log.d(TAG, "SKIP VIDEO DATA " +
-									// outpcm.length + " BYTES.");
 									if (true)
 									{
 										int i, j, vw, vh, cw, ch, w, h;
@@ -243,17 +286,18 @@ public class FFplay extends Activity
 										Canvas canvas = mSurfaceHolder1.lockCanvas();// »ñÈ¡»­²¼
 										cw = canvas.getWidth();
 										ch = canvas.getHeight();
-										vw = 640; // linesize 672, 336
-										vh = 360;
-										linesize = 672;
+										vw = decinfo.width; // linesize 672, 336
+										vh = decinfo.height;
+										linesize = decinfo.linesizeY;
 										if (canvas == null)
 											break;
-										outyuv = new int[vh * linesize];// [outpcm.length-40];
+										outyuv = new int[vh * linesize];
 										for (j = 0; j < vh; j++)
 											for (i = 0; i < vw; i++)
 											{
-												c = outpcm[40 + vw * j + i];
-												outyuv[vw * j + i] = Color.argb(0xff, c, c, c);
+												c = outpcm[decinfo.header_len + vw * j + i];
+//												c = (byte) Math.min(c, 128);
+												outyuv[vw * j + i] = Color.rgb(c, c, c);
 											}
 										canvas.drawBitmap(outyuv, 0, linesize, 0, 0, cw, vh, false, null);
 										Paint mPaint = new Paint();

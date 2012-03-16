@@ -89,10 +89,29 @@
 #  define  E(...)  do {} while (0)
 #endif
 
-#define PCMOUTLEN			(64*1024)
+#if DEBUG
+#  define  V(x...)  __android_log_print(ANDROID_LOG_VERBOSE,"ffplay-jni",x)
+#else
+#  define  V(...)  do {} while (0)
+#endif
+
+#define PCMOUTLEN			(8*1024)
+#define MAGIC_ID				(0xdeaf)
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
 /******************************************************************************/
+typedef struct
+{
+	uint16_t magic; //must be MAGIC_ID
+	uint16_t header_len; // sizeof this structure.
+	uint16_t type; //1: audio, 2:video
+	//Audio
+	uint16_t samplerate, channel, bitspersample;
+	//Video
+	uint16_t yuv_format;
+	uint16_t width, height;
+	uint16_t linesizeY, linesizeU, linesizeV;
+} DecOutInfo;
 
 /******************************************************************************/
 /*  Local Variables                                                           */
@@ -110,6 +129,7 @@ FILE *f = NULL;
 char buf[1024];
 char streaminfo[1024] = "streaminfo";
 
+DecOutInfo decinfo;
 char *pcm;
 int pcmlen = 0;
 
@@ -148,6 +168,8 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayInit(JNIEnv* env, jobject thiz)
 	av_register_all();
 
 	pcm = malloc(PCMOUTLEN);
+	decinfo.magic = MAGIC_ID;
+	decinfo.header_len = sizeof(DecOutInfo);
 	D("FFplayInit done !");
 	return 0;
 }
@@ -282,8 +304,7 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 		jobject thiz)
 {
-
-	static jint decinfo_header[10];
+	int hdr_len = decinfo.header_len;
 
 	while (av_read_frame(fc, &avpkt) >= 0)
 	{
@@ -295,22 +316,27 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				len = avcodec_decode_video2(vc, vframe, &got_picture, &avpkt);
 				if (got_picture)
 				{
-					D(
+					V(
 							"got video frame. %d x %d. linesize %d,%d,%d", vframe->width, vframe->height, vframe->linesize[0], vframe->linesize[1], vframe->linesize[2]);
 					jbyteArray jarray = (*env)->NewByteArray(env,
-							(vframe->width * vframe->height * 3 / 2) + 40);
+							(vframe->width * vframe->height * 3 / 2) + hdr_len);
 
-					decinfo_header[0] = 2;
-					(*env)->SetByteArrayRegion(env, jarray, 0, 40,
-							(jbyte*) decinfo_header);
-					(*env)->SetByteArrayRegion(env, jarray, 40,
+					decinfo.type = 2;
+					decinfo.width = vframe->width;
+					decinfo.height = vframe->height;
+					decinfo.linesizeY = vframe->linesize[0];
+					decinfo.linesizeU = vframe->linesize[1];
+					decinfo.linesizeV = vframe->linesize[2];
+					(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+							(jbyte*) &decinfo);
+					(*env)->SetByteArrayRegion(env, jarray, hdr_len,
 							vframe->width * vframe->height, vframe->data[0]);
 					(*env)->SetByteArrayRegion(env, jarray,
-							vframe->width * vframe->height + 40,
+							vframe->width * vframe->height + hdr_len,
 							vframe->width * vframe->height / 4,
 							vframe->data[1]);
 					(*env)->SetByteArrayRegion(env, jarray,
-							vframe->width * vframe->height * 5 / 4 + 40,
+							vframe->width * vframe->height * 5 / 4 + hdr_len,
 							vframe->width * vframe->height / 4,
 							vframe->data[2]);
 					return jarray;
@@ -336,21 +362,11 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				{
 					D("avpkt.size  %d bytes left.\n", avpkt.size);
 					E("Error while decoding\n");
-//				if (ending == TRUE)
-//				{
-//					avpkt.size = 0;
-//					break;
-//				}
+
 					avpkt.size -= 1;
 					avpkt.data += 1;
 					continue;
 				}
-
-//			{
-//				char fmt_str[128] = "";
-//				I(
-//						"audio stream: ch:%d, srate:%d, samples:%d, fmt:%s\n", ac->channels, ac->sample_rate, aframe->nb_samples, av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), ac->sample_fmt));
-//			}
 
 				if (got_audio_frame)
 				{
@@ -362,24 +378,31 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 
 					if ((pcmlen + outsize) > PCMOUTLEN)
 					{ //buffer full.
-						jarray = (*env)->NewByteArray(env, outsize + 40 + pcmlen);
-						decinfo_header[0] = 1;
-						(*env)->SetByteArrayRegion(env, jarray, 0, 40,
-								(jbyte*) decinfo_header);
-						(*env)->SetByteArrayRegion(env, jarray, 40, pcmlen,
+						decinfo.channel = ac->channels;
+						decinfo.samplerate = ac->sample_rate;
+						decinfo.bitspersample = 16;
+
+						jarray = (*env)->NewByteArray(env,
+								outsize + hdr_len + pcmlen);
+						decinfo.type = 1;
+						(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+								(jbyte*) &decinfo);
+						(*env)->SetByteArrayRegion(env, jarray, hdr_len, pcmlen,
 								pcm);
-						(*env)->SetByteArrayRegion(env, jarray, 40+pcmlen, outsize,
-								outbuf);
+						(*env)->SetByteArrayRegion(env, jarray,
+								hdr_len + pcmlen, outsize, outbuf);
+						D(
+								"return audio frame. %d bytes.", outsize + hdr_len + pcmlen);
 						pcmlen = 0;
 					}
 					else
 					{ // not enough pcm, not output.
-						memcpy(pcm+pcmlen, aframe->data[0], outsize);
+						memcpy(pcm + pcmlen, aframe->data[0], outsize);
 						pcmlen += outsize;
-						jarray = (*env)->NewByteArray(env, 40);
-						decinfo_header[0] = 1000;
-						(*env)->SetByteArrayRegion(env, jarray, 0, 40,
-								(jbyte*) decinfo_header);
+						jarray = (*env)->NewByteArray(env, hdr_len);
+						decinfo.type = 0; //invalid
+						(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+								(jbyte*) &decinfo);
 					}
 					return jarray;
 				}
