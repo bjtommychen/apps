@@ -95,7 +95,7 @@
 #  define  V(...)  do {} while (0)
 #endif
 
-#define PCMOUTLEN			(24*1024)
+#define PCMOUTLEN			(16*1024)
 #define MAGIC_ID				(0xdeaf)
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
@@ -130,13 +130,15 @@ char buf[1024];
 char streaminfo[1024] = "streaminfo";
 
 DecOutInfo decinfo;
-unsigned char *pcm;
-int pcmlen = 0;
 unsigned char *vout = 0;
 
-static jintArray jarray_rgb = NULL;
-//static int jintArray_size = 0;
-//static jbyteArray jarray_vid = NULL;
+unsigned char *aout = 0;
+int aout_offset = 0;
+int aout_len = 0;
+
+//jbyteArray jarray_hdr = NULL;
+jintArray jarray_rgb = NULL;
+jbyteArray jarray_aud = NULL;
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -172,9 +174,11 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayInit(JNIEnv* env, jobject thiz)
 	avcodec_register_all();
 	av_register_all();
 
-	pcm = malloc(PCMOUTLEN);
 	decinfo.magic = MAGIC_ID;
 	decinfo.header_len = sizeof(DecOutInfo);
+
+//	jarray_hdr = (*env)->NewByteArray(env, decinfo.header_len);
+
 	D("FFplayInit done !");
 	return 0;
 }
@@ -184,6 +188,7 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayInit(JNIEnv* env, jobject thiz)
  */
 jint Java_com_tommy_ffplayer_FFplay_FFplayExit(JNIEnv* env, jobject thiz)
 {
+//	(*env)->DeleteLocalRef(env, jarray_hdr);
 	return 0;
 }
 
@@ -301,16 +306,22 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 		free(vout);
 		vout = NULL;
 	}
+	if (aout)
+	{
+		free(aout);
+		aout = NULL;
+		aout_offset = 0;
+	}
 	if (jarray_rgb)
 	{
 		(*env)->DeleteLocalRef(env, jarray_rgb);
 		jarray_rgb = NULL;
 	}
-//	if (jarray_vid)
-//	{
-//		(*env)->DeleteLocalRef(env, jarray_vid);
-//		jarray_vid = NULL;
-//	}
+	if (jarray_aud)
+	{
+		(*env)->DeleteLocalRef(env, jarray_aud);
+		jarray_aud = NULL;
+	}
 
 	return 0;
 }
@@ -331,38 +342,50 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 	{
 		if (avpkt.stream_index == videoidx)
 		{
-			D("Got video frame.");
+//			D("Got video frame.");
 			while (avpkt.size > 0)
 			{
 				len = avcodec_decode_video2(vc, vframe, &got_picture, &avpkt);
 				if (got_picture)
 				{
-					jbyteArray jarray_vid;
+//					jbyteArray jarray_vid;
+					jbyteArray jarray_hdr;
 					V(
 							"got video frame. %d x %d. linesize %d,%d,%d", vframe->width, vframe->height, vframe->linesize[0], vframe->linesize[1], vframe->linesize[2]);
-//					if (jarray_vid == NULL)
-						jarray_vid = (*env)->NewByteArray(env,
-								(vframe->linesize[0] * vframe->height * 3 / 2)
-										+ hdr_len);
 					decinfo.type = 2;
 					decinfo.width = vframe->width;
 					decinfo.height = vframe->height;
 					decinfo.linesizeY = vframe->linesize[0];
 					decinfo.linesizeU = vframe->linesize[1];
 					decinfo.linesizeV = vframe->linesize[2];
+
+#if 1
+					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
+					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
+							(jbyte*) &decinfo);
+					return jarray_hdr;
+#else
+					if (jarray_vid == NULL)
+					jarray_vid = (*env)->NewByteArray(env,
+							(vframe->linesize[0] * vframe->height * 3 / 2)
+							+ hdr_len);
+
 					(*env)->SetByteArrayRegion(env, jarray_vid, 0, hdr_len,
 							(jbyte*) &decinfo);
 					(*env)->SetByteArrayRegion(env, jarray_vid, hdr_len,
-							vframe->linesize[0] * vframe->height, vframe->data[0]);
+							vframe->linesize[0] * vframe->height,
+							vframe->data[0]);
 					(*env)->SetByteArrayRegion(env, jarray_vid,
 							vframe->linesize[0] * vframe->height + hdr_len,
 							vframe->linesize[0] * vframe->height / 4,
 							vframe->data[1]);
 					(*env)->SetByteArrayRegion(env, jarray_vid,
-							vframe->linesize[0] * vframe->height * 5 / 4 + hdr_len,
+							vframe->linesize[0] * vframe->height * 5 / 4
+							+ hdr_len,
 							vframe->linesize[0] * vframe->height / 4,
 							vframe->data[2]);
 					return jarray_vid;
+#endif
 				}
 			}
 			break;
@@ -393,41 +416,20 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 
 				if (got_audio_frame)
 				{
-					jbyteArray jarray_pcm;
+					jbyteArray jarray_hdr;
 					D("got audio frame. %d samples.", aframe->nb_samples);
+					decinfo.channel = ac->channels;
+					decinfo.samplerate = ac->sample_rate;
+					decinfo.bitspersample = 16;
+					decinfo.type = 1;
+					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
+					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
+							(jbyte*) &decinfo);
+					return jarray_hdr;
+#if 0
 					jbyte *outbuf = (jbyte*) aframe->data[0];
 					int outsize = av_samples_get_buffer_size(NULL, ac->channels,
 							aframe->nb_samples, ac->sample_fmt, 1);
-#if 1
-					if ((pcmlen + outsize) > PCMOUTLEN)
-					{ //buffer full.
-						decinfo.channel = ac->channels;
-						decinfo.samplerate = ac->sample_rate;
-						decinfo.bitspersample = 16;
-
-						jarray_pcm = (*env)->NewByteArray(env,
-								outsize + hdr_len + pcmlen);
-						decinfo.type = 1;
-						(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
-								(jbyte*) &decinfo);
-						(*env)->SetByteArrayRegion(env, jarray_pcm, hdr_len,
-								pcmlen, pcm);
-						(*env)->SetByteArrayRegion(env, jarray_pcm,
-								hdr_len + pcmlen, outsize, outbuf);
-						D(
-								"return audio frame. %d bytes.", outsize + hdr_len + pcmlen);
-						pcmlen = 0;
-					}
-					else
-					{ // not enough pcm, not output.
-						memcpy(pcm + pcmlen, aframe->data[0], outsize);
-						pcmlen += outsize;
-						jarray_pcm = (*env)->NewByteArray(env, hdr_len);
-						decinfo.type = 0; //invalid
-						(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
-								(jbyte*) &decinfo);
-					}
-#else
 					decinfo.type = 1;
 					jarray_pcm = (*env)->NewByteArray(env, outsize + hdr_len);
 					(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
@@ -435,7 +437,6 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					(*env)->SetByteArrayRegion(env, jarray_pcm, hdr_len, outsize,
 							(jbyte*) outbuf);
 #endif
-					return jarray_pcm;
 				}
 
 				avpkt.size -= len;
@@ -481,4 +482,41 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 	(*env)->SetIntArrayRegion(env, jarray_rgb, 0, len, (jint*) vout);
 
 	return jarray_rgb;
+}
+
+jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayGetPCM(JNIEnv* env,
+		jobject thiz)
+{
+	jbyte *outbuf = (jbyte*) aframe->data[0];
+	int outsize = av_samples_get_buffer_size(NULL, ac->channels,
+			aframe->nb_samples, ac->sample_fmt, 1);
+
+	if (aout == NULL)
+	{
+		aout_len = (PCMOUTLEN / outsize + 1) * outsize;
+		D("FFplayGetPCM alloc %d mem done.", aout_len);
+		aout = malloc(aout_len);
+	}
+	if (jarray_aud == NULL)
+	{
+		jarray_aud = (*env)->NewByteArray(env, aout_len);
+		D("FFplayGetPCM alloc jarray_aud done.");
+	}
+
+	if ((aout_offset + outsize) >= aout_len)
+	{ //buffer full.
+		memcpy(aout + aout_offset, aframe->data[0], outsize);
+		(*env)->SetByteArrayRegion(env, jarray_aud, 0, aout_len, aout);
+		aout_offset = 0;
+		D( "return audio frame. %d bytes.", aout_len);
+		return jarray_aud;
+	}
+	else
+	{ // not enough pcm, not output.
+		memcpy(aout + aout_offset, aframe->data[0], outsize);
+		aout_offset += outsize;
+		return NULL;
+	}
+
+	return jarray_aud;
 }
