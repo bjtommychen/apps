@@ -32,7 +32,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:editable="true"
-        android:text="@string/hello" android:scrollbarAlwaysDrawVerticalTrack="true" android:scrollbars="vertical" android:scrollbarSize="9dip" android:scrollbarStyle="insideOverlay" android:isScrollContainer="true"/>
+        android:text="@string/hello" />
 
     <ProgressBar
         android:id="@+id/progressBar1"
@@ -46,7 +46,8 @@
         android:id="@+id/spinner1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-
+
+
     <LinearLayout
         android:id="@+id/linearLayout1"
         android:layout_width="match_parent"
@@ -63,7 +64,8 @@
             android:layout_width="102dp"
             android:layout_height="wrap_content"
             android:text="Play" />
-
+
+
         <Button
             android:id="@+id/button_stop"
             android:layout_width="102dp"
@@ -71,7 +73,9 @@
             android:text="Stop" />
 
     </LinearLayout>
-
+
+
+
     <SurfaceView
         android:id="@+id/surfaceView1"
         android:layout_width="match_parent"
