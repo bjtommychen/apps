@@ -68,7 +68,7 @@ public class FFplay extends Activity
 	private TextView tv1, tv2, tv3, tv4;
 	private ProgressBar progbar;
 	// HANDLE
-	private Handler handler = null;
+	private Handler handler_UI = null;
 	protected static final int GUI_UPDATE_PROGRESS = 0x100;
 	protected static final int GUI_PLAYEND = 0x101;
 	// SURFACE
@@ -77,6 +77,9 @@ public class FFplay extends Activity
 
 	private String mSourceString;
 	private DecInfo decinfo;
+
+	// Time
+	private long tstart, telapsed, tend;
 
 	// Add this class to emulate structure in C.
 	private class DecInfo
@@ -127,11 +130,11 @@ public class FFplay extends Activity
 		setContentView(R.layout.main);
 
 		btn_open = (Button) findViewById(R.id.button_open);
-		btn_open.setOnClickListener(handler_button3);
+		btn_open.setOnClickListener(handler_btnopen);
 		btn_play = (Button) findViewById(R.id.button_play);
-		btn_play.setOnClickListener(handler_button1);
+		btn_play.setOnClickListener(handler_btnplay);
 		btn_stop = (Button) findViewById(R.id.button_stop);
-		btn_stop.setOnClickListener(handler_button2);
+		btn_stop.setOnClickListener(handler_btnstop);
 		tv1 = (TextView) findViewById(R.id.TextView1);
 		tv2 = (TextView) findViewById(R.id.TextView2);
 		tv3 = (TextView) findViewById(R.id.TextView3);
@@ -141,8 +144,8 @@ public class FFplay extends Activity
 
 		mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceView1);
 		mSurfaceHolder1 = mSurfaceView1.getHolder();
-//		mSurfaceHolder1.setFormat(PixelFormat.RGBA_8888);
-//		mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		// mSurfaceHolder1.setFormat(PixelFormat.RGBA_8888);
+		// mSurfaceHolder1.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		mSurfaceHolder1.addCallback(new SurfaceHolder.Callback()
 		{
@@ -164,26 +167,28 @@ public class FFplay extends Activity
 			}
 		});
 
-        // initialize content source spinner
-        Spinner sourceSpinner = (Spinner) findViewById(R.id.spinner1);
-        ArrayAdapter<CharSequence> sourceAdapter = ArrayAdapter.createFromResource(
-                this, R.array.source_array, android.R.layout.simple_spinner_item);
-        sourceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        sourceSpinner.setAdapter(sourceAdapter);
-        sourceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+		// initialize content source spinner
+		Spinner sourceSpinner = (Spinner) findViewById(R.id.spinner1);
+		ArrayAdapter<CharSequence> sourceAdapter = ArrayAdapter.createFromResource(this, R.array.source_array, android.R.layout.simple_spinner_item);
+		sourceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		sourceSpinner.setAdapter(sourceAdapter);
+		sourceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+		{
 
-            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                mSourceString = parent.getItemAtPosition(pos).toString();
-                Log.v(TAG, "onItemSelected " + mSourceString);
-            }
+			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id)
+			{
+				mSourceString = parent.getItemAtPosition(pos).toString();
+				Log.v(TAG, "onItemSelected " + mSourceString);
+			}
 
-            public void onNothingSelected(AdapterView<?> parent) {
-                Log.v(TAG, "onNothingSelected");
-                mSourceString = null;
-            }
+			public void onNothingSelected(AdapterView<?> parent)
+			{
+				Log.v(TAG, "onNothingSelected");
+				mSourceString = null;
+			}
 
-        });		
-		
+		});
+
 		decinfo = new DecInfo();
 		initHandles();
 		AudioTrack_init();
@@ -206,16 +211,21 @@ public class FFplay extends Activity
 	 */
 	private void initHandles()
 	{
-		// Create Main MSG handler
-		handler = new Handler()
+
+		// Create Main MSG handler_UI
+		handler_UI = new Handler()
 		{
+			float fps;
+
 			@Override
 			public void handleMessage(Message msg)
 			{
 				switch (msg.what)
 				{
 					case GUI_UPDATE_PROGRESS:
-						tv3.setText("playing frame " + frame);
+						telapsed = System.currentTimeMillis() - tstart;
+						fps = frame * 1000 / telapsed;
+						tv3.setText("frame " + frame + ", fps: " + fps);
 						if (progbar.getProgress() >= progbar.getMax())
 							progbar.setProgress(0);
 						progbar.incrementProgressBy(1);
@@ -249,14 +259,14 @@ public class FFplay extends Activity
 		};
 	}
 
-	Button.OnClickListener handler_button3 = new Button.OnClickListener()
+	Button.OnClickListener handler_btnopen = new Button.OnClickListener()
 	{
 		@Override
 		public void onClick(View arg0)
 		{
-			
+
 			String filename = mSourceString;
-			
+
 			if (bRunning)
 				return;
 
@@ -270,7 +280,7 @@ public class FFplay extends Activity
 	/*
 	 * playing wave
 	 */
-	Button.OnClickListener handler_button1 = new Button.OnClickListener()
+	Button.OnClickListener handler_btnplay = new Button.OnClickListener()
 	{
 		@Override
 		public void onClick(View arg0)
@@ -280,6 +290,8 @@ public class FFplay extends Activity
 			at.play();
 			tv4.setText("");
 			bRunning = true;
+			tstart = System.currentTimeMillis();
+
 			thPlay = new Thread()
 			{
 				@Override
@@ -322,19 +334,22 @@ public class FFplay extends Activity
 										linesize = decinfo.linesizeY;
 										if (canvas == null)
 											break;
-//										if (false)
-//										{
-//											outyuv = new int[vh * linesize];
-//											for (j = 0; j < vh; j++)
-//												for (i = 0; i < vw; i++)
-//												{
-//													c = outpcm[decinfo.header_len + vw * j + i];
-//
-//													outyuv[vw * j + i] = Color.rgb(c, c, c);
-//												}
-//											canvas.drawBitmap(outyuv, 0, linesize, 0, 0, cw, vh, false, null);
-//										}
-//										else
+										// if (false)
+										// {
+										// outyuv = new int[vh * linesize];
+										// for (j = 0; j < vh; j++)
+										// for (i = 0; i < vw; i++)
+										// {
+										// c = outpcm[decinfo.header_len + vw *
+										// j + i];
+										//
+										// outyuv[vw * j + i] = Color.rgb(c, c,
+										// c);
+										// }
+										// canvas.drawBitmap(outyuv, 0,
+										// linesize, 0, 0, cw, vh, false, null);
+										// }
+										// else
 										{
 											canvas.drawBitmap(outyuv, 0, linesize, 0, 0, Math.min(cw, vw), Math.min(ch, vh), false, null);
 										}
@@ -344,18 +359,18 @@ public class FFplay extends Activity
 										mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
 									}
 									if (frame % 5 == 0)
-										handler.sendEmptyMessage(GUI_UPDATE_PROGRESS);
+										handler_UI.sendEmptyMessage(GUI_UPDATE_PROGRESS);
 									frame++;
 								}
 							}
 							// Thread.sleep(1);
 						}
-						at.flush();
 						at.stop();
+						at.flush();
 						FFplayCloseFile();
 						bOpenfile = false;
 						bRunning = false;
-						handler.sendEmptyMessage(GUI_PLAYEND);
+						handler_UI.sendEmptyMessage(GUI_PLAYEND);
 
 					} catch (Exception e)
 					{
@@ -372,7 +387,7 @@ public class FFplay extends Activity
 	/*
 	 * Stop
 	 */
-	Button.OnClickListener handler_button2 = new Button.OnClickListener()
+	Button.OnClickListener handler_btnstop = new Button.OnClickListener()
 	{
 		@Override
 		public void onClick(View arg0)
