@@ -52,7 +52,7 @@
  jdouble     d;
  jobject     l;
  jstring     t = (*env)->NewStringUTF(env, "Hello from JNI !");
- jbyteArray jarray = (*env)->NewByteArray(env, nOutSize);
+ jbyteArray jarray_rgb = (*env)->NewByteArray(env, nOutSize);
  char *str = (*env)->GetStringUTFChars(env, jstring, 0);
  (*env)->ReleaseStringUTFChars(env, jstring, str);
 
@@ -133,6 +133,10 @@ DecOutInfo decinfo;
 unsigned char *pcm;
 int pcmlen = 0;
 unsigned char *vout = 0;
+
+static jintArray jarray_rgb = NULL;
+//static int jintArray_size = 0;
+//static jbyteArray jarray_vid = NULL;
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -295,8 +299,18 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 	if (vout)
 	{
 		free(vout);
-		vout = 0;
+		vout = NULL;
 	}
+	if (jarray_rgb)
+	{
+		(*env)->DeleteLocalRef(env, jarray_rgb);
+		jarray_rgb = NULL;
+	}
+//	if (jarray_vid)
+//	{
+//		(*env)->DeleteLocalRef(env, jarray_vid);
+//		jarray_vid = NULL;
+//	}
 
 	return 0;
 }
@@ -323,30 +337,32 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				len = avcodec_decode_video2(vc, vframe, &got_picture, &avpkt);
 				if (got_picture)
 				{
+					jbyteArray jarray_vid;
 					V(
 							"got video frame. %d x %d. linesize %d,%d,%d", vframe->width, vframe->height, vframe->linesize[0], vframe->linesize[1], vframe->linesize[2]);
-					jbyteArray jarray = (*env)->NewByteArray(env,
-							(vframe->width * vframe->height * 3 / 2) + hdr_len);
-
+//					if (jarray_vid == NULL)
+						jarray_vid = (*env)->NewByteArray(env,
+								(vframe->linesize[0] * vframe->height * 3 / 2)
+										+ hdr_len);
 					decinfo.type = 2;
 					decinfo.width = vframe->width;
 					decinfo.height = vframe->height;
 					decinfo.linesizeY = vframe->linesize[0];
 					decinfo.linesizeU = vframe->linesize[1];
 					decinfo.linesizeV = vframe->linesize[2];
-					(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+					(*env)->SetByteArrayRegion(env, jarray_vid, 0, hdr_len,
 							(jbyte*) &decinfo);
-					(*env)->SetByteArrayRegion(env, jarray, hdr_len,
-							vframe->width * vframe->height, vframe->data[0]);
-					(*env)->SetByteArrayRegion(env, jarray,
-							vframe->width * vframe->height + hdr_len,
-							vframe->width * vframe->height / 4,
+					(*env)->SetByteArrayRegion(env, jarray_vid, hdr_len,
+							vframe->linesize[0] * vframe->height, vframe->data[0]);
+					(*env)->SetByteArrayRegion(env, jarray_vid,
+							vframe->linesize[0] * vframe->height + hdr_len,
+							vframe->linesize[0] * vframe->height / 4,
 							vframe->data[1]);
-					(*env)->SetByteArrayRegion(env, jarray,
-							vframe->width * vframe->height * 5 / 4 + hdr_len,
-							vframe->width * vframe->height / 4,
+					(*env)->SetByteArrayRegion(env, jarray_vid,
+							vframe->linesize[0] * vframe->height * 5 / 4 + hdr_len,
+							vframe->linesize[0] * vframe->height / 4,
 							vframe->data[2]);
-					return jarray;
+					return jarray_vid;
 				}
 			}
 			break;
@@ -377,7 +393,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 
 				if (got_audio_frame)
 				{
-					jbyteArray jarray;
+					jbyteArray jarray_pcm;
 					D("got audio frame. %d samples.", aframe->nb_samples);
 					jbyte *outbuf = (jbyte*) aframe->data[0];
 					int outsize = av_samples_get_buffer_size(NULL, ac->channels,
@@ -389,14 +405,14 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 						decinfo.samplerate = ac->sample_rate;
 						decinfo.bitspersample = 16;
 
-						jarray = (*env)->NewByteArray(env,
+						jarray_pcm = (*env)->NewByteArray(env,
 								outsize + hdr_len + pcmlen);
 						decinfo.type = 1;
-						(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+						(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
 								(jbyte*) &decinfo);
-						(*env)->SetByteArrayRegion(env, jarray, hdr_len, pcmlen,
-								pcm);
-						(*env)->SetByteArrayRegion(env, jarray,
+						(*env)->SetByteArrayRegion(env, jarray_pcm, hdr_len,
+								pcmlen, pcm);
+						(*env)->SetByteArrayRegion(env, jarray_pcm,
 								hdr_len + pcmlen, outsize, outbuf);
 						D(
 								"return audio frame. %d bytes.", outsize + hdr_len + pcmlen);
@@ -406,20 +422,20 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					{ // not enough pcm, not output.
 						memcpy(pcm + pcmlen, aframe->data[0], outsize);
 						pcmlen += outsize;
-						jarray = (*env)->NewByteArray(env, hdr_len);
+						jarray_pcm = (*env)->NewByteArray(env, hdr_len);
 						decinfo.type = 0; //invalid
-						(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+						(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
 								(jbyte*) &decinfo);
 					}
 #else
 					decinfo.type = 1;
-					jarray = (*env)->NewByteArray(env, outsize + hdr_len);
-					(*env)->SetByteArrayRegion(env, jarray, 0, hdr_len,
+					jarray_pcm = (*env)->NewByteArray(env, outsize + hdr_len);
+					(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
 							(jbyte*) &decinfo);
-					(*env)->SetByteArrayRegion(env, jarray, hdr_len, outsize,
+					(*env)->SetByteArrayRegion(env, jarray_pcm, hdr_len, outsize,
 							(jbyte*) outbuf);
 #endif
-					return jarray;
+					return jarray_pcm;
 				}
 
 				avpkt.size -= len;
@@ -440,35 +456,29 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 		jobject thiz)
 {
 	int i, j;
-	static jintArray jarray = 0;
-	static int jintArray_size = 0;
 	int len = vframe->height * vframe->linesize[0];
 	int *dst;
 	char *src = vframe->data[0];
 
-	if (vout == 0)
+	if (vout == NULL)
 	{
 		D("FFplayConvertRGB alloc mem done.");
 		vout = malloc(len * sizeof(int));
 	}
-	// Try to remove startGC, but can only remove some part.
-//	if (jarray == 0 || jintArray_size != len)
-//	{
-//		if (jarray != NULL)
-//			(*env)->DeleteLocalRef(env,jarray);
-//		jarray = (*env)->NewIntArray(env, len);
-//		jintArray_size = len;
-//		D("FFplayConvertRGB alloc jarray done.");
-//	}
-	jarray = (*env)->NewIntArray(env, len);
+	if (jarray_rgb == NULL)
+	{
+		jarray_rgb = (*env)->NewIntArray(env, len);
+	}
 	dst = (int*) vout;
 	for (j = 0; j < vframe->height; j++)
+	{
 		for (i = 0; i < vframe->linesize[0]; i++)
-		{
+		{ // Convert Y to RGB888
 			*dst++ = (*src << 16) | (*src << 8) | (*src);
 			src++;
 		}
+	}
+	(*env)->SetIntArrayRegion(env, jarray_rgb, 0, len, (jint*) vout);
 
-	(*env)->SetIntArrayRegion(env, jarray, 0, len, (jint*) vout);
-	return jarray;
+	return jarray_rgb;
 }
