@@ -54,6 +54,8 @@ public class FFplay extends Activity
 
 	public native int[] FFplayConvertRGB();
 
+	public native byte[] FFplayGetPCM();
+
 	private final static String TAG = "ffplay-java";
 	// AUDIO TRACK
 	private AudioTrack at = null;
@@ -302,22 +304,25 @@ public class FFplay extends Activity
 						frame = 0;
 						while (bRunning)
 						{
+							byte[] out_hdr;
 							byte[] outpcm;
 							int[] outyuv;
 
-							outpcm = FFplayDecodeFrame();
+							out_hdr = FFplayDecodeFrame();
 
-							if (outpcm == null)
+							if (out_hdr == null)
 							{
 								bRunning = false;
-								Log.i(TAG, "outpcm got null.");
+								Log.i(TAG, "out_hdr got null.");
 							} else
 							{
 								// parse the info header from ffmpeg
-								decinfo.parse(outpcm);
+								decinfo.parse(out_hdr);
 								if (decinfo.type == 1)
 								{ // If audio data.
-									at.write(outpcm, decinfo.header_len, outpcm.length - decinfo.header_len);
+									outpcm = FFplayGetPCM();
+									if (outpcm != null)
+										at.write(outpcm, 0, outpcm.length);
 								} else if (decinfo.type == 2)
 								{ // If video data.
 									if (true)
@@ -334,28 +339,11 @@ public class FFplay extends Activity
 										linesize = decinfo.linesizeY;
 										if (canvas == null)
 											break;
-										// if (false)
-										// {
-										// outyuv = new int[vh * linesize];
-										// for (j = 0; j < vh; j++)
-										// for (i = 0; i < vw; i++)
-										// {
-										// c = outpcm[decinfo.header_len + vw *
-										// j + i];
-										//
-										// outyuv[vw * j + i] = Color.rgb(c, c,
-										// c);
-										// }
-										// canvas.drawBitmap(outyuv, 0,
-										// linesize, 0, 0, cw, vh, false, null);
-										// }
-										// else
-										{
-											canvas.drawBitmap(outyuv, 0, linesize, 0, 0, Math.min(cw, vw), Math.min(ch, vh), false, null);
-										}
+
+										canvas.drawBitmap(outyuv, 0, linesize, 0, 0, Math.min(cw, vw), Math.min(ch, vh), false, null);
 										Paint mPaint = new Paint();
 										mPaint.setColor(Color.RED);
-										canvas.drawText("Demo", 10, 10, mPaint);
+										canvas.drawText("FFplay Demo", 10, 10, mPaint);
 										mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
 									}
 									if (frame % 5 == 0)
