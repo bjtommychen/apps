@@ -8,7 +8,9 @@
                 <item>/mnt/sdcard/srv/stream/vs.mp4</item>
                 <item >/mnt/sdcard/srv/stream/love_mv.mpg</item>
                 <item >/mnt/sdcard/srv/stream/VIDEO0001.3gp</item>
-                <item >/mnt/sdcard/srv/stream/Selina.YouAreSongInMyHeart.MV.avi</item>
-    </string-array>
+                
+                <item >/mnt/sdcard/srv/stream/rain.rmvb</item>
+                <item >/mnt/sdcard/srv/stream/nobody.ts</item>
+    <item>/mnt/sdcard/srv/stream/Selina.YouAreSongInMyHeart.MV.avi</item></string-array>
 
 </resources>
