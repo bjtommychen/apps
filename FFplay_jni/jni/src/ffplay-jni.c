@@ -337,6 +337,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 		jobject thiz)
 {
 	int hdr_len = decinfo.header_len;
+	jbyteArray jarray_hdr;
 
 	while (av_read_frame(fc, &avpkt) >= 0)
 	{
@@ -349,7 +350,6 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				if (got_picture)
 				{
 //					jbyteArray jarray_vid;
-					jbyteArray jarray_hdr;
 					V(
 							"got video frame. %d x %d. linesize %d,%d,%d", vframe->width, vframe->height, vframe->linesize[0], vframe->linesize[1], vframe->linesize[2]);
 					decinfo.type = 2;
@@ -363,6 +363,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
 					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
 							(jbyte*) &decinfo);
+					(*env)->DeleteLocalRef(env, jarray_hdr);
 					return jarray_hdr;
 #else
 					if (jarray_vid == NULL)
@@ -388,7 +389,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 #endif
 				}
 			}
-			break;
+//			break;
 		}
 
 		// Decode Audio
@@ -416,15 +417,16 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 
 				if (got_audio_frame)
 				{
-					jbyteArray jarray_hdr;
 					D("got audio frame. %d samples.", aframe->nb_samples);
 					decinfo.channel = ac->channels;
 					decinfo.samplerate = ac->sample_rate;
-					decinfo.bitspersample = 16;
+					decinfo.bitspersample =
+							(ac->sample_fmt == AV_SAMPLE_FMT_S16) ? 16 : 0;			// Only support S16 format.
 					decinfo.type = 1;
 					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
 					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
 							(jbyte*) &decinfo);
+					(*env)->DeleteLocalRef(env, jarray_hdr);
 					return jarray_hdr;
 #if 0
 					jbyte *outbuf = (jbyte*) aframe->data[0];
@@ -442,7 +444,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 				avpkt.size -= len;
 				avpkt.data += len;
 			}
-			break;
+//			break;
 		}
 
 //		if (frame > 1000)
