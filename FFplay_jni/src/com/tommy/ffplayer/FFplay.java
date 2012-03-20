@@ -221,7 +221,6 @@ public class FFplay extends Activity
 		FFplayCloseFile();
 		bOpenfile = false;
 		FFplayExit();
-		// TODO Auto-generated method stub
 		super.onDestroy();
 	}
 
@@ -393,8 +392,12 @@ public class FFplay extends Activity
 
 					} catch (Exception e)
 					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						at.stop();
+						at.flush();
+						FFplayCloseFile();
+						bOpenfile = false;
+						bRunning = false;
+						handler_UI.sendEmptyMessage(GUI_PLAYEND);						e.printStackTrace();
 					}
 				}
 			};
