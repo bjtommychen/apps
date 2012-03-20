@@ -138,7 +138,7 @@ int aout_len = 0;
 
 //jbyteArray jarray_hdr = NULL;
 jintArray jarray_rgb = NULL;
-jbyteArray jarray_aud = NULL;
+//jbyteArray jarray_aud = NULL;
 
 /******************************************************************************/
 /*  Local Function Declarations                                               */
@@ -317,11 +317,11 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 		(*env)->DeleteLocalRef(env, jarray_rgb);
 		jarray_rgb = NULL;
 	}
-	if (jarray_aud)
-	{
-		(*env)->DeleteLocalRef(env, jarray_aud);
-		jarray_aud = NULL;
-	}
+//	if (jarray_aud)
+//	{
+//		(*env)->DeleteLocalRef(env, jarray_aud);
+//		jarray_aud = NULL;
+//	}
 
 	return 0;
 }
@@ -363,7 +363,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
 					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
 							(jbyte*) &decinfo);
-					(*env)->DeleteLocalRef(env, jarray_hdr);
+//					(*env)->DeleteLocalRef(env, jarray_hdr);
 					return jarray_hdr;
 #else
 					if (jarray_vid == NULL)
@@ -426,7 +426,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
 					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
 							(jbyte*) &decinfo);
-					(*env)->DeleteLocalRef(env, jarray_hdr);
+//					(*env)->DeleteLocalRef(env, jarray_hdr);
 					return jarray_hdr;
 #if 0
 					jbyte *outbuf = (jbyte*) aframe->data[0];
@@ -489,6 +489,7 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayGetPCM(JNIEnv* env,
 		jobject thiz)
 {
+	jbyteArray jarray_aud;
 	jbyte *outbuf = (jbyte*) aframe->data[0];
 	int outsize = av_samples_get_buffer_size(NULL, ac->channels,
 			aframe->nb_samples, ac->sample_fmt, 1);
@@ -499,14 +500,15 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayGetPCM(JNIEnv* env,
 		D("FFplayGetPCM alloc %d mem done.", aout_len);
 		aout = malloc(aout_len);
 	}
-	if (jarray_aud == NULL)
+//	if (jarray_aud == NULL)
 	{
-		jarray_aud = (*env)->NewByteArray(env, aout_len);
-		D("FFplayGetPCM alloc jarray_aud done.");
+//		jarray_aud = (*env)->NewByteArray(env, aout_len);
+//		D("FFplayGetPCM alloc jarray_aud done.");
 	}
 
 	if ((aout_offset + outsize) >= aout_len)
 	{ //buffer full.
+		jarray_aud = (*env)->NewByteArray(env, aout_len);
 		memcpy(aout + aout_offset, aframe->data[0], outsize);
 		(*env)->SetByteArrayRegion(env, jarray_aud, 0, aout_len, aout);
 		aout_offset = 0;
