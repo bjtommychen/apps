@@ -281,7 +281,7 @@ public class FFplay extends Activity
 
 					case GUI_PLAYEND:
 						progbar.setProgress(0);
-						tv3.setText("play end!");
+						tv3.setText("frame " + frame +", play end!");
 						break;
 				}
 				super.handleMessage(msg);
