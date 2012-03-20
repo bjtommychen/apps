@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
+    android:layout_width="match_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical" >
-
+
     <TextView
         android:id="@+id/TextView1"
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:editable="true"
         android:text="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
@@ -26,27 +26,27 @@
         android:editable="true"
         android:text="@string/hello" >
     </TextView>
-
-    <TextView
-        android:id="@+id/TextView4"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:editable="true"
-        android:text="@string/hello" />
-
-    <ProgressBar
-        android:id="@+id/progressBar1"
-        style="?android:attr/progressBarStyleHorizontal"
+
+    <LinearLayout
+        android:id="@+id/linearLayout3"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="1000"
-        android:progress="0" />
+        android:layout_height="wrap_content" >
 
-    <Spinner
-        android:id="@+id/spinner1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <Spinner
+            android:id="@+id/spinner1"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0.88" />
 
+        <ToggleButton
+            android:id="@+id/toggleButton1"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:checked="true"
+            android:text="ToggleButton"
+            android:textOff="AVoutput off"
+            android:textOn="AVoutput on" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/linearLayout1"
@@ -73,8 +73,27 @@
             android:text="Stop" />
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/TextView4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView" />
 
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
 
+        <ProgressBar
+            android:id="@+id/progressBar1"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="1000"
+            android:progress="0" />
+
+    </LinearLayout>
 
     <SurfaceView
         android:id="@+id/surfaceView1"

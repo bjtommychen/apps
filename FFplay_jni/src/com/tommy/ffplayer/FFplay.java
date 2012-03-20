@@ -10,9 +10,11 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 import android.util.Log;
 
 import android.media.AudioFormat;
@@ -61,12 +63,14 @@ public class FFplay extends Activity
 	private AudioTrack at = null;
 	private int min_buf_size;
 	private boolean bRunning = false, bOpenfile = false;
+	private Boolean bAVoutput = true;
 	private Thread thPlay;
 	private int at_srate = 44100;
 	private int at_channel = AudioFormat.CHANNEL_OUT_STEREO;
 	private int frame;
 	// VIEW
 	private Button btn_open, btn_play, btn_stop;
+	private ToggleButton tbtn_output;
 	private TextView tv1, tv2, tv3, tv4;
 	private ProgressBar progbar;
 	// HANDLE
@@ -137,6 +141,7 @@ public class FFplay extends Activity
 		btn_play.setOnClickListener(handler_btnplay);
 		btn_stop = (Button) findViewById(R.id.button_stop);
 		btn_stop.setOnClickListener(handler_btnstop);
+		tbtn_output = (ToggleButton) findViewById(R.id.toggleButton1);
 		tv1 = (TextView) findViewById(R.id.TextView1);
 		tv2 = (TextView) findViewById(R.id.TextView2);
 		tv3 = (TextView) findViewById(R.id.TextView3);
@@ -191,10 +196,33 @@ public class FFplay extends Activity
 
 		});
 
+		tbtn_output.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener()
+		{
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+			{
+				if (buttonView.getId() == R.id.toggleButton1)
+					bAVoutput = isChecked;
+			}
+		});
+
 		decinfo = new DecInfo();
 		initHandles();
 		AudioTrack_init();
 		FFplayInit();
+	}
+
+	@Override
+	protected void onDestroy()
+	{
+		bRunning = false;
+		at.stop();
+		at.flush();
+		FFplayCloseFile();
+		bOpenfile = false;
+		FFplayExit();
+		// TODO Auto-generated method stub
+		super.onDestroy();
 	}
 
 	/*
@@ -321,11 +349,14 @@ public class FFplay extends Activity
 								if (decinfo.type == 1)
 								{ // If audio data.
 									outpcm = FFplayGetPCM();
-									if (outpcm != null)
-										at.write(outpcm, 0, outpcm.length);
+									if (bAVoutput)
+									{
+										if (outpcm != null && decinfo.bitspersample == 16)
+											at.write(outpcm, 0, outpcm.length);
+									}
 								} else if (decinfo.type == 2)
 								{ // If video data.
-									if (true)
+									if (bAVoutput)
 									{
 										int i, j, vw, vh, cw, ch, w, h;
 										int linesize;
