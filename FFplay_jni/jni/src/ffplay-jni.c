@@ -486,6 +486,30 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 	return jarray_rgb;
 }
 
+jint Java_com_tommy_ffplayer_FFplay_FFplayConvertGray(JNIEnv* env,
+		jobject thiz, jintArray buf)
+{
+	int i, j;
+	int len = vframe->height * vframe->linesize[0];
+	int *dst;
+	char *src = vframe->data[0];
+	jint *elems = (*env)->GetIntArrayElements(env, buf, (jboolean*)NULL);
+
+	dst =(int*) elems;
+	for (j = 0; j < vframe->height; j++)
+	{
+		for (i = 0; i < vframe->linesize[0]; i++)
+		{ // Convert Y to RGB888
+			*dst++ = (*src << 16) | (*src << 8) | (*src);
+			src++;
+		}
+	}
+	//	ReferenceTable overflow (max=1024)
+	(*env)->ReleaseIntArrayElements(env, buf, elems, 0);
+
+	return 0;
+}
+
 jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayGetPCM(JNIEnv* env,
 		jobject thiz)
 {
