@@ -56,6 +56,8 @@ public class FFplay extends Activity
 
 	public native int[] FFplayConvertRGB();
 
+	public native int FFplayConvertGray(int[] buf);
+
 	public native byte[] FFplayGetPCM();
 
 	private final static String TAG = "ffplay-java";
@@ -253,7 +255,7 @@ public class FFplay extends Activity
 				{
 					case GUI_UPDATE_PROGRESS:
 						telapsed = System.currentTimeMillis() - tstart;
-						fps = frame * 1000 / telapsed;
+						fps = (float) ((float) frame * 1000. / telapsed);
 						tv3.setText("frame " + frame + ", fps: " + fps);
 						if (progbar.getProgress() >= progbar.getMax())
 							progbar.setProgress(0);
@@ -321,22 +323,22 @@ public class FFplay extends Activity
 			at.play();
 			tv4.setText("");
 			bRunning = true;
-			tstart = System.currentTimeMillis();
 
 			thPlay = new Thread()
 			{
+				byte[] out_hdr = null;
+				byte[] outpcm = null;
+				int[] outyuv = null;
+
 				@Override
 				public void run()
 				{
 					try
 					{
 						frame = 0;
+						tstart = System.currentTimeMillis();
 						while (bRunning)
 						{
-							byte[] out_hdr;
-							byte[] outpcm;
-							int[] outyuv;
-
 							out_hdr = FFplayDecodeFrame();
 
 							if (out_hdr == null)
@@ -349,11 +351,13 @@ public class FFplay extends Activity
 								decinfo.parse(out_hdr);
 								if (decinfo.type == 1)
 								{ // If audio data.
-									outpcm = FFplayGetPCM();
-									if (bAVoutput)
+									if (decinfo.bitspersample == 16)
 									{
-										if (outpcm != null && decinfo.bitspersample == 16)
+										outpcm = FFplayGetPCM();
+										if (bAVoutput && outpcm != null)
+										{
 											at.write(outpcm, 0, outpcm.length);
+										}
 									}
 								} else if (decinfo.type == 2)
 								{ // If video data.
@@ -361,22 +365,34 @@ public class FFplay extends Activity
 									{
 										int i, j, vw, vh, cw, ch, w, h;
 										int linesize;
-										byte c;
-										outyuv = FFplayConvertRGB();
+										// outyuv = FFplayConvertRGB();
 										Canvas canvas = mSurfaceHolder1.lockCanvas();// 获取画布
 										cw = canvas.getWidth();
 										ch = canvas.getHeight();
 										vw = decinfo.width; // linesize 672, 336
 										vh = decinfo.height;
 										linesize = decinfo.linesizeY;
-										if (canvas == null)
-											break;
-
-										canvas.drawBitmap(outyuv, 0, linesize, 0, 0, Math.min(cw, vw), Math.min(ch, vh), false, null);
-										Paint mPaint = new Paint();
-										mPaint.setColor(Color.RED);
-										canvas.drawText("FFplay Demo", 10, 10, mPaint);
-										mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
+										if (outyuv == null)
+											outyuv = new int[linesize * vh];
+										FFplayConvertGray(outyuv);
+										if (canvas != null)
+										{
+											int x = 0, y = 0;
+											// make video centered in canvas.
+											if (vw > cw)
+											{
+												x = (vw - cw) / 2;
+											}
+											// if (vh > ch)
+											// {
+											// y = (vh - ch) / 2;
+											// }
+											canvas.drawBitmap(outyuv, 0, linesize, -x, 0, Math.min(cw, vw) + x, Math.min(ch, vh), false, null);
+											Paint mPaint = new Paint();
+											mPaint.setColor(Color.RED);
+											canvas.drawText("FFplay Demo", 0, 10, mPaint);
+											mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
+										}
 									}
 									if (frame % 5 == 0)
 										handler_UI.sendEmptyMessage(GUI_UPDATE_PROGRESS);
@@ -433,6 +449,7 @@ public class FFplay extends Activity
 		at = new AudioTrack(AudioManager.STREAM_MUSIC, at_srate, at_channel, AudioFormat.ENCODING_PCM_16BIT, min_buf_size * 2, AudioTrack.MODE_STREAM);
 		Log.d(TAG, "volume " + at.getMinVolume() + " -- " + at.getMaxVolume());
 		Log.d(TAG, "audio track's min. buffer is " + min_buf_size);
+		Log.d(TAG, "audio track native sample rate is " + at.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC));
 	}
 
 }
