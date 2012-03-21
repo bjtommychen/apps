@@ -69,7 +69,7 @@ public class FFplay extends Activity
 	private Thread thPlay;
 	private int at_srate = 44100;
 	private int at_channel = AudioFormat.CHANNEL_OUT_STEREO;
-	private int frame;
+	private int frame, frame_fps;
 	// VIEW
 	private Button btn_open, btn_play, btn_stop;
 	private ToggleButton tbtn_output;
@@ -246,7 +246,7 @@ public class FFplay extends Activity
 		// Create Main MSG handler_UI
 		handler_UI = new Handler()
 		{
-			float fps;
+			float fps = 0;
 
 			@Override
 			public void handleMessage(Message msg)
@@ -254,8 +254,14 @@ public class FFplay extends Activity
 				switch (msg.what)
 				{
 					case GUI_UPDATE_PROGRESS:
-						telapsed = System.currentTimeMillis() - tstart;
-						fps = (float) ((float) frame * 1000. / telapsed);
+						if ((frame - frame_fps) >= 20)
+						{
+							tend = System.currentTimeMillis();
+							telapsed = tend - tstart;
+							fps = (float) ((float) (frame - frame_fps) * 1000. / telapsed);
+							tstart = tend;
+							frame_fps = frame;
+						}
 						tv3.setText("frame " + frame + ", fps: " + fps);
 						if (progbar.getProgress() >= progbar.getMax())
 							progbar.setProgress(0);
@@ -336,6 +342,7 @@ public class FFplay extends Activity
 					try
 					{
 						frame = 0;
+						frame_fps = 0;
 						tstart = System.currentTimeMillis();
 						while (bRunning)
 						{
@@ -394,9 +401,11 @@ public class FFplay extends Activity
 											mSurfaceHolder1.unlockCanvasAndPost(canvas);// 解锁画布，提交画好的图像
 										}
 									}
-									if (frame % 5 == 0)
-										handler_UI.sendEmptyMessage(GUI_UPDATE_PROGRESS);
 									frame++;
+									if (frame % 5 == 0)
+									{
+										handler_UI.sendEmptyMessage(GUI_UPDATE_PROGRESS);
+									}
 								}
 							}
 							// Thread.sleep(1);
