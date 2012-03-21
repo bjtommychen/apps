@@ -280,7 +280,7 @@ public class FFplay extends Activity
 
 					case GUI_PLAYEND:
 						progbar.setProgress(0);
-						tv3.setText("frame " + frame +", play end!");
+						tv3.setText("frame " + frame + ", play end!");
 						break;
 				}
 				super.handleMessage(msg);
@@ -299,10 +299,12 @@ public class FFplay extends Activity
 			if (bRunning)
 				return;
 
-			FFplayOpenFile(filename);
-			tv1.setText(filename);
-			tv4.setText(FFplayGetStreamInfo());
-			bOpenfile = true;
+			if (FFplayOpenFile(filename) == 0)
+			{
+				tv1.setText(filename);
+				tv4.setText(FFplayGetStreamInfo());
+				bOpenfile = true;
+			}
 		}
 	};
 
@@ -397,7 +399,8 @@ public class FFplay extends Activity
 						FFplayCloseFile();
 						bOpenfile = false;
 						bRunning = false;
-						handler_UI.sendEmptyMessage(GUI_PLAYEND);						e.printStackTrace();
+						handler_UI.sendEmptyMessage(GUI_PLAYEND);
+						e.printStackTrace();
 					}
 				}
 			};
