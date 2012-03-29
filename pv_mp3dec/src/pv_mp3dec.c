@@ -19,7 +19,7 @@
 /******************************************************************************/
 /*  Local Macro Definitions                                                   */
 /******************************************************************************/
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 #define log(a, b...)	printf(a, ##b)
 #else
@@ -45,7 +45,8 @@ char fin_name[256] = "/srv/stream/spring_mud.mp3";
 char fout_name[256] = "out.pcm";
 int chNum = 2, SampleRate = 44100, Bits_per_Sample = 16;
 
-tPVMP3DecoderExternal *mConfig;
+tPVMP3DecoderExternal mConfig_body;
+tPVMP3DecoderExternal *mConfig = &mConfig_body;
 void *mDecoderBuf;
 
 /******************************************************************************/
@@ -104,8 +105,7 @@ static void parse_options(int argc, char **argv)
 			}
 		}
 		argv++;
-	}
-	log("parse_options done.");
+	} log("parse_options done.\n");
 }
 
 /*******************************************************************************************************************/
@@ -116,6 +116,7 @@ int main(int argc, char **argv)
 	int bEOF = FALSE;
 	char *inbuf, *outbuf;
 	int remainbytes = 0;
+	int frame = 0;
 
 	show_banner(argc, argv);
 
@@ -127,7 +128,7 @@ int main(int argc, char **argv)
 
 	parse_options(argc, argv);
 
-	printf("check parameter done.");
+	log("check parameter done.\n");
 
 	if ((fin = fopen(fin_name, "rb")) == NULL)
 	{
@@ -142,10 +143,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-
-
 	inbuf = malloc(INPUT_BUFSZ);
 	outbuf = malloc(OUTPUT_BUFSZ);
+	log("mem alloc done. \n");
 	mConfig->equalizerType = flat;
 	mConfig->crcEnabled = FALSE;
 	uint32_t memRequirements = pvmp3_decoderMemRequirements();
@@ -153,6 +153,7 @@ int main(int argc, char **argv)
 	mDecoderBuf = malloc(memRequirements);
 	pvmp3_InitDecoder(mConfig, mDecoderBuf);
 
+	printf("Decoding ... Please wait ...\n");
 	while (loop)
 	{
 		int readlen, len;
@@ -164,21 +165,23 @@ int main(int argc, char **argv)
 		if (len < readlen)
 			bEOF = TRUE;
 
-		mConfig->pInputBuffer = inbuf;
+		mConfig->pInputBuffer = (uint8*) inbuf;
 		mConfig->inputBufferCurrentLength = INPUT_BUFSZ;
 		mConfig->inputBufferMaxLength = 0;
 		mConfig->inputBufferUsedLength = 0;
 		mConfig->outputFrameSize = OUTPUT_BUFSZ / sizeof(int16_t);
-		mConfig->pOutputBuffer = outbuf;
+		mConfig->pOutputBuffer = (uint8*) outbuf;
 
 		if ((decoderErr = pvmp3_framedecoder(mConfig, mDecoderBuf)) != NO_DECODING_ERROR)
 		{
-			log("mp3 decoder returned error %d", decoderErr);
+			log("mp3 decoder returned error %d\n", decoderErr);
 			if (bEOF == TRUE)
 				loop = FALSE;
+			mConfig->inputBufferUsedLength = 1;	//INPUT_BUFSZ;
 		}
 		else
 		{
+			frame++;
 			log("decode got %d samples .\n", mConfig->outputFrameSize);
 			fwrite(outbuf, 1, mConfig->outputFrameSize * sizeof(int16), fout);
 		}
@@ -187,6 +190,8 @@ int main(int argc, char **argv)
 		remainbytes = INPUT_BUFSZ - mConfig->inputBufferUsedLength;
 		memmove(inbuf, inbuf + mConfig->inputBufferUsedLength, remainbytes);
 	}
+
+	printf("\nDone!\nTotal %d frames decoded.\n", frame);
 	fclose(fin);
 	fclose(fout);
 
