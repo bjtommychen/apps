@@ -93,6 +93,11 @@ static void parse_options(int argc, char **argv)
 					log("argv:%s\n", *argv);
 					strcpy(fin_name, *argv);
 					break;
+				case 'o':
+					argv++;
+					log("argv:%s\n", *argv);
+					strcpy(fout_name, *argv);
+					break;
 				}
 			}
 			else
@@ -105,7 +110,8 @@ static void parse_options(int argc, char **argv)
 			}
 		}
 		argv++;
-	} log("parse_options done.\n");
+	}
+	log("parse_options done.\n");
 }
 
 /*******************************************************************************************************************/
@@ -153,20 +159,27 @@ int main(int argc, char **argv)
 	mDecoderBuf = malloc(memRequirements);
 	pvmp3_InitDecoder(mConfig, mDecoderBuf);
 
-	printf("Decoding ... Please wait ...\n");
+	printf("Decoding %s to %s... please wait ...\n", fin_name, fout_name);
 	while (loop)
 	{
-		int readlen, len;
+		int readlen = 0, len = 0;
 		ERROR_CODE decoderErr;
 
-		readlen = INPUT_BUFSZ - remainbytes;
-		len = fread(inbuf + remainbytes, 1, readlen, fin);
-		log("fread %d bytes.\n", len);
-		if (len < readlen)
-			bEOF = TRUE;
+		if (bEOF == FALSE)
+		{
+			readlen = INPUT_BUFSZ - remainbytes;
+			len = fread(inbuf + remainbytes, 1, readlen, fin);
+			log("fread %d bytes.\n", len);
+			if (len < readlen)
+				bEOF = TRUE;
+		}
+		else
+		{
+			len = 0;
+		}
 
 		mConfig->pInputBuffer = (uint8*) inbuf;
-		mConfig->inputBufferCurrentLength = INPUT_BUFSZ;
+		mConfig->inputBufferCurrentLength = remainbytes + len;
 		mConfig->inputBufferMaxLength = 0;
 		mConfig->inputBufferUsedLength = 0;
 		mConfig->outputFrameSize = OUTPUT_BUFSZ / sizeof(int16_t);
@@ -177,7 +190,7 @@ int main(int argc, char **argv)
 			log("mp3 decoder returned error %d\n", decoderErr);
 			if (bEOF == TRUE)
 				loop = FALSE;
-			mConfig->inputBufferUsedLength = 1;	//INPUT_BUFSZ;
+			mConfig->inputBufferUsedLength = 1; //INPUT_BUFSZ;
 		}
 		else
 		{
@@ -187,7 +200,7 @@ int main(int argc, char **argv)
 		}
 
 		log("inputBufferUsedLength %d bytes.\n", mConfig->inputBufferUsedLength);
-		remainbytes = INPUT_BUFSZ - mConfig->inputBufferUsedLength;
+		remainbytes = mConfig->inputBufferCurrentLength - mConfig->inputBufferUsedLength;
 		memmove(inbuf, inbuf + mConfig->inputBufferUsedLength, remainbytes);
 	}
 
