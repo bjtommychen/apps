@@ -1,4 +1,8 @@
-Todo:
-
-Feb  9 2012 13:34:18 
-Port to ubuntu.
+Based: 
+libSDL (x86 version),  
+Build:
+X86 exe file, 
+Taget:
+Play audio pcm data directly.
+Performance:
+Work well.
