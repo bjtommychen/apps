@@ -44,17 +44,20 @@ LOCAL_SRC_FILES :=         \
  	src/pvmp3_stereo_proc.cpp \
  	src/pvmp3_reorder.cpp \
 
+ifneq ($(TARGET_ARCH_ABI),armeabi-v7a)
+LOCAL_CFLAGS := -DHAVE_NEON=1 -DTOMMYTEST
 LOCAL_SRC_FILES += \
  	src/pvmp3_polyphase_filter_window.cpp \
  	src/pvmp3_mdct_18.cpp \
  	src/pvmp3_dct_9.cpp \
  	src/pvmp3_dct_16.cpp
-
-LOCAL_SRC_FILES_ASMSRC += \
-	src/asm/pvmp3_polyphase_filter_window_gcc.s \
- 	src/asm/pvmp3_mdct_18_gcc.s \
- 	src/asm/pvmp3_dct_9_gcc.s \
-	src/asm/pvmp3_dct_16_gcc.s
+else
+LOCAL_SRC_FILES += \
+	src/asm/pvmp3_polyphase_filter_window_gcc.S \
+ 	src/asm/pvmp3_mdct_18_gcc.S \
+ 	src/asm/pvmp3_dct_9_gcc.S \
+	src/asm/pvmp3_dct_16_gcc.S
+endif
 
 
 LOCAL_C_INCLUDES := \
