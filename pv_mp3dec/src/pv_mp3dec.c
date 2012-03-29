@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 		mConfig->inputBufferMaxLength = 0;
 		mConfig->inputBufferUsedLength = 0;
 		mConfig->outputFrameSize = OUTPUT_BUFSZ / sizeof(int16_t);
-		mConfig->pOutputBuffer = (uint8*) outbuf;
+		mConfig->pOutputBuffer = (int16*) outbuf;
 
 		if ((decoderErr = pvmp3_framedecoder(mConfig, mDecoderBuf)) != NO_DECODING_ERROR)
 		{
