@@ -1,8 +1,6 @@
 ﻿#!/usr/bin/perl   
 use Cwd;   
-use Switch; 
-use Time::Progress;
-use threads ('yield', 'stack_size' => 64*4096, 'exit' => 'threads_only', 'stringify');
+
 
 ########### CONFIG PARAMETERS###############
 my $p_zsim = $ARGV[0]; 
@@ -11,12 +9,12 @@ my @logfilearray = ( "log1.txt", "log2.txt", "log3.txt" , "log4.txt", "log5.txt"
 
 #work dir
 my $inpath="input";
-#my $inpath ="\\\\bejlinux\\wma9_test_streams\\input";
 my $outpath="output";
+my $filefilter="*";
 
 #config
 my $recursive = 1; 		# do file search recursively or not.
-my $maxthread = 4;		# only support quad-cpu-core now.   max is 8.
+my $maxthread = 1;		# only support quad-cpu-core now.   max is 8.
 my $overwrite = 1;  	# overwrite output file or not
 #control
 my $mydebug = 0;	# 1: if just print the commands.
@@ -30,40 +28,38 @@ my $i = 0;
 my $cmd;
 
 #time
-my $pasttime = new Time::Progress;
 my @filelists ;
 
 my $ntotal = 0;
 my $ncurr = 0;
-$pasttime->restart;
 
 ########### Start #############
-if (1) #($ARGV[0] eq "")
-{
-	print "TestBatch (support multi-cpu-core) v0.5 -- by Tommy Chen \n";
-	print "Usage: perl TestBatch.pl <exe> <wmadec.exe> <inputdir> <outputdir>\n";
-	print "Usage: perl TestBatch.pl <zisimg2> <wmadec.out> \n";
-	print "Default: Input dir is $inpath/, Output dir is $outpath/, MaxThread is $maxthread cpu(s). \n";
-   
-	print "Default: Recursive is $recursive. OverWrite is $overwrite \n";
- 
-	print "\n";
-
-}
 if ($ARGV[0] eq "")
 {
-	die "\n";	
+	print "mk_cmdlist v1.0 -- by Tommy Chen \n";
+	print "Usage: perl mk_cmdlist.pl <inputdir> <outputdir> <file_filter>\n";
+	print "Default: Input dir is $inpath/, Output dir is $outpath/. File filter is $filefilter. \n";
+	print "Note: file filter is only the .ext name.\n";
+	exit(0);
+}
+
+
+if ($ARGV[0] ne "")
+{
+	$inpath = $ARGV[0];
+}
+
+
+if ($ARGV[1] ne "")
+{
+	$outpath = $ARGV[1];
 }
 
 if ($ARGV[2] ne "")
 {
-	$inpath = $ARGV[2];
+	$filefilter = $ARGV[2];
 }
 
-if ($ARGV[3] ne "")
-{
-	$outpath = $ARGV[3];
-}
 
 print "Input Dir :", $inpath, "\n", "Output Dir:", $outpath,"\n";
 
@@ -98,15 +94,15 @@ $ntotal  =
 print "\nGot filelist ! Total $ntotal files !\n";
 for($i = 2; $i>0; $i--)
 { 
-	print "Start in $i second .... \n";
-	sleep(1);
+#	print "Start in $i second .... \n";
+#	sleep(1);
 } 
 print "\n";
 
 ########### MainLoop #############
 foreach $infile (@files)
 {
-    next unless $infile =~/\.wma$|\.mp3$|\.asf$|\.god$/i;
+    next unless $infile =~/\.wma$|\.mp3$|\.asf$|\.$filefilter/i;
 #    next unless $infile =~/\.mp3$/i;
 #    print $infile,"\n";
 
@@ -115,7 +111,7 @@ foreach $infile (@files)
 	my $logfile;
 		
 #	$outfile =~s/wma/wav/;
-	$outfile =~s/....$/.b16/;
+	$outfile =~s/....$/.out/;
 	$outfile = $outpath.$outfile;
 
 		# skip exist file 
@@ -135,107 +131,28 @@ foreach $infile (@files)
 		}	 
 	
  
-	while(1)
-	{		
-		# loop to find a empty task slot.
-		for( $i=0; $i< $maxthread; $i=$i+1)
-		{
-			$t = @tarray[$i];
-			if ($t !=0 && $t->is_running())
-			{
-				#sleep 1;	
-			}
-			else
-			{
-				if($t)
-				{
-				    if ($t->is_joinable()) 
-				    {
-				        $t->join(); 
-				    } 
-				}
 
-				@tarray[$i] = 0;
-   	 			#print $pasttime->report( "done %p elapsed: %L (%l sec), ETA %E (%e sec)\n", 50 );
-				last if (1);	#tommy: always the last one, just like a break;
-			}
-		}
- 
-		last if ($i<$maxthread);
-		
-		sleep 1;
-	}	
-	
 	# $i is the empty slot.	
 	$logfile = @logfilearray[$i];
 	
-	my $cmd_arg = '-i "'.$path.$infile.'" -o "'.$outfile.'"  
-	# >>'.$logfile;
+	my $cmd_arg = '-i "'.$path.$infile.'" -o "'.$outfile.'" '."";
 
-	if (lc($ARGV[0]) eq 'exe') 
 	{
-		$cmd = $ARGV[1]." ".$cmd_arg;
-	}
-	else
-	{
-		$cmd = $ARGV[0].' '.$ARGV[1]." -q -ignore -exec -cl ".$cmd_arg;
+		$cmd = "run_cmd"." p1 ".$cmd_arg."p2";
 	}
 
 	print $cmd,"\n";		# $cmd is the New Task !!! 
-	$t = threads->create('mysub', $cmd); 
-	@tarray[$i] = $t;		# create the thread and put it into the task slot.
-	
-	$ncurr ++;
-	if($ncurr % 10 == 0)
-	{
-		print "[$ncurr/$ntotal] ".$pasttime->report("Done %p, Elapsed: %L \n", $ncurr*100/$ntotal);
-	}
-    print('Thread ', $i, ':', $path.$infile, "\n");
 
 }
 
 
-	# come here when all task created, must wait for all finished.
-	# wait until all threads finished.
-	{		
-		for( $i=0; $i< $maxthread; $i=$i+1)
-		{	# wait one by one
-			$t = @tarray[$i];
-			while ($t !=0 && $t->is_running())
-			{
-				sleep 1;	
-			}
 
-			@tarray[$i] = 0;
-		}
- 
-	}	
-
-  print $pasttime->report( "done %p elapsed: %L (%l sec), ETA %E (%e sec)\n", 100 );
+#  print $pasttime->report( "done %p elapsed: %L (%l sec), ETA %E (%e sec)\n", 100 );
 
 
 
 ########### Post Msg #############
-if ($mydebug == 0)
-{ 
-	my $logfiles ;
-	
-	unlink ("myziped.zip");
-	open (LOGFILE, ">log.txt");
-	for( $i=0; $i< $maxthread; $i=$i+1)
- 
- 
-	{
-#	 $logfiles = $logfiles." ".@logfilearray[$i]; 
-	  	open (ONELOGFILE, "< @logfilearray[$i] ");
-	   	while(<ONELOGFILE>)
-	    {
-	     	print LOGFILE $_;
-	    }
-	}
-	system ("perl zlib_add.pl log.txt");
-	system ("perl MailSendEasy.pl myziped.zip");
-}
+
 ############# END OF MAIN ###############
 
 
