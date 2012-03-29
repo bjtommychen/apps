@@ -61,4 +61,13 @@ LOCAL_C_INCLUDES := \
         $(LOCAL_PATH)/src \
         $(LOCAL_PATH)/include
 
-include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_C_INCLUDES := \
+        $(LOCAL_PATH)/src \
+        $(LOCAL_PATH)/include
+LOCAL_MODULE := pv_mp3dec.out
+LOCAL_SRC_FILES := ../src/pv_mp3dec.c
+LOCAL_STATIC_LIBRARIES :=libpvmp3dec
+include $(BUILD_EXECUTABLE)
