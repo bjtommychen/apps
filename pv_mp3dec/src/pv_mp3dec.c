@@ -59,7 +59,7 @@ void *mDecoderBuf;
 
 static void show_banner(int argc, char **argv)
 {
-	printf("PacketVideo_mp3dec version %s by %s.\t", VERSION, AUTHOR);
+	printf("PacketVideo_mp3dec v %s by %s.\t", VERSION, AUTHOR);
 	printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
 }
 
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	mDecoderBuf = malloc(memRequirements);
 	pvmp3_InitDecoder(mConfig, mDecoderBuf);
 
-	printf("Decoding %s to %s... please wait ...\n", fin_name, fout_name);
+	printf("Decoding %s to %s... \nplease wait ...", fin_name, fout_name);
 	while (loop)
 	{
 		int readlen = 0, len = 0;
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 		memmove(inbuf, inbuf + mConfig->inputBufferUsedLength, remainbytes);
 	}
 
-	printf("\nDone!\nTotal %d frames decoded.\n", frame);
+	printf("Done!\nTotal %d frames decoded.\n\n", frame);
 	fclose(fin);
 	fclose(fout);
 
