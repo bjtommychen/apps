@@ -126,7 +126,7 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
-						<entry excluding="asm/pvmp3_dct_16_gcc.s|asm/pvmp3_dct_9_arm.s|asm/pvmp3_dct_9_gcc.s|asm/pvmp3_mdct_18_arm.s|asm/pvmp3_mdct_18_gcc.s|asm/pvmp3_mdct_18_wm.asm|asm/pvmp3_polyphase_filter_window_arm.s|asm/pvmp3_polyphase_filter_window_gcc.s|asm/pvmp3_polyphase_filter_window_wm.asm" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="jni/src"/>
+						<entry excluding="asm/pvmp3_dct_16_gcc.S|asm/pvmp3_dct_9_arm.S|asm/pvmp3_dct_9_gcc.S|asm/pvmp3_mdct_18_arm.S|asm/pvmp3_mdct_18_gcc.S|asm/pvmp3_mdct_18_wm.asm|asm/pvmp3_polyphase_filter_window_arm.S|asm/pvmp3_polyphase_filter_window_gcc.S|asm/pvmp3_polyphase_filter_window_wm.asm" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="jni/src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
