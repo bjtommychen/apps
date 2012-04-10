@@ -66,6 +66,14 @@ LOCAL_C_INCLUDES := \
 
 include $(BUILD_STATIC_LIBRARY)
 
+# BUILD SHARED LIB
+include $(CLEAR_VARS)
+LOCAL_MODULE    := libpvmp3dec_shared
+LOCAL_STATIC_LIBRARIES := libpvmp3dec
+include $(BUILD_SHARED_LIBRARY)
+
+
+# BUILD EXE
 include $(CLEAR_VARS)
 LOCAL_C_INCLUDES := \
         $(LOCAL_PATH)/src \
