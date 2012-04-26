@@ -4,10 +4,12 @@ mkdir tmp
 rm -rf tmp/*.*
 cd tmp
 zdar x ../%1
+rm ..\allobjs.o
 zdld -g3 --allow_overlapping_sections -r *.o -o ..\allobjs.o
 cd ..
 zdobjdump -h allobjs.o
 zdnm allobjs.o
+rm allobjs_strip.o
 zdobjcopy allobjs.o allobjs_strip.o -S --keep-symbols keep_symbols.txt
 zdnm allobjs_strip.o
 rm %1.new
