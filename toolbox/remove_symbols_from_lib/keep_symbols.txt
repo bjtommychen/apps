@@ -1,0 +1,6 @@
+_AudioMixer_Exit
+_AudioMixer_Init
+_AudioMixer_Process
+_AudioMixer_Process_MultiChannel
+_AudioMixer_VolumeControl
+_get_LIBAUDIOMIXER_version
