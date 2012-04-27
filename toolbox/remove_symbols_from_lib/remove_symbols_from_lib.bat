@@ -14,7 +14,9 @@ rem --redefine-sym _Mixer2CH_V2_800M=aaaaa
 zdobjcopy allobjs.o t1.o --keep-global-symbols keep_symbols.txt 
 zdnm t1.o
 zdobjcopy t1.o t2.o -xg 
-zdnm t2.o
+zdnm t2.o 
+rem zdnm t2.o > a.txt
+rem $ awk 'BEGIN {sum=1000} $2=="t" || $2=="d"{sum+=1; v1= "zdobjcopy t.o --redefine-sym "  $3  "=localsym" sum; print v1;system(v1)}' a.txt
 zdobjcopy t2.o allobjs_strip.o
 rem -N _Mixer2CH_V2_800M
 rem -S --keep-symbols keep_symbols.txt
