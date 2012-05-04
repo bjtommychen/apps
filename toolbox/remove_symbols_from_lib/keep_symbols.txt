@@ -1,6 +1,7 @@
-_AudioMixer_Exit
-_AudioMixer_Init
-_AudioMixer_Process
-_AudioMixer_Process_MultiChannel
-_AudioMixer_VolumeControl
-_get_LIBAUDIOMIXER_version
+_G729AB_decoderMain
+_G729AB_disableVad
+_G729AB_enableVad
+_G729AB_encoderMain
+_G729AB_initDecoder
+_G729AB_initEncoder
+_get_libG729AB_version 
