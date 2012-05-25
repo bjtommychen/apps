@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-#include "FF_Codec.h"
 #define LOG_NDEBUG 0
 #define LOG_TAG "FF_Codec"
+#include <utils/Log.h>
+#define  I(x...)  LOGI(x)
+#define  D(x...)  LOGD(x)
 
 #define __UINT64_C(c)     c ## ULL
 #define UINT64_C(c)       __UINT64_C(c)
-
-#include <utils/Log.h> 
-#define  I(x...)  LOGI(x)
-#define  D(x...)  LOGD(x)
 
 #ifdef __cplusplus
 extern "C"
@@ -53,6 +51,10 @@ extern "C"
 }
 #endif
 
+#include "FF_Codec.h"
+
+#include <OMX_Component.h>
+
 #include <media/stagefright/MediaBufferGroup.h>
 #include <media/stagefright/MediaDebug.h>
 #include <media/stagefright/MediaDefs.h>
@@ -62,26 +64,17 @@ extern "C"
 namespace android
 {
 
-
 /*	TOMMY ADD	*/
-//#define INBUF_SIZE 4096
-#define AUDIO_INBUF_SIZE (1024*32)
-#define AUDIO_REFILL_THRESH 4096
+//#define AUDIO_INBUF_SIZE (1024*32)
+#define READ_REFILL_THRESH 4096
 
 static AVCodec *codec;
-static AVCodecContext *ac = NULL;
+static AVCodecContext *ac = NULL, *vc = NULL;
 static int len, ending;
-static AVPacket avpkt;
 static AVFrame *decoded_frame = NULL;
-static bool alloc_ac = false;
-
-static unsigned long absolute_framecount = 0;
-static long sample_rate;
-static int layer;
-static long bitrate;
-static int mpegversion;
-
-static CodecID codec_id;
+static bool alloc_ac = false, alloc_vc = false;
+static CodecID codec_id[2]; //Video. Audio.
+static AVPacket apkt, vpkt;
 
 extern "C" void mylog_ffcodec(char *fmt)
 {
@@ -90,56 +83,57 @@ extern "C" void mylog_ffcodec(char *fmt)
 }
 
 FF_CODEC::FF_CODEC(const sp<MediaSource> &source) :
-		mSource(source), mNumChannels(0), mStarted(false), mBufferGroup(NULL), mConfig(NULL), //new tPVMP3DecoderExternal),
-		mDecoderBuf(NULL), mAnchorTimeUs(0), mNumFramesOutput(0), mInputBuffer(NULL), mFixedHeader(0)
+		mSource(source), mNumChannels(0), mStarted(false), mBufferGroup(NULL), mConfig(NULL), mDecoderBuf(NULL), mAnchorTimeUs(
+				0), mNumFramesOutput(0), mInputBuffer(NULL), mFixedHeader(0), mNumSamplesOutput(0)
 {
 	init();
-	LOGV(" FF_CODEC() ");
+	LOGV("FF_CODEC() ");
 }
 
 void FF_CODEC::init()
 {
-	sp<MetaData> srcFormat = mSource->getFormat();
+	CHECK(!mStarted);
+	const char *mime = NULL;
+	sp<MetaData> meta = mSource->getFormat();
+	CHECK(meta->findCString(kKeyMIMEType, &mime));
 
-	int32_t sampleRate;
-
-	CHECK(srcFormat->findInt32(kKeyChannelCount, &mNumChannels));
-	CHECK(srcFormat->findInt32(kKeySampleRate, &sampleRate));
-	CHECK(srcFormat->findInt32(kKeyColorFormat, (int32_t*)&codec_id));
-	CHECK(srcFormat->findPointer(kKeyWidth, (void**)&ac));
+	LOGV("mime is %s", mime);
 
 	mMeta = new MetaData;
-	mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_RAW);
-	mMeta->setInt32(kKeyChannelCount, mNumChannels);
-	mMeta->setInt32(kKeySampleRate, sampleRate);
+	if (!strncasecmp(mime, "video/", 6))
+	{ //Video
+		isVideo = true;
+		CHECK(mSource->getFormat()->findInt32(kKeyWidth, &mWidth));
+		CHECK(mSource->getFormat()->findInt32(kKeyHeight, &mHeight));
+		mMeta->setInt32(kKeyWidth, mWidth);
+		mMeta->setInt32(kKeyHeight, mHeight);
+		mMeta->setInt32(kKeyColorFormat, OMX_COLOR_FormatYUV420Planar);
+		mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_VIDEO_RAW);
+		CHECK(meta->findInt32(kKeyFFcodecid, (int32_t*) &codec_id[0]));
+		CHECK(meta->findPointer(kKeyFFcodecctx, (void**) &vc));
+	}
+	else if (!strncasecmp(mime, "audio/", 6))
+	{ //Audiocodec
+		int32_t sampleRate;
 
-	int64_t durationUs;
-	if (srcFormat->findInt64(kKeyDuration, &durationUs))
-	{
-		mMeta->setInt64(kKeyDuration, durationUs);
+		isVideo = false;
+		CHECK(meta->findInt32(kKeyChannelCount, &mNumChannels));
+		CHECK(meta->findInt32(kKeySampleRate, &sampleRate));
+		CHECK(meta->findInt32(kKeyFFcodecid, (int32_t*) &codec_id[1]));
+		CHECK(meta->findPointer(kKeyFFcodecctx, (void**) &ac));
+
+		mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_RAW);
+		mMeta->setInt32(kKeyChannelCount, mNumChannels);
+		mMeta->setInt32(kKeySampleRate, sampleRate);
+
+		int64_t durationUs;
+		if (meta->findInt64(kKeyDuration, &durationUs))
+		{
+			mMeta->setInt64(kKeyDuration, durationUs);
+		}
 	}
 
 	mMeta->setCString(kKeyDecoderComponent, "FF_CODEC");
-
-#if 0
-	LOGD("FFplayInit called ! ");
-
-	I("\n**************************FF_CODEC*******************************\n");
-	I( "*  FFplayer based on libffmpeg, build time: %s %s \n", __DATE__, __TIME__);
-#ifdef OPT_TOMMY_NEON
-	I("***************  TOMMY OPTIMIZED USING NEON  ********************\n");
-#endif
-	I("avcodec version %d\n", avutil_version());
-	I("avcodec version %d\n", avcodec_version());
-	I("test using prelink.");
-	I("avformat version %d\n", avformat_version());
-	I("*****************************************************************\n");
-
-	avcodec_register_all();
-	av_register_all();
-
-	LOGD("FFplayInit done !");
-#endif
 }
 
 FF_CODEC::~FF_CODEC()
@@ -151,8 +145,32 @@ FF_CODEC::~FF_CODEC()
 
 	//delete mConfig;
 	mConfig = NULL;
-	LOGV(" ~FF_CODEC()");
+	LOGV("~FF_CODEC()");
 
+}
+
+void FF_CODEC::allocateFrames(int32_t width, int32_t height)
+{
+	size_t frameSize = (((width + 15) & -16) * ((height + 15) & -16) * 3) / 2;
+
+	for (uint32_t i = 0; i < 2; ++i)
+	{
+		mFrames[i] = new MediaBuffer(frameSize);
+		mFrames[i]->setObserver(this);
+	}
+}
+
+void FF_CODEC::releaseFrames()
+{
+	for (size_t i = 0; i < sizeof(mFrames) / sizeof(mFrames[0]); ++i)
+	{
+		MediaBuffer *buffer = mFrames[i];
+
+		buffer->setObserver(NULL);
+		buffer->release();
+
+		mFrames[i] = NULL;
+	}
 }
 
 status_t FF_CODEC::start(MetaData *params)
@@ -170,35 +188,64 @@ status_t FF_CODEC::start(MetaData *params)
 	mStarted = true;
 
 #if 1
-	av_init_packet(&avpkt);
 
 	/* find the mpeg audio decoder */
-	codec = avcodec_find_decoder(codec_id);		//(CODEC_ID_MP3);
+	codec = avcodec_find_decoder(codec_id[isVideo ? 0 : 1]);
 	if (!codec)
 	{
-		LOGE( "codec not found\n");
+		LOGE("codec not found\n");
 		return UNKNOWN_ERROR;
 	}
 
-	alloc_ac = false;
-	if(ac == NULL)
+	if (isVideo)
 	{
-		LOGD("avcodec_alloc_context3. ");
-		ac = avcodec_alloc_context3(codec);
-		alloc_ac = true;
+		av_init_packet(&vpkt);
+
+		alloc_vc = false;
+		if (vc == NULL)
+		{
+			LOGD("avcodec_alloc_context3. ");
+			vc = avcodec_alloc_context3(codec);
+			alloc_vc = true;
+		}
+
+		/* open it */
+		if (avcodec_open2(vc, codec, 0) < 0)
+		{
+			LOGE("could not open vcodec\n");
+			return UNKNOWN_ERROR;
+		}
+
+		allocateFrames(mWidth, mHeight);
+	}
+	else
+	{
+		av_init_packet(&apkt);
+
+		alloc_ac = false;
+		if (ac == NULL)
+		{
+			LOGD("avcodec_alloc_context3. ");
+			ac = avcodec_alloc_context3(codec);
+			alloc_ac = true;
+		}
+
+		/* open it */
+		if (avcodec_open2(ac, codec, 0) < 0)
+		{
+			LOGE("could not open acodec\n");
+			return UNKNOWN_ERROR;
+		}
 	}
 
-	/* open it */
-	if (avcodec_open2(ac, codec, 0) < 0)
-	{
-		LOGE( "could not open codec\n");
-		return UNKNOWN_ERROR;
-	}
+	decoded_frame = avcodec_alloc_frame();
+	avframe = (void*) decoded_frame;
+
 	ending = false;
 
 #endif
 
-	LOGV(" FF_CODEC::start() done");
+	LOGV("FF_CODEC::start() done");
 
 	return OK;
 }
@@ -222,20 +269,35 @@ status_t FF_CODEC::stop()
 	delete mBufferGroup;
 	mBufferGroup = NULL;
 
-#if 1
-	avcodec_close(ac);
-	if(alloc_ac)
-		av_free(ac);
-	alloc_ac = false;
-
-	if (decoded_frame)
-		av_free(decoded_frame);
-	decoded_frame = NULL;
-#endif
-
 	mSource->stop();
 
 	mStarted = false;
+
+#if 1
+	if (!isVideo)
+	{
+		avcodec_close(ac);
+		if (alloc_ac)
+			av_free(ac);
+		ac = NULL;
+		alloc_ac = false;
+	}
+	else if (isVideo)
+	{
+		avcodec_close(vc);
+		if (alloc_vc)
+			av_free(vc);
+		vc = NULL;
+		alloc_vc = false;
+		releaseFrames();
+	}
+
+	decoded_frame = (AVFrame*) avframe;
+	if (decoded_frame)
+		av_free(decoded_frame);
+	decoded_frame = NULL;
+
+#endif
 
 	LOGV(" FF_CODEC::stop()");
 	return OK;
@@ -245,6 +307,38 @@ sp<MetaData> FF_CODEC::getFormat()
 {
 	LOGV(" FF_CODEC::getFormat()");
 	return mMeta;
+}
+
+static void ff_CopyYuv(int width, int height, MediaBuffer *buff, AVFrame *frame)
+{
+	int i, j;
+	uint8_t *dst, *src;
+
+	src = frame->data[0];
+	dst = (uint8_t*) buff->data();
+	for (j = 0; j < height; j++)
+	{
+		memcpy(dst, src, width);
+		src += frame->linesize[0];
+		dst += width;
+	}
+
+	src = frame->data[1];
+	for (j = 0; j < height / 2; j++)
+	{
+		memcpy(dst, src, width / 2);
+		src += frame->linesize[1];
+		dst += width / 2;
+	}
+
+	src = frame->data[2];
+	for (j = 0; j < height / 2; j++)
+	{
+		memcpy(dst, src, width / 2);
+		src += frame->linesize[2];
+		dst += width / 2;
+	}
+	buff->set_range(0, buff->size());
 }
 
 status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
@@ -299,24 +393,6 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 			mFixedHeader = U32_AT((uint8_t *) mInputBuffer->data());
 		}
 
-		if (seekSource == true)
-		{
-//			off_t syncOffset = 0;
-//			bool valid = resync((uint8_t *) mInputBuffer->data() + mInputBuffer->range_offset(),
-//					mInputBuffer->range_length(), mFixedHeader, &syncOffset);
-//			if (valid)
-//			{
-//				// consume these bytes, we might find a frame header in next buffer
-//				mInputBuffer->set_range(mInputBuffer->range_offset() + syncOffset,
-//						mInputBuffer->range_length() - syncOffset);
-//				LOGV("FFcodec found a sync point after seek syncOffset %d", (int)syncOffset);
-//			}
-//			else
-//			{
-//				LOGV("NO SYNC POINT found, buffer length %d", mInputBuffer->range_length());
-//			}
-		}
-
 		int64_t timeUs;
 		if (mInputBuffer->meta_data()->findInt64(kKeyTime, &timeUs))
 		{
@@ -345,28 +421,38 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		}
 	}
 
-	// If input buffer length < thresh, try to fill it.
-	if (mInputBuffer && mInputBuffer->range_length() < AUDIO_REFILL_THRESH)
+#if 1
+	const char *extractor_name;
+	CHECK(mSource->getFormat()->findCString(kKeyFFextractor, &extractor_name));
+
+	LOGV("extractor_name is %s.", extractor_name);
+	if (strcmp(extractor_name, "FFExtractor") != NULL)
 	{
-		err = OK;
-		while (mInputBuffer->range_length() < (mInputBuffer->size() / 2) && err == OK)
+		// If input buffer length < thresh, try to fill it.
+		if (mInputBuffer && mInputBuffer->range_length() < READ_REFILL_THRESH)
 		{
-			err = mSource->read(&mbtmp, NULL);
-			if (err != OK)
+			err = OK;
+			while (mInputBuffer->range_length() < (mInputBuffer->size() / 2) && err == OK)
 			{
-				ending = true;
-			}
-			else
-			{
-				memcpy((uint8_t *) mInputBuffer->data() + mInputBuffer->range_offset() + mInputBuffer->range_length(),
-						(uint8_t *) mbtmp->data() + mbtmp->range_offset(), mbtmp->range_length());
-				mInputBuffer->set_range(mInputBuffer->range_offset(),
-						mInputBuffer->range_length() + mbtmp->range_length());
-				mbtmp->release();
+				err = mSource->read(&mbtmp, NULL);
+				if (err != OK)
+				{
+					ending = true;
+				}
+				else
+				{
+					memcpy(
+							(uint8_t *) mInputBuffer->data() + mInputBuffer->range_offset()
+									+ mInputBuffer->range_length(), (uint8_t *) mbtmp->data() + mbtmp->range_offset(),
+							mbtmp->range_length());
+					mInputBuffer->set_range(mInputBuffer->range_offset(),
+							mInputBuffer->range_length() + mbtmp->range_length());
+					mbtmp->release();
+				}
 			}
 		}
 	}
-
+#endif
 	// below fix one bug, which cause ftptest.wma crash at tail.
 	if (mInputBuffer == NULL && ending == true)
 	{
@@ -374,86 +460,157 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		return ERROR_END_OF_STREAM;
 	}
 
-	avpkt.data = (uint8_t*) mInputBuffer->data() + mInputBuffer->range_offset();
-	avpkt.size = mInputBuffer->range_length();
-	CHECK_EQ(mBufferGroup->acquire_buffer(&buffer), OK);
-	buffer->set_range(0, 0);
+	if (!isVideo)
+	{ //AUDIO
+		LOGV("read().AUDIO");
+		apkt.data = (uint8_t*) mInputBuffer->data() + mInputBuffer->range_offset();
+		apkt.size = mInputBuffer->range_length();
+		CHECK_EQ(mBufferGroup->acquire_buffer(&buffer), OK);
+		buffer->set_range(0, 0);
 
-	LOGV("ready to decode. avpkt.size  %d bytes (input).\n", avpkt.size);
-	LOGV("ready to decode. buffer size  %d bytes (output).\n", buffer->size());
-	while (got_audio_frame == 0 && avpkt.size > 0)
-	{
-		if (!decoded_frame)
+		LOGV("ready to decode. avpkt.size  %d bytes (input).\n", apkt.size);
+		LOGV("ready to decode. buffer size  %d bytes (output).\n", buffer->size());
+		while (got_audio_frame == 0 && apkt.size > 0)
 		{
-			if (!(decoded_frame = avcodec_alloc_frame()))
-			{
-				LOGE("out of memory\n");
-				buffer->release();
-				*out = NULL;
-				return UNKNOWN_ERROR;
-			}
-		}
-		else
-		{
+			decoded_frame = (AVFrame*) avframe;
 			avcodec_get_frame_defaults(decoded_frame);
-		}
 
-		// len is the used bytes from the input stream.
-		len = avcodec_decode_audio4(ac, decoded_frame, &got_audio_frame, &avpkt);
-		if (len < 0)
-		{
-			LOGE("avpkt.size  %d bytes left.\n", avpkt.size);
-			LOGE( "Error while decoding\n");
-			if (ending == true)
+			// len is the used bytes from the input stream.
+			len = avcodec_decode_audio4(ac, decoded_frame, &got_audio_frame, &apkt);
+			if (len < 0)
 			{
-				avpkt.size = 0;
-				buffer->release();
-				*out = NULL;
-				return ERROR_END_OF_STREAM;
+				LOGE("avpkt.size  %d bytes left.\n", apkt.size);
+				LOGE("Error while decoding\n");
+				if (ending == true)
+				{
+					apkt.size = 0;
+					buffer->release();
+					*out = NULL;
+					return ERROR_END_OF_STREAM;
+				}
+				apkt.size = 0;
 			}
-			avpkt.size = 0;
-		}
-		else
-		{
-			if (got_audio_frame)
+			else
 			{
-				LOGV("^, ch:%d, samples:%d, fmt:%d\n", ac->channels, decoded_frame->nb_samples, ac->sample_fmt);
-				/* if a frame has been decoded, output it */
-				int data_size = av_samples_get_buffer_size(NULL, ac->channels, decoded_frame->nb_samples, ac->sample_fmt,
-						1);
-				LOGV("%d bytes of input consumed, output %d bytes .", len, data_size);
-				//fwrite(decoded_frame->data[0], 1, data_size, outfile);
-				memcpy((uint8_t*) buffer->data() + buffer->range_length(), decoded_frame->data[0], data_size);
-				buffer->set_range(0, buffer->range_length() + data_size);
-				sample_rate = ac->sample_rate;
-				nb_samples += decoded_frame->nb_samples;
+				if (got_audio_frame)
+				{
+					LOGV("^, ch:%d, samples:%d, fmt:%d\n", ac->channels, decoded_frame->nb_samples, ac->sample_fmt);
+					/* if a frame has been decoded, output it */
+					int data_size = av_samples_get_buffer_size(NULL, ac->channels, decoded_frame->nb_samples,
+							ac->sample_fmt, 1);
+					LOGV("%d bytes of input consumed, output %d bytes .", len, data_size);
+					//fwrite(decoded_frame->data[0], 1, data_size, outfile);
+					memcpy((uint8_t*) buffer->data() + buffer->range_length(), decoded_frame->data[0], data_size);
+					buffer->set_range(0, buffer->range_length() + data_size);
+					sample_rate = ac->sample_rate;
+					nb_samples += decoded_frame->nb_samples;
+				}
+				apkt.size -= len;
+				apkt.data += len;
+				apkt.dts = apkt.pts = AV_NOPTS_VALUE;
 			}
-			avpkt.size -= len;
-			avpkt.data += len;
-			avpkt.dts = avpkt.pts = AV_NOPTS_VALUE;
-		}
 //		LOGV("avpkt.size  %d bytes left.\n", avpkt.size);
+		}
+
+		LOGV("decode done. avpkt.size  %d bytes left.\n", apkt.size);
+
+		// move unused data to header of mInputBuffer.
+		memmove((uint8_t*) mInputBuffer->data(), (uint8_t*) apkt.data, apkt.size);
+		mInputBuffer->set_range(0, apkt.size);
+
+		if (mInputBuffer->range_length() == 0)
+		{
+			mInputBuffer->release();
+			mInputBuffer = NULL;
+		}
+
+		buffer->meta_data()->setInt64(kKeyTime, mAnchorTimeUs + (mNumFramesOutput * 1000000) / sample_rate);
+		mNumFramesOutput += nb_samples;
+
+		*out = buffer;
 	}
+	else
+	{ //VIDEO
+		LOGV("read().VIDEO");
+		vpkt.data = (uint8_t*) mInputBuffer->data() + mInputBuffer->range_offset();
+		vpkt.size = mInputBuffer->range_length();
+		buffer = mFrames[mNumSamplesOutput & 0x01];
+		buffer->set_range(0, 0);
 
-	LOGV("decode done. avpkt.size  %d bytes left.\n", avpkt.size);
+		LOGV("ready to decode. avpkt.size  %d bytes (input).\n", vpkt.size);
+		LOGV("ready to decode. buffer size  %d bytes (output).\n", buffer->size());
+		while (vpkt.size > 0)
+		{
+			int got_picture;
+			decoded_frame = (AVFrame*) avframe;
 
-	// move unused data to header of mInputBuffer.
-	memmove((uint8_t*) mInputBuffer->data(), (uint8_t*) avpkt.data, avpkt.size);
-	mInputBuffer->set_range(0, avpkt.size);
+			// len is the used bytes from the input stream.
+			len = avcodec_decode_video2(vc, decoded_frame, &got_picture, &vpkt);
+			if (len < 0)
+			{
+				LOGE("avpkt.size  %d bytes left.\n", vpkt.size);
+				LOGE("Error while decoding\n");
+				if (ending == true)
+				{
+					vpkt.size = 0;
+					buffer->release();
+					*out = NULL;
+					return ERROR_END_OF_STREAM;
+				}
+				vpkt.size = 0;
+			}
+			else
+			{
+				if (got_picture)
+				{
+					LOGV("got video frame! %d x %d. linesize %d,%d,%d", decoded_frame->width, decoded_frame->height,
+							decoded_frame->linesize[0], decoded_frame->linesize[1], decoded_frame->linesize[2]);
 
-	if (mInputBuffer->range_length() == 0)
-	{
-		mInputBuffer->release();
-		mInputBuffer = NULL;
+					/* if a frame has been decoded, output it */
+//					int data_size = decoded_frame->height * decoded_frame->linesize[0]; // * 3 / 2;
+//					LOGV("%d bytes of input consumed, output %d bytes .", len, data_size);
+//					memcpy((uint8_t*) buffer->data() + buffer->range_length(), decoded_frame->data[0], data_size);
+//					buffer->set_range(0, buffer->range_length() + data_size);
+					ff_CopyYuv(mWidth, mHeight, buffer, decoded_frame);
+
+				}
+				vpkt.size -= len;
+				vpkt.data += len;
+				vpkt.dts = vpkt.pts = AV_NOPTS_VALUE;
+			}
+//		LOGV("avpkt.size  %d bytes left.\n", avpkt.size);
+		}
+
+		LOGV("decode done. vpkt.size %d bytes left.\n", vpkt.size);
+
+		// move unused data to header of mInputBuffer.
+		memmove((uint8_t*) mInputBuffer->data(), (uint8_t*) vpkt.data, vpkt.size);
+		mInputBuffer->set_range(0, vpkt.size);
+
+		int64_t timeUs;
+		CHECK(mInputBuffer->meta_data()->findInt64(kKeyTime, &timeUs));
+
+		if (mInputBuffer->range_length() == 0)
+		{
+			mInputBuffer->release();
+			mInputBuffer = NULL;
+		}
+
+		*out = buffer; //mFrames[mNumSamplesOutput & 0x01];
+		(*out)->add_ref();
+		(*out)->meta_data()->setInt64(kKeyTime, timeUs);
+		++mNumSamplesOutput;
 	}
-
-	buffer->meta_data()->setInt64(kKeyTime, mAnchorTimeUs + (mNumFramesOutput * 1000000) / sample_rate);
-	mNumFramesOutput += nb_samples;
 
 	LOGV("read() done.");
-	*out = buffer;
+
 	return OK;
 
+}
+
+void FF_CODEC::signalBufferReturned(MediaBuffer *buffer)
+{
+	LOGV("signalBufferReturned");
 }
 
 } // namespace android

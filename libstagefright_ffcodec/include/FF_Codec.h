@@ -18,6 +18,7 @@
 
 #define FF_CODEC_H
 
+#include <media/stagefright/MediaBuffer.h>
 #include <media/stagefright/MediaSource.h>
 
 //struct tPVMP3DecoderExternal;
@@ -26,7 +27,7 @@ namespace android {
 
 struct MediaBufferGroup;
 
-struct FF_CODEC : public MediaSource {
+struct FF_CODEC : public MediaSource,  public MediaBufferObserver {
     FF_CODEC(const sp<MediaSource> &source);
 
     virtual status_t start(MetaData *params);
@@ -37,13 +38,27 @@ struct FF_CODEC : public MediaSource {
     virtual status_t read(
             MediaBuffer **buffer, const ReadOptions *options);
 
+    //Tommy: add below for video.
+    virtual void signalBufferReturned(MediaBuffer *buffer);
+
 protected:
     virtual ~FF_CODEC();
 
 private:
     sp<MediaSource> mSource;
     sp<MetaData> mMeta;
+
+    bool isVideo;
+    //video
+    int32_t mWidth, mHeight;
+    MediaBuffer *mFrames[2];
+    int64_t mNumSamplesOutput;
+    int64_t mTargetTimeUs;
+    //audio
     int32_t mNumChannels;
+    int32_t sample_rate;
+    //ffmpeg
+    void	*avframe;
 
     bool mStarted;
 
@@ -61,6 +76,9 @@ private:
     //MediaBuffer *mPartialBuffer;		// Tommy:no use
 
     void init();
+
+    void allocateFrames(int32_t width, int32_t height);
+    void releaseFrames();
 
     FF_CODEC(const FF_CODEC &);
     FF_CODEC &operator=(const FF_CODEC &);

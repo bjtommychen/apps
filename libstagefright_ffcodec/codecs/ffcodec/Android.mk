@@ -22,7 +22,8 @@ endif
 LOCAL_C_INCLUDES := \
         frameworks/base/media/libstagefright/include \
         $(LOCAL_PATH)/src \
-        $(LOCAL_PATH)/include
+        $(LOCAL_PATH)/include\
+	frameworks/base/include/media/stagefright/openmax
 
 
 LOCAL_CFLAGS := -DHAVE_CONFIG_H 

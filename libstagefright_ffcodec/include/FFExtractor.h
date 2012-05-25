@@ -45,7 +45,15 @@ private:
     sp<MetaData> mMeta;
     uint32_t mFixedHeader;
     int32_t mByteNumber; // total number of bytes in this FF
-    //char mTableOfContents[99]; // TOC entries in XING header
+
+    struct Track {
+
+        sp<MetaData> meta;
+        uint32_t timescale;
+
+        int idx;
+    };
+    Track *mTrackA, *mTrackV;
 
     FFExtractor(const FFExtractor &);
     FFExtractor &operator=(const FFExtractor &);

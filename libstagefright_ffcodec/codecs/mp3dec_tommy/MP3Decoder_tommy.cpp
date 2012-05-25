@@ -445,7 +445,9 @@ status_t MP3DecoderTommy::stop()
 	if (initcfg.pCoreMemPool)
 	{
 		free(initcfg.pCoreMemPool);
-	}LOGV(" MP3DecoderTommy::stop()");
+	}
+
+	LOGV(" MP3DecoderTommy::stop()");
 	return OK;
 }
 

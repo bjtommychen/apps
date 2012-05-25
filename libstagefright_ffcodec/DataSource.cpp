@@ -149,7 +149,7 @@ sp<DataSource> DataSource::CreateFromURI(
         return NULL;
     }
 
-    LOGV("uri_file_tommy is %s.", source->uri_file_tommy);
+    LOGV("DataSource::CreateFromURI, uri_file_tommy is %s.", source->uri_file_tommy);
 
     return source;
 }

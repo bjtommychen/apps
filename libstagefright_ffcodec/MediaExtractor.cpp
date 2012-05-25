@@ -76,14 +76,16 @@ sp<MediaExtractor> MediaExtractor::Create(const sp<DataSource> &source, const ch
 #if 1
 	if (source->uri_file_tommy != NULL)
 	{
-		if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_WMA))
-		{
+//		if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_WMA))
+//		{
+//			return new FFExtractor(source, meta);
+//		}
+//		if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MPEG))
+//		{
+//			return new FFExtractor(source, meta);
+//		}
+		if (!strcasecmp(mime, "video/ffone"))
 			return new FFExtractor(source, meta);
-		}
-		if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MPEG))
-		{
-			return new FFExtractor(source, meta);
-		}
 	}
 #endif
 
