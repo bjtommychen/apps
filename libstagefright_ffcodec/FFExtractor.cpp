@@ -77,7 +77,8 @@ static int audioidx, videoidx;
 static bool hasVideo, hasAudio;
 //static int sample_rate;
 //static int num_channels;
-static int bitrate; // in Kbps.
+static int bitrateA, bitrateV; // in Kbps.
+
 static String8 mimetypeA, mimetypeV;
 
 //static CodecID codec_id;
@@ -112,6 +113,9 @@ private:
 	int32_t mByteNumber; // total number of bytes in this FF
 	MediaBufferGroup *mGroup;
 
+	bool hasVideo;
+	bool hasAudio;
+
 	FFSource(const FFSource &);
 	FFSource &operator=(const FFSource &);
 };
@@ -125,17 +129,18 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 
 	size_t frame_size;
 
+	bitrateA = bitrateV = 0;
+
 	if (hasAudio)
 	{
 		mTrackA = new Track;
 		mTrackA->meta = new MetaData;
 
-//		codec_id = ac->codec_id;
-		bitrate = ac->bit_rate / 1000;
+		bitrateA += ac->bit_rate / 1000;
 
 		mTrackA->meta->setCString(kKeyMIMEType, mimetypeA);
 		mTrackA->meta->setInt32(kKeySampleRate, ac->sample_rate);
-		mTrackA->meta->setInt32(kKeyBitRate, bitrate * 1000);
+		mTrackA->meta->setInt32(kKeyBitRate, ac->bit_rate);
 		mTrackA->meta->setInt32(kKeyChannelCount, ac->channels);
 		mTrackA->meta->setInt32(kKeyFFcodecid, ac->codec_id);
 		mTrackA->meta->setPointer(kKeyFFcodecctx, (void*) ac);
@@ -153,9 +158,10 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 			off_t fileSize;
 			if (mDataSource->getSize(&fileSize) == OK)
 			{
-				mTrackA->meta->setInt64(kKeyDuration, 8000LL * (fileSize - mFirstFramePos) / bitrate);
+				mTrackA->meta->setInt64(kKeyDuration, 8000LL * (fileSize - mFirstFramePos) / bitrateA);
 			}
 		}
+		LOGV("audio bitrate %d kbps.", bitrateA);
 		LOGV("FFExtractor() audio done.");
 	}
 
@@ -163,6 +169,8 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 	{
 		mTrackV = new Track;
 		mTrackV->meta = new MetaData;
+
+		bitrateV += vc->bit_rate / 1000;
 
 		mTrackV->meta->setCString(kKeyMIMEType, mimetypeV);
 		mTrackV->meta->setInt32(kKeyWidth, vc->width);
@@ -174,11 +182,12 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 
 		mTrackV->meta->setCString(kKeyFFextractor, "FFExtractor");
 
+		LOGV("video bitrate %d kbps.", bitrateV);
 		LOGV("FFExtractor() video done.");
 	}
 
 	mInitCheck = OK;
-	LOGV("FFExtractor() done.");
+	LOGV("FFExtractor() done. total bitrate:%d kbps", bitrateA + bitrateV);
 }
 
 size_t FFExtractor::countTracks()
@@ -209,9 +218,10 @@ sp<MediaSource> FFExtractor::getTrack(size_t index)
 	}
 	LOGV("getTrack(%d) new FFSource.", index);
 //	if (index == 0)
-//		return new FFSource(mTrackA->meta, mDataSource, mFirstFramePos, mFixedHeader, mByteNumber, NULL);
-//	else
-	return new FFSource(mTrackV->meta, mDataSource, mFirstFramePos, mFixedHeader, mByteNumber, NULL);
+	if (!hasVideo)
+		return new FFSource(mTrackA->meta, mDataSource, mFirstFramePos, mFixedHeader, mByteNumber, NULL);
+	else
+		return new FFSource(mTrackV->meta, mDataSource, mFirstFramePos, mFixedHeader, mByteNumber, NULL);
 }
 
 sp<MetaData> FFExtractor::getTrackMetaData(size_t index, uint32_t flags)
@@ -222,9 +232,10 @@ sp<MetaData> FFExtractor::getTrackMetaData(size_t index, uint32_t flags)
 	}
 	LOGV("getTrackMetaData(%d).", index);
 //	if (index == 0)
-//		return mTrackA->meta;
-//	else
-	return mTrackV->meta;
+	if (!hasVideo)
+		return mTrackA->meta;
+	else
+		return mTrackV->meta;
 }
 
 //////////////////////////////////FFSource//////////////////////////////////////////////
@@ -235,6 +246,15 @@ FFSource::FFSource(const sp<MetaData> &meta, const sp<DataSource> &source, off_t
 				0), mStarted(false), mByteNumber(byte_number), mGroup(NULL)
 {
 	//memcpy (mTableOfContents, table_of_contents, sizeof(mTableOfContents));
+	hasVideo = false;
+	hasAudio = false;
+
+	const char *mime = NULL;
+	CHECK(mMeta->findCString(kKeyMIMEType, &mime));
+	if (!strncasecmp(mime, "video/", 6))
+		hasVideo = true;
+	if (!strncasecmp(mime, "audio/", 6))
+		hasAudio = true;
 }
 
 FFSource::~FFSource()
@@ -251,10 +271,14 @@ status_t FFSource::start(MetaData *)
 
 	mGroup = new MediaBufferGroup;
 
-	const size_t kMaxFrameSize = 32768*3;	//For 1080P, add *3.
+	size_t kMaxFrameSize;
+	if (hasVideo)
+		kMaxFrameSize = 200 * 1024; //For 1080P, add *3.
+	else
+		kMaxFrameSize = 32768;
 	mGroup->add_buffer(new MediaBuffer(kMaxFrameSize));
 	mGroup->add_buffer(new MediaBuffer(kMaxFrameSize));
-	LOGV("start(), Tommy do ONE more new MediaBuffer %d bytes. for ffcodec", kMaxFrameSize);
+	LOGV("FFSource::start, Tommy do ONE more new MediaBuffer %d bytes. for ffcodec", kMaxFrameSize);
 
 	mCurrentPos = mFirstFramePos;
 	mCurrentTimeUs = 0;
@@ -292,6 +316,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 {
 	*out = NULL;
 
+
 #if 1	//Seek
 	int64_t seekTimeUs;
 	ReadOptions::SeekMode mode;
@@ -316,7 +341,8 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 		}
 	}
 #endif
-	int frame_size;
+	int frame_size = 0;
+	int bitrate;
 
 	MediaBuffer *buffer;
 	status_t err = mGroup->acquire_buffer(&buffer);
@@ -327,14 +353,27 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 
 	memset(&apkt, 0, sizeof(apkt));
 	memset(&vpkt, 0, sizeof(vpkt));
+
 	while (av_read_frame(fc, &apkt) == 0)
 	{
-//		if (apkt.stream_index == audioidx)
-//			break;
-		if (apkt.stream_index == videoidx)
-			break;
+		if (hasVideo)
+		{
+			if (apkt.stream_index == videoidx)
+			{
+				frame_size += apkt.size;
+				break;
+			}
+		}
+		else
+		{
+			if (apkt.stream_index == audioidx)
+			{
+				frame_size += apkt.size;
+				break;
+			}
+		}
 
-		LOGV("skip non-audio frame idx.%d", apkt.stream_index);
+		LOGV("skip frame idx.%d", apkt.stream_index);
 	}
 
 //	ssize_t n = mDataSource->readAt(mCurrentPos, buffer->data(), frame_size);
@@ -347,13 +386,21 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 		return ERROR_END_OF_STREAM;
 	}
 
-	frame_size = apkt.size;
-	memcpy(buffer->data(), apkt.data, frame_size);
-	buffer->set_range(0, frame_size);
-	LOGV("FFSource::read %d bytes. ", frame_size);
+//	frame_size = apkt.size;
+	memcpy(buffer->data(), apkt.data, apkt.size);
+	buffer->set_range(0, apkt.size);
+	LOGV("FFSource::read %d bytes. ", apkt.size);
 
 	buffer->meta_data()->setInt64(kKeyTime, mCurrentTimeUs);
 	buffer->meta_data()->setInt32(kKeyIsSyncFrame, 1);
+
+	bitrate = (hasVideo)? bitrateV : bitrateA;
+	if (bitrate == 0)
+	{
+		LOGE("bitrate %d, ", bitrate);
+	}
+
+	LOGV(" video bitrate is %d",	fc->streams[videoidx]->codec->bit_rate);
 
 	mCurrentPos += frame_size;
 	mCurrentTimeUs += frame_size * 8000ll / bitrate;
@@ -389,7 +436,6 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 //	return false;
 
 	*confidence = 0.0f;
-
 
 	I("\n**************************SniffFF*******************************\n");
 	I( "*  FFplayer based on libffmpeg, build time: %s %s \n", __DATE__, __TIME__);
@@ -458,6 +504,7 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 				&(fc->streams[i]->codec->codec_tag));
 		avcodec_string(buf, sizeof(buf), fc->streams[i]->codec, 1);
 		LOGV("%s", buf);
+
 	}
 
 	LOGV("\n");
@@ -488,6 +535,14 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 		mimetypeA = MEDIA_MIMETYPE_AUDIO_AAC;
 		audiosupport = true;
 		break;
+	case CODEC_ID_AMR_NB:
+	case CODEC_ID_AMR_WB:
+		mimetypeA = MEDIA_MIMETYPE_AUDIO_AMR_NB;
+		audiosupport = true;
+	case CODEC_ID_COOK:
+		mimetypeA = MEDIA_MIMETYPE_AUDIO_RAW;
+		audiosupport = true;
+
 	default:
 		*confidence = 0.0f;
 		break;
@@ -526,13 +581,13 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 
 	if (hasAudio && !hasVideo)
 	{
-		*mimeType = mimetypeA;
+		*mimeType = "audio/ffone"; //mimetypeA;
 		*confidence = 0.73f;
 	}
 
 	if (hasVideo)
 	{
-		*mimeType = "video/ffone";	//MEDIA_MIMETYPE_CONTAINER_MPEG4;
+		*mimeType = "video/ffone"; //MEDIA_MIMETYPE_CONTAINER_MPEG4;
 		*confidence = 0.73f;
 	}
 
