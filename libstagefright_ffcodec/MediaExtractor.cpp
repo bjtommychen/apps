@@ -84,6 +84,8 @@ sp<MediaExtractor> MediaExtractor::Create(const sp<DataSource> &source, const ch
 //		{
 //			return new FFExtractor(source, meta);
 //		}
+		if (!strcasecmp(mime, "audio/ffone"))
+			return new FFExtractor(source, meta);
 		if (!strcasecmp(mime, "video/ffone"))
 			return new FFExtractor(source, meta);
 	}
