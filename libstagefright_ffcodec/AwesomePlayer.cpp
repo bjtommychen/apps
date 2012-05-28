@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 #define LOG_TAG "AwesomePlayer"
 #include <utils/Log.h>
 
@@ -221,7 +221,19 @@ status_t AwesomeLocalRenderer::init(
         size_t displayWidth, size_t displayHeight,
         size_t decodedWidth, size_t decodedHeight,
         int32_t rotationDegrees) {
-    if (!previewOnly) {
+
+#if 0
+	char str[256];
+	//Tommy
+	if (!strcmp(componentName, "FF_CODEC"))
+	{
+		strcpy(str, "OMX.SEC.FF_CODEC");
+		componentName = str;
+	}
+#endif
+
+	LOGI("AwesomeLocalRenderer::init %s", componentName);
+	if (!previewOnly) {
         // We will stick to the vanilla software-color-converting renderer
         // for "previewOnly" mode, to avoid unneccessarily switching overlays
         // more often than necessary.
@@ -278,6 +290,7 @@ status_t AwesomeLocalRenderer::init(
         }
     }
 
+    LOGI("AwesomeLocalRenderer::init got hw render %x", mTarget);
     if (mTarget != NULL) {
         return OK;
     }
@@ -286,6 +299,7 @@ status_t AwesomeLocalRenderer::init(
             colorFormat, surface, displayWidth, displayHeight,
             decodedWidth, decodedHeight, rotationDegrees);
 
+    LOGI("AwesomeLocalRenderer::init got soft render");
     return ((SoftwareRenderer *)mTarget)->initCheck();
 }
 
@@ -423,7 +437,9 @@ status_t AwesomePlayer::setDataSource(
 
 status_t AwesomePlayer::setDataSource_l(
         const sp<DataSource> &dataSource) {
-    sp<MediaExtractor> extractor = MediaExtractor::Create(dataSource);
+
+    LOGV("setDataSource_l &dataSource");
+	sp<MediaExtractor> extractor = MediaExtractor::Create(dataSource);
 
     if (extractor == NULL) {
         return UNKNOWN_ERROR;
@@ -448,6 +464,7 @@ status_t AwesomePlayer::setDataSource_l(const sp<MediaExtractor> &extractor) {
     // tracks' individual bitrates, if not all of them advertise bitrate,
     // we have to fail.
 
+    LOGV("setDataSource_l &extractor");
     int64_t totalBitRate = 0;
 
     for (size_t i = 0; i < extractor->countTracks(); ++i) {
@@ -1076,6 +1093,8 @@ status_t AwesomePlayer::initRenderer_l() {
                 kKeyRotation, &rotationDegrees)) {
         rotationDegrees = 0;
     }
+
+    LOGI("AwesomePlayer::initRenderer_l() component %s, rotation %d", component, rotationDegrees);
 
     mVideoRenderer.clear();
 
@@ -1817,6 +1836,7 @@ void AwesomePlayer::onVideoEvent() {
         mFlags &= ~FIRST_FRAME;
 
         mTimeSourceDeltaUs = ts->getRealTimeUs() - timeUs;
+        LOGV("FIRST_FRAME  mTimeSourceDeltaUs %lld;", mTimeSourceDeltaUs);
     }
 
     int64_t realTimeUs, mediaTimeUs;
@@ -1826,8 +1846,10 @@ void AwesomePlayer::onVideoEvent() {
     }
 
     int64_t nowUs = ts->getRealTimeUs() - mTimeSourceDeltaUs;
-
+    LOGV("nowUs %lld, ts->getRealTimeUs() %lld, mTimeSourceDeltaUs %lld,;", nowUs , ts->getRealTimeUs() , mTimeSourceDeltaUs);
     int64_t latenessUs = nowUs - timeUs;
+
+    LOGV("latenessUs %lld, nowUs %lld,- timeUs %lld,;", latenessUs , nowUs , timeUs);
 
     if (wasSeeking) {
         // Let's display the first frame after seeking right away.
@@ -1849,11 +1871,11 @@ void AwesomePlayer::onVideoEvent() {
         LOGV("Frame dropped - lateness (%lld - %lld = %lld uS)",nowUs,timeUs,latenessUs);
 
 #else
-    if (latenessUs > 40000) {
+    if (latenessUs >40000) {
         // We're more than 40ms late.
 #endif
         LOGV("we're late by %lld us (%.2f secs)", latenessUs, latenessUs / 1E6);
-
+#if 0 	//tommy, force to display even if late.
         mVideoBuffer->release();
         mVideoBuffer = NULL;
 #if defined(OMAP_ENHANCEMENT) && defined(TARGET_OMAP4)
@@ -1862,6 +1884,7 @@ void AwesomePlayer::onVideoEvent() {
         postVideoEvent_l();
 #endif
         return;
+#endif
     }
 #if defined(OMAP_ENHANCEMENT) && !defined(TARGET_OMAP4)
     if (latenessUs < -100000) {
@@ -1883,6 +1906,7 @@ void AwesomePlayer::onVideoEvent() {
 #else
         postVideoEvent_l(10000);
 #endif
+        LOGV("We're more than 10ms early. delay 10ms.");
         return;
     }
 
@@ -2074,6 +2098,8 @@ status_t AwesomePlayer::prepareAsync_l() {
 
 status_t AwesomePlayer::finishSetDataSource_l() {
     sp<DataSource> dataSource;
+
+    LOGV("finishSetDataSource_l() %s.", mUri.string());
 
     if (!strncasecmp("http://", mUri.string(), 7)) {
         mConnectingDataSource = new NuHTTPDataSource;
@@ -2284,6 +2310,7 @@ status_t AwesomePlayer::finishSetDataSource_l() {
     sp<MediaExtractor> extractor = MediaExtractor::Create(dataSource);
 
     if (extractor == NULL) {
+    	LOGE("extractor == NULL");
         return UNKNOWN_ERROR;
     }
 #ifdef OMAP_ENHANCEMENT
