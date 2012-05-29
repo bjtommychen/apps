@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+//#define VIDEO_ONLY
 #define LOG_NDEBUG 0
 #define LOG_TAG "FFExtractor"
 #include <utils/Log.h>
@@ -199,11 +200,12 @@ size_t FFExtractor::countTracks()
 	}
 	else
 	{
+#ifndef VIDEO_ONLY
 		if (hasAudio)
 			r++;
-//		if (hasVideo)
-//			r++;
-		r = 1;
+#endif
+		if (hasVideo)
+			r++;
 	}
 	LOGV("countTracks return %d. ", r);
 
@@ -217,8 +219,11 @@ sp<MediaSource> FFExtractor::getTrack(size_t index)
 		return NULL;
 	}
 	LOGV("getTrack(%d) new FFSource.", index);
-//	if (index == 0)
-	if (!hasVideo)
+#ifndef VIDEO_ONLY
+	if (index == 0)
+#else
+		if (!hasVideo)
+#endif
 		return new FFSource(mTrackA->meta, mDataSource, mFirstFramePos, mFixedHeader, mByteNumber, NULL);
 	else
 		return new FFSource(mTrackV->meta, mDataSource, mFirstFramePos, mFixedHeader, mByteNumber, NULL);
@@ -231,8 +236,11 @@ sp<MetaData> FFExtractor::getTrackMetaData(size_t index, uint32_t flags)
 		return NULL;
 	}
 	LOGV("getTrackMetaData(%d).", index);
-//	if (index == 0)
-	if (!hasVideo)
+#ifndef VIDEO_ONLY
+	if (index == 0)
+#else
+		if (!hasVideo)
+#endif
 		return mTrackA->meta;
 	else
 		return mTrackV->meta;
@@ -273,9 +281,9 @@ status_t FFSource::start(MetaData *)
 
 	size_t kMaxFrameSize;
 	if (hasVideo)
-		kMaxFrameSize = 200 * 1024; //For 1080P, add *3.
+		kMaxFrameSize = 300 * 1024; //For 1080P, add *3.
 	else
-		kMaxFrameSize = 32768;
+		kMaxFrameSize = 64 * 1024;
 	mGroup->add_buffer(new MediaBuffer(kMaxFrameSize));
 	mGroup->add_buffer(new MediaBuffer(kMaxFrameSize));
 	LOGV("FFSource::start, Tommy do ONE more new MediaBuffer %d bytes. for ffcodec", kMaxFrameSize);
@@ -285,6 +293,8 @@ status_t FFSource::start(MetaData *)
 
 #if 1
 //	aframe = avcodec_alloc_frame();
+	memset(&apkt, 0, sizeof(apkt));
+	memset(&vpkt, 0, sizeof(vpkt));
 #endif
 
 	mStarted = true;
@@ -315,7 +325,6 @@ sp<MetaData> FFSource::getFormat()
 status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 {
 	*out = NULL;
-
 
 #if 1	//Seek
 	int64_t seekTimeUs;
@@ -351,34 +360,61 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 		return err;
 	}
 
-	memset(&apkt, 0, sizeof(apkt));
-	memset(&vpkt, 0, sizeof(vpkt));
+	int status = 0;
 
-	while (av_read_frame(fc, &apkt) == 0)
+	buffer->set_range(0, 0);
+	if (hasAudio)
 	{
-		if (hasVideo)
-		{
-			if (apkt.stream_index == videoidx)
-			{
-				frame_size += apkt.size;
-				break;
-			}
-		}
-		else
+		while ((status = av_read_frame(fc, &apkt)) == 0)
 		{
 			if (apkt.stream_index == audioidx)
 			{
+				LOGV("read audio packet %d bytes.", apkt.size);
+				memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
+				buffer->set_range(0, buffer->range_length() + apkt.size);
 				frame_size += apkt.size;
+				continue;
+			}
+			else
+			{
+				LOGV("got video when read audio. save video packet. then return");
+//				vpkt = apkt;
 				break;
 			}
 		}
 
-		LOGV("skip frame idx.%d", apkt.stream_index);
+	}
+	else if (hasVideo)
+	{
+		if (apkt.size)
+		{
+			//Video stored in last apkt.
+			memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
+			buffer->set_range(0, buffer->range_length() + apkt.size);
+			frame_size += apkt.size;
+			apkt.size = 0;
+		}
+		else
+		{
+			while ((status = av_read_frame(fc, &apkt)) == 0)
+			{
+				if (apkt.stream_index == videoidx)
+				{
+					LOGV("read video packet %d bytes.", apkt.size);
+					memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
+					buffer->set_range(0, buffer->range_length() + apkt.size);
+					frame_size += apkt.size;
+					break;
+				}
+				else
+				{
+					LOGV("got audio when read video. ");
+				}
+			}
+		}
 	}
 
-//	ssize_t n = mDataSource->readAt(mCurrentPos, buffer->data(), frame_size);
-//	if (n < (ssize_t) frame_size)
-	if (apkt.size == 0)
+	if (status != 0 && buffer->range_length() == 0)
 	{
 		buffer->release();
 		buffer = NULL;
@@ -386,26 +422,38 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 		return ERROR_END_OF_STREAM;
 	}
 
-//	frame_size = apkt.size;
-	memcpy(buffer->data(), apkt.data, apkt.size);
-	buffer->set_range(0, apkt.size);
-	LOGV("FFSource::read %d bytes. ", apkt.size);
+//	memcpy(buffer->data(), apkt.data, apkt.size);
+//	buffer->set_range(0, apkt.size);
 
 	buffer->meta_data()->setInt64(kKeyTime, mCurrentTimeUs);
 	buffer->meta_data()->setInt32(kKeyIsSyncFrame, 1);
 
-	bitrate = (hasVideo)? bitrateV : bitrateA;
-	if (bitrate == 0)
+	mCurrentPos += frame_size;
+
+	if (hasVideo)
 	{
-		LOGE("bitrate %d, ", bitrate);
+		bitrate = bitrateV;
+		if (bitrate == 0)
+		{
+			LOGE("bitrate %d, use time_base.", bitrate);
+			mCurrentTimeUs += av_q2d(fc->streams[videoidx]->codec->time_base) * 1000000L;
+		}
+		else
+		{
+			mCurrentTimeUs += frame_size * 8000ll / bitrate;
+		}
+	}
+	else if (hasAudio)
+	{
+		bitrate = bitrateA;
+		mCurrentTimeUs += frame_size * 8000ll / bitrate;
 	}
 
-	LOGV(" video bitrate is %d",	fc->streams[videoidx]->codec->bit_rate);
-
-	mCurrentPos += frame_size;
-	mCurrentTimeUs += frame_size * 8000ll / bitrate;
+//	LOGV(" video bitrate is %d, frame_rate %lf. time base %lf. ", fc->streams[videoidx]->codec->bit_rate, av_q2d(fc->streams[videoidx]->avg_frame_rate),
+//			av_q2d(fc->streams[videoidx]->codec->time_base));
 
 	*out = buffer;
+	LOGV("FFSource::read %d bytes. ", buffer->range_length());
 
 	return OK;
 }
@@ -483,7 +531,7 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 	}
 
 	LOGV("nb_streams is %d\n", fc->nb_streams);
-	for (int i = 0; i < fc->nb_streams; i++)
+	for (unsigned int i = 0; i < fc->nb_streams; i++)
 	{
 		LOGV("\nStream #%d: ", i);
 		switch (fc->streams[i]->codec->codec_type)
@@ -584,8 +632,7 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 		*mimeType = "audio/ffone"; //mimetypeA;
 		*confidence = 0.73f;
 	}
-
-	if (hasVideo)
+	else if (hasVideo)
 	{
 		*mimeType = "video/ffone"; //MEDIA_MIMETYPE_CONTAINER_MPEG4;
 		*confidence = 0.73f;
