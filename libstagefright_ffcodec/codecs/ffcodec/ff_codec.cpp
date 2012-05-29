@@ -76,6 +76,8 @@ static bool alloc_ac = false, alloc_vc = false;
 static CodecID codec_id[2]; //Video. Audio.
 static AVPacket apkt, vpkt;
 
+static bool readbusy = false;
+
 extern "C" void mylog_ffcodec(char *fmt)
 {
 	//LOGI("mylog");
@@ -408,6 +410,13 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 
 	LOGV("read().");
 
+	while (readbusy)
+	{
+		usleep(500000); //0.5s
+	}
+
+	readbusy = true;
+
 	if (mInputBuffer == NULL)
 	{
 		err = mSource->read(&mInputBuffer, NULL);
@@ -602,6 +611,7 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		++mNumSamplesOutput;
 	}
 
+	readbusy = false;
 	LOGV("read() done.");
 
 	return OK;
