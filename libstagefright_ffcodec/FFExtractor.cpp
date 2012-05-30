@@ -520,7 +520,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 		}
 		else
 		{
-			while ((status = av_read_frame(fc, &apkt)) == 0)
+			while ((status = av_read_frame(fc, &apkt)) == 0 && buffer->range_length() < buffer->size() * 9 / 10)
 			{
 				// Get continue audio packet, until read video packet.
 				if (apkt.stream_index == audioidx)
