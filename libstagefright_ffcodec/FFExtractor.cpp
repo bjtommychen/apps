@@ -70,6 +70,137 @@ extern "C"
 
 namespace android
 {
+#if 1
+typedef struct PacketQueue
+{
+	AVPacketList *first_pkt, *last_pkt;
+	int nb_packets;
+	int size; // total bytes of all nb_packets.
+	int abort_request;
+//	SDL_mutex *mutex;
+//	SDL_cond *cond;
+} PacketQueue;
+
+PacketQueue videoq;
+PacketQueue audioq;
+
+static void packet_queue_init(PacketQueue *q)
+{
+	memset(q, 0, sizeof(PacketQueue));
+//	q->mutex = SDL_CreateMutex();
+//	q->cond = SDL_CreateCond();
+}
+
+static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
+{
+
+	AVPacketList *pkt1;
+
+	LOGD("pkt data pointer is %p\n", pkt->data);
+	if (av_dup_packet(pkt) < 0)
+	{
+		return -1;
+	}
+	pkt1 = (AVPacketList*) av_malloc(sizeof(AVPacketList));
+	if (!pkt1)
+		return -1;
+	pkt1->pkt = *pkt;
+	pkt1->next = NULL;
+
+//	SDL_LockMutex(q->mutex);
+
+	if (!q->last_pkt)
+		q->first_pkt = pkt1;
+	else
+		q->last_pkt->next = pkt1;
+	q->last_pkt = pkt1;
+	q->nb_packets++;
+	q->size += pkt1->pkt.size;
+//	SDL_CondSignal(q->cond);
+//
+//	SDL_UnlockMutex(q->mutex);
+	return 0;
+}
+
+static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
+{
+	AVPacketList *pkt1;
+	int ret;
+
+//	SDL_LockMutex(q->mutex);
+
+	for (;;)
+	{
+		if (q->abort_request)
+		{
+			ret = -1;
+			break;
+		}
+
+		pkt1 = q->first_pkt;
+		if (pkt1)
+		{
+			q->first_pkt = pkt1->next;
+			if (!q->first_pkt)
+				q->last_pkt = NULL;
+			q->nb_packets--;
+			q->size -= pkt1->pkt.size;
+			*pkt = pkt1->pkt;
+			av_free(pkt1);
+			ret = 1;
+			break;
+		}
+		else if (!block)
+		{
+			ret = 0;
+			break;
+		}
+		else
+		{
+//			SDL_CondWait(q->cond, q->mutex);
+		}
+	}
+
+//	SDL_UnlockMutex(q->mutex);
+	return ret;
+}
+
+static void packet_queue_flush(PacketQueue *q)
+{
+	AVPacketList *pkt, *pkt1;
+
+//    SDL_LockMutex(q->mutex);
+	for (pkt = q->first_pkt; pkt != NULL; pkt = pkt1)
+	{
+		pkt1 = pkt->next;
+		av_free_packet(&pkt->pkt);
+		av_freep(&pkt);
+	}
+	q->last_pkt = NULL;
+	q->first_pkt = NULL;
+	q->nb_packets = 0;
+	q->size = 0;
+//    SDL_UnlockMutex(q->mutex);
+}
+
+static void packet_queue_end(PacketQueue *q)
+{
+	packet_queue_flush(q);
+//    SDL_DestroyMutex(q->mutex);
+//    SDL_DestroyCond(q->cond);
+}
+
+static void packet_queue_abort(PacketQueue *q)
+{
+//    SDL_LockMutex(q->mutex);?
+
+	q->abort_request = 1;
+
+//    SDL_CondSignal(q->cond);
+//
+//    SDL_UnlockMutex(q->mutex);
+}
+#endif
 
 // ffmpeg avformat.
 static AVFormatContext *fc = NULL;
@@ -137,7 +268,7 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 		mTrackA = new Track;
 		mTrackA->meta = new MetaData;
 
-		bitrateA += ac->bit_rate / 1000;
+		bitrateA = ac->bit_rate / 1000;
 
 		mTrackA->meta->setCString(kKeyMIMEType, mimetypeA);
 		mTrackA->meta->setInt32(kKeySampleRate, ac->sample_rate);
@@ -149,8 +280,8 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 		mTrackA->meta->setCString(kKeyFFextractor, "FFExtractor");
 
 		mFirstFramePos = 0;
-		int64_t duration = 0;
-		if (duration > 0)
+		int64_t duration = fc->duration;
+		if (duration != AV_NOPTS_VALUE)
 		{
 			mTrackA->meta->setInt64(kKeyDuration, duration);
 		}
@@ -171,12 +302,17 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 		mTrackV = new Track;
 		mTrackV->meta = new MetaData;
 
-		bitrateV += vc->bit_rate / 1000;
+		bitrateV = vc->bit_rate / 1000;
+//		if (vc->bit_rate == 0)
+//		{
+//			bitrateV = (fc->bit_rate - ac->bit_rate)/1000;
+//			LOGV("calcualte video bitrate from total bitrate.");
+//		}
 
 		mTrackV->meta->setCString(kKeyMIMEType, mimetypeV);
 		mTrackV->meta->setInt32(kKeyWidth, vc->width);
 		mTrackV->meta->setInt32(kKeyHeight, vc->height);
-		mTrackV->meta->setInt32(kKeyBitRate, vc->bit_rate);
+		mTrackV->meta->setInt32(kKeyBitRate, bitrateV * 1000);
 		mTrackV->meta->setInt64(kKeyDuration, fc->duration);
 		mTrackV->meta->setInt32(kKeyFFcodecid, vc->codec_id);
 		mTrackV->meta->setPointer(kKeyFFcodecctx, (void*) vc);
@@ -285,16 +421,18 @@ status_t FFSource::start(MetaData *)
 	else
 		kMaxFrameSize = 64 * 1024;
 	mGroup->add_buffer(new MediaBuffer(kMaxFrameSize));
-	mGroup->add_buffer(new MediaBuffer(kMaxFrameSize));
+//	mGroup->add_buffer(new MediaBuffer(kMaxFrameSize));
 	LOGV("FFSource::start, Tommy do ONE more new MediaBuffer %d bytes. for ffcodec", kMaxFrameSize);
 
 	mCurrentPos = mFirstFramePos;
 	mCurrentTimeUs = 0;
 
 #if 1
-//	aframe = avcodec_alloc_frame();
 	memset(&apkt, 0, sizeof(apkt));
 	memset(&vpkt, 0, sizeof(vpkt));
+
+	packet_queue_init(&audioq);
+	packet_queue_init(&videoq);
 #endif
 
 	mStarted = true;
@@ -310,7 +448,10 @@ status_t FFSource::stop()
 	mGroup = NULL;
 
 #if 1
-//	av_free(aframe);
+	packet_queue_abort(&audioq);
+	packet_queue_end(&audioq);
+	packet_queue_abort(&videoq);
+	packet_queue_end(&videoq);
 #endif
 	mStarted = false;
 
@@ -342,7 +483,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 
 		mCurrentTimeUs = seekTimeUs;
 		// interpolate in TOC to get file seek point in bytes
-		int64_t duration;
+//		int64_t duration;
 		{
 //			LOGD("seekTimeUs %ld.", seekTimeUs);
 			mCurrentPos = mFirstFramePos + seekTimeUs * bitrate / 8000000;
@@ -365,29 +506,45 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 	buffer->set_range(0, 0);
 	if (hasAudio)
 	{
-		while ((status = av_read_frame(fc, &apkt)) == 0)
-		{
-			if (apkt.stream_index == audioidx)
+		if (audioq.nb_packets > 0)
+		{ // Already have audio packet in queue. Get all.
+			LOGV(" audioq.nb_packets %d. ", audioq.nb_packets);
+			while (audioq.nb_packets > 0 && buffer->range_length() < buffer->size() * 9 / 10)
 			{
-				LOGV("read audio packet %d bytes.", apkt.size);
+				packet_queue_get(&audioq, &apkt, 0);
 				memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 				buffer->set_range(0, buffer->range_length() + apkt.size);
 				frame_size += apkt.size;
-				continue;
-			}
-			else
-			{
-				LOGV("got video when read audio. save video packet. then return");
-//				vpkt = apkt;
-				break;
+				apkt.size = 0;
 			}
 		}
-
+		else
+		{
+			while ((status = av_read_frame(fc, &apkt)) == 0)
+			{
+				// Get continue audio packet, until read video packet.
+				if (apkt.stream_index == audioidx)
+				{
+					LOGV("read audio packet %d bytes.", apkt.size);
+					memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
+					buffer->set_range(0, buffer->range_length() + apkt.size);
+					frame_size += apkt.size;
+					continue;
+				}
+				else
+				{
+					LOGV("got video when read audio. save video packet. then return");
+					packet_queue_put(&videoq, &apkt);
+					break;
+				}
+			}
+		}
 	}
 	else if (hasVideo)
 	{
-		if (apkt.size)
-		{
+		if (videoq.nb_packets > 0)
+		{ // Already have video packet in queue. Get one.
+			packet_queue_get(&videoq, &apkt, 0);
 			//Video stored in last apkt.
 			memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 			buffer->set_range(0, buffer->range_length() + apkt.size);
@@ -408,6 +565,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 				}
 				else
 				{
+					packet_queue_put(&audioq, &apkt);
 					LOGV("got audio when read video. ");
 				}
 			}
@@ -436,7 +594,8 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 		if (bitrate == 0)
 		{
 			LOGE("bitrate %d, use time_base.", bitrate);
-			mCurrentTimeUs += av_q2d(fc->streams[videoidx]->codec->time_base) * 1000000L;
+//			mCurrentTimeUs += av_q2d(fc->streams[videoidx]->codec->time_base) * 1000000L;
+			mCurrentTimeUs += AV_TIME_BASE / av_q2d(fc->streams[videoidx]->avg_frame_rate);
 		}
 		else
 		{
@@ -453,7 +612,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 //			av_q2d(fc->streams[videoidx]->codec->time_base));
 
 	*out = buffer;
-	LOGV("FFSource::read %d bytes. ", buffer->range_length());
+	LOGV("FFSource::read %d bytes.  mCurrentTimeUs %lld.", buffer->range_length(), mCurrentTimeUs);
 
 	return OK;
 }
