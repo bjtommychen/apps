@@ -21,7 +21,7 @@
 #include <media/stagefright/MediaBuffer.h>
 #include <media/stagefright/MediaSource.h>
 
-//struct tPVMP3DecoderExternal;
+
 
 namespace android {
 
