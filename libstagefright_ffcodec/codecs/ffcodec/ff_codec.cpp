@@ -61,6 +61,8 @@ extern "C"
 #include <media/stagefright/MetaData.h>
 #include <media/stagefright/Utils.h>
 
+#include <utils/threads.h>
+
 namespace android
 {
 
@@ -76,7 +78,7 @@ static bool alloc_ac = false, alloc_vc = false;
 static CodecID codec_id[2]; //Video. Audio.
 static AVPacket apkt, vpkt;
 
-static bool readbusy = false;
+Mutex mLock;
 
 extern "C" void mylog_ffcodec(char *fmt)
 {
@@ -345,6 +347,8 @@ static void ff_CopyYuv(int width, int height, MediaBuffer *buff, AVFrame *frame)
 
 status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 {
+	Mutex::Autolock autoLock(mLock);
+
 	status_t err;
 	MediaBuffer *buffer = NULL;
 	int64_t timeUs;
@@ -354,6 +358,8 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 	int offset;
 	MediaBuffer *mbtmp;
 	int nb_samples = 0;
+
+	LOGV("read().");
 
 	*out = NULL;
 
@@ -408,15 +414,6 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		}
 	}
 
-	LOGV("read().");
-
-	while (readbusy)
-	{
-		usleep(500000); //0.5s
-	}
-
-	readbusy = true;
-
 	if (mInputBuffer == NULL)
 	{
 		err = mSource->read(&mInputBuffer, NULL);
@@ -430,7 +427,7 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		}
 	}
 
-#if 1
+#if 0
 	const char *extractor_name;
 	CHECK(mSource->getFormat()->findCString(kKeyFFextractor, &extractor_name));
 
@@ -452,7 +449,7 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 				{
 					memcpy(
 							(uint8_t *) mInputBuffer->data() + mInputBuffer->range_offset()
-									+ mInputBuffer->range_length(), (uint8_t *) mbtmp->data() + mbtmp->range_offset(),
+							+ mInputBuffer->range_length(), (uint8_t *) mbtmp->data() + mbtmp->range_offset(),
 							mbtmp->range_length());
 					mInputBuffer->set_range(mInputBuffer->range_offset(),
 							mInputBuffer->range_length() + mbtmp->range_length());
@@ -479,7 +476,7 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 
 		LOGV("ready to decode. avpkt.size  %d bytes (input).\n", apkt.size);
 		LOGV("ready to decode. buffer size  %d bytes (output).\n", buffer->size());
-		while (got_audio_frame == 0 && apkt.size > 0)
+		while (/*got_audio_frame == 0 &&*/apkt.size > 0 && buffer->range_length() < (buffer->size() * 9 / 10))
 		{
 			decoded_frame = (AVFrame*) avframe;
 			avcodec_get_frame_defaults(decoded_frame);
@@ -611,7 +608,6 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		++mNumSamplesOutput;
 	}
 
-	readbusy = false;
 	LOGV("read() done.");
 
 	return OK;
