@@ -476,7 +476,7 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 
 		LOGV("ready to decode. avpkt.size  %d bytes (input).\n", apkt.size);
 		LOGV("ready to decode. buffer size  %d bytes (output).\n", buffer->size());
-		while (/*got_audio_frame == 0 &&*/apkt.size > 0 && buffer->range_length() < (buffer->size() * 9 / 10))
+		while (got_audio_frame == 0 && apkt.size > 0) // && buffer->range_length() < (buffer->size() * 9 / 10))
 		{
 			decoded_frame = (AVFrame*) avframe;
 			avcodec_get_frame_defaults(decoded_frame);
