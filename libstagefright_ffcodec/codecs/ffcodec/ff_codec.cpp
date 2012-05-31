@@ -378,7 +378,10 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 			mInputBuffer = NULL;
 		}
 
-		avcodec_flush_buffers(ac);
+		if (!isVideo)
+			avcodec_flush_buffers(ac);
+		if (isVideo)
+			avcodec_flush_buffers(vc);
 	}
 	else
 	{
