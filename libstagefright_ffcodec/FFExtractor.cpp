@@ -204,19 +204,14 @@ static void packet_queue_abort(PacketQueue *q)
 
 // ffmpeg avformat.
 static AVFormatContext *fc = NULL;
-static AVPacket apkt;
+static AVPacket apkt;		//Because it's not allocated. so no need to call av_free_packet().
 static int audioidx, videoidx;
 static bool hasVideo, hasAudio;
-//static int sample_rate;
-//static int num_channels;
 static int bitrateA, bitrateV; // in Kbps.
 
 static String8 mimetypeA, mimetypeV;
 
-//static CodecID codec_id;
-//static AVCodec *acodec;
 static AVCodecContext *ac = NULL, *vc = NULL;
-//static AVFrame *aframe = NULL;
 
 class FFSource: public MediaSource
 {
@@ -517,8 +512,6 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 				memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 				buffer->set_range(0, buffer->range_length() + apkt.size);
 				frame_size += apkt.size;
-				//av_free_packet(&apkt);
-				//apkt.size = 0;
 			}
 		}
 		else
@@ -532,7 +525,6 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 					memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 					buffer->set_range(0, buffer->range_length() + apkt.size);
 					frame_size += apkt.size;
-					//av_free_packet(&apkt);
 					continue;
 				}
 				else
@@ -553,7 +545,6 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 			memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 			buffer->set_range(0, buffer->range_length() + apkt.size);
 			frame_size += apkt.size;
-			//av_free_packet(&apkt);
 		}
 		else
 		{
@@ -565,7 +556,6 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 					memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 					buffer->set_range(0, buffer->range_length() + apkt.size);
 					frame_size += apkt.size;
-					//av_free_packet(&apkt);
 					break;
 				}
 				else
@@ -584,9 +574,6 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 
 		return ERROR_END_OF_STREAM;
 	}
-
-//	memcpy(buffer->data(), apkt.data, apkt.size);
-//	buffer->set_range(0, apkt.size);
 
 	buffer->meta_data()->setInt64(kKeyTime, mCurrentTimeUs);
 	buffer->meta_data()->setInt32(kKeyIsSyncFrame, 1);
