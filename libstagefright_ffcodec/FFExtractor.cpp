@@ -204,7 +204,7 @@ static void packet_queue_abort(PacketQueue *q)
 
 // ffmpeg avformat.
 static AVFormatContext *fc = NULL;
-static AVPacket apkt, vpkt;
+static AVPacket apkt;
 static int audioidx, videoidx;
 static bool hasVideo, hasAudio;
 //static int sample_rate;
@@ -428,8 +428,8 @@ status_t FFSource::start(MetaData *)
 	mCurrentTimeUs = 0;
 
 #if 1
-	memset(&apkt, 0, sizeof(apkt));
-	memset(&vpkt, 0, sizeof(vpkt));
+
+	av_init_packet(&apkt);
 
 	packet_queue_init(&audioq);
 	packet_queue_init(&videoq);
@@ -485,10 +485,12 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 		// interpolate in TOC to get file seek point in bytes
 //		int64_t duration;
 		{
-//			LOGD("seekTimeUs %ld.", seekTimeUs);
+			LOGD("seekTimeUs %ld.", seekTimeUs);
 			mCurrentPos = mFirstFramePos + seekTimeUs * bitrate / 8000000;
 			av_seek_frame(fc, -1, seekTimeUs, AVSEEK_FLAG_BACKWARD);
 		}
+		packet_queue_flush(&videoq);
+		packet_queue_flush(&audioq);
 	}
 #endif
 	int frame_size = 0;
@@ -515,7 +517,8 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 				memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 				buffer->set_range(0, buffer->range_length() + apkt.size);
 				frame_size += apkt.size;
-				apkt.size = 0;
+				//av_free_packet(&apkt);
+				//apkt.size = 0;
 			}
 		}
 		else
@@ -529,6 +532,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 					memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 					buffer->set_range(0, buffer->range_length() + apkt.size);
 					frame_size += apkt.size;
+					//av_free_packet(&apkt);
 					continue;
 				}
 				else
@@ -549,7 +553,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 			memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 			buffer->set_range(0, buffer->range_length() + apkt.size);
 			frame_size += apkt.size;
-			apkt.size = 0;
+			//av_free_packet(&apkt);
 		}
 		else
 		{
@@ -561,6 +565,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 					memcpy(buffer->data() + buffer->range_length(), apkt.data, apkt.size);
 					buffer->set_range(0, buffer->range_length() + apkt.size);
 					frame_size += apkt.size;
+					//av_free_packet(&apkt);
 					break;
 				}
 				else
