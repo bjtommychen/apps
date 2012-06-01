@@ -587,28 +587,10 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 
 	if (hasVideo)
 	{
-//		if (fc->streams[videoidx]->avg_frame_rate.den && fc->streams[videoidx]->avg_frame_rate.num)
-//		{
-//			mCurrentTimeUs += AV_TIME_BASE / av_q2d(fc->streams[videoidx]->avg_frame_rate);
-//		}
-//		else
-//		{
-//			mCurrentTimeUs += av_q2d(fc->streams[videoidx]->codec->time_base) * 1000000L;
-//		}
 
-//		bitrate = bitrateV;
-//		if (1) //(bitrate == 0)
-//		{
-//			LOGE("bitrate %d, avg_frame_rate %lf.", bitrate, av_q2d(fc->streams[videoidx]->avg_frame_rate));
-////			mCurrentTimeUs += av_q2d(fc->streams[videoidx]->codec->time_base) * 1000000L;
-//			mCurrentTimeUs += AV_TIME_BASE / av_q2d(fc->streams[videoidx]->avg_frame_rate);
-//		}
-//		else
-//		{
-//			mCurrentTimeUs += frame_size * 8000ll / bitrate;
-//		}
-		LOGV(" video bitrate is %d, frame_rate %lf. time base %lf. ", fc->streams[videoidx]->codec->bit_rate, av_q2d(fc->streams[videoidx]->avg_frame_rate),
-				av_q2d(fc->streams[videoidx]->codec->time_base));
+		LOGV(" video bitrate is %d, frame_rate %lf. time base %lf.  %d/%d.", fc->streams[videoidx]->codec->bit_rate, av_q2d(fc->streams[videoidx]->avg_frame_rate),
+				av_q2d(fc->streams[videoidx]->codec->time_base),
+				fc->streams[videoidx]->avg_frame_rate.num, fc->streams[videoidx]->avg_frame_rate.den);
 	}
 	else if (hasAudio)
 	{
