@@ -72,6 +72,8 @@ private:
     int64_t mNumFramesOutput;
     uint32_t mFixedHeader;
 
+    int64_t mUsOutput;		//Tommy
+
     MediaBuffer *mInputBuffer;
     //MediaBuffer *mPartialBuffer;		// Tommy:no use
 
