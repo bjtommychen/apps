@@ -72,6 +72,7 @@ namespace android
 
 static AVCodec *codec;
 static AVCodecContext *ac = NULL, *vc = NULL;
+static AVStream *vstream = NULL;
 static int len, ending;
 static AVFrame *decoded_frame = NULL;
 static bool alloc_ac = false, alloc_vc = false;
@@ -84,6 +85,35 @@ extern "C" void mylog_ffcodec(char *fmt)
 {
 	//LOGI("mylog");
 	__android_log_print(ANDROID_LOG_INFO, "ffcodec log", "%s", fmt);
+}
+
+#define AUDIO_RESAMPLE_SIZE		(1024*20)
+static int audio_resample_converter(AVCodecContext *audioc, unsigned char *src, int nb_samples, unsigned char *dst,
+		int* dstlen)
+{ // Need format convert, check swr_convert() for details.
+	struct SwrContext *swr_ctx;
+	unsigned char swr_tmpbuff[AUDIO_RESAMPLE_SIZE];
+	unsigned char *in[] =
+	{ src };
+	unsigned char *out[] =
+	{ swr_tmpbuff };
+	int len2;
+
+	LOGV("enter resample !\n");
+	swr_ctx = swr_alloc_set_opts(NULL, audioc->channel_layout, AV_SAMPLE_FMT_S16, audioc->sample_rate,
+			audioc->channel_layout, audioc->sample_fmt, audioc->sample_rate, 0, NULL);
+	swr_init(swr_ctx);
+	len2 = swr_convert(swr_ctx, (uint8_t **) out,
+			sizeof(swr_tmpbuff) / audioc->channels / av_get_bytes_per_sample(AV_SAMPLE_FMT_S16), (const uint8_t **) in,
+			nb_samples);
+	swr_free(&swr_ctx);
+	LOGV("resample output %d samples.\n", len2);
+	len2 *= audioc->channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
+	memcpy(dst, swr_tmpbuff, len2);
+	if (dstlen)
+		*dstlen = len2;
+
+	return len2;
 }
 
 FF_CODEC::FF_CODEC(const sp<MediaSource> &source) :
@@ -115,6 +145,7 @@ void FF_CODEC::init()
 		mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_VIDEO_RAW);
 		CHECK(meta->findInt32(kKeyFFcodecid, (int32_t*) &codec_id[0]));
 		CHECK(meta->findPointer(kKeyFFcodecctx, (void**) &vc));
+		CHECK(meta->findPointer(kKeyFFcodecstrm, (void**) &vstream));
 	}
 	else if (!strncasecmp(mime, "audio/", 6))
 	{ //Audiocodec
@@ -189,6 +220,7 @@ status_t FF_CODEC::start(MetaData *params)
 
 	mAnchorTimeUs = 0;
 	mNumFramesOutput = 0;
+	mUsOutput = 0;
 	mStarted = true;
 
 #if 1
@@ -354,6 +386,7 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 	int64_t timeUs;
 	bool seekSource = false;
 
+	int got_picture = 0;
 	int got_audio_frame = 0;
 	int offset;
 	MediaBuffer *mbtmp;
@@ -370,6 +403,7 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		CHECK(seekTimeUs >= 0);
 
 		mNumFramesOutput = 0;
+		mUsOutput = 0;
 		seekSource = true;
 
 		if (mInputBuffer)
@@ -398,17 +432,18 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 			ending = true;
 		}
 
-		if ((mFixedHeader == 0) && (mInputBuffer->range_length() > 4))
-		{
-			//save the first 4 bytes as fixed header for the reset of the file
-			mFixedHeader = U32_AT((uint8_t *) mInputBuffer->data());
-		}
+//		if ((mFixedHeader == 0) && (mInputBuffer->range_length() > 4))
+//		{
+//			//save the first 4 bytes as fixed header for the reset of the file
+//			mFixedHeader = U32_AT((uint8_t *) mInputBuffer->data());
+//		}
 
 		int64_t timeUs;
 		if (mInputBuffer->meta_data()->findInt64(kKeyTime, &timeUs))
 		{
 			mAnchorTimeUs = timeUs;
 			mNumFramesOutput = 0;
+			mUsOutput = 0;
 		}
 		else
 		{
@@ -508,8 +543,15 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 					int data_size = av_samples_get_buffer_size(NULL, ac->channels, decoded_frame->nb_samples,
 							ac->sample_fmt, 1);
 					LOGV("%d bytes of input consumed, output %d bytes .", len, data_size);
-					//fwrite(decoded_frame->data[0], 1, data_size, outfile);
-					memcpy((uint8_t*) buffer->data() + buffer->range_length(), decoded_frame->data[0], data_size);
+					if (ac->sample_fmt == AV_SAMPLE_FMT_S16)
+					{
+						memcpy((uint8_t*) buffer->data() + buffer->range_length(), decoded_frame->data[0], data_size);
+					}
+					else
+					{
+						audio_resample_converter(ac, decoded_frame->data[0], decoded_frame->nb_samples,
+								(uint8_t*) buffer->data() + buffer->range_length(), &data_size);
+					}
 					buffer->set_range(0, buffer->range_length() + data_size);
 					sample_rate = ac->sample_rate;
 					nb_samples += decoded_frame->nb_samples;
@@ -536,6 +578,10 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		buffer->meta_data()->setInt64(kKeyTime, mAnchorTimeUs + (mNumFramesOutput * 1000000) / sample_rate);
 		mNumFramesOutput += nb_samples;
 
+		LOGD(
+				"my delta %f,",
+				(float)buffer->range_length()
+						/ (ac->channels * ac->sample_rate * av_get_bytes_per_sample(ac->sample_fmt)));
 		*out = buffer;
 	}
 	else
@@ -550,7 +596,6 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		LOGV("ready to decode. buffer size  %d bytes (output).\n", buffer->size());
 		while (vpkt.size > 0)
 		{
-			int got_picture;
 			decoded_frame = (AVFrame*) avframe;
 
 			// len is the used bytes from the input stream.
@@ -591,7 +636,10 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		}
 
 		LOGV("decode done. vpkt.size %d bytes left.\n", vpkt.size);
-
+		if (!got_picture)
+		{
+			LOGE("GOT PIC? NO!");
+		}
 		// move unused data to header of mInputBuffer.
 		memmove((uint8_t*) mInputBuffer->data(), (uint8_t*) vpkt.data, vpkt.size);
 		mInputBuffer->set_range(0, vpkt.size);
@@ -599,16 +647,39 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		int64_t timeUs;
 		CHECK(mInputBuffer->meta_data()->findInt64(kKeyTime, &timeUs));
 
+		{
+//			static int64_t timeUsBak = 0L;
+//			LOGD("VIDEO.timeus delta %lld.", timeUs - timeUsBak);
+//			timeUsBak = timeUs;
+//			LOGD("input buffer timeUs:%lld, mUsOutput:%lld,", timeUs, mUsOutput);
+//			mUsOutput += decoded_frame->pts;
+//			LOGD("%lld, %lld, %lld ", decoded_frame->pkt_dts, decoded_frame->pkt_dts,
+//					av_q2d(vc->time_base) * AV_TIME_BASE);
+		}
+
 		if (mInputBuffer->range_length() == 0)
 		{
 			mInputBuffer->release();
 			mInputBuffer = NULL;
 		}
 
-		*out = buffer; //mFrames[mNumSamplesOutput & 0x01];
-		(*out)->add_ref();
-		(*out)->meta_data()->setInt64(kKeyTime, timeUs);
-		++mNumSamplesOutput;
+		if (vstream->avg_frame_rate.den && vstream->avg_frame_rate.num)
+			timeUs = mAnchorTimeUs
+					+ (mNumFramesOutput * (AV_TIME_BASE / av_q2d(vstream->avg_frame_rate)));
+		else
+			timeUs = mAnchorTimeUs
+								+ (mNumFramesOutput * (AV_TIME_BASE / av_q2d(vstream->time_base)));
+
+		if (!got_picture)
+			*out = new MediaBuffer(0);
+		else
+		{
+			mNumFramesOutput ++;
+			*out = buffer; //mFrames[mNumSamplesOutput & 0x01];
+			(*out)->add_ref();
+			(*out)->meta_data()->setInt64(kKeyTime, timeUs);
+			++mNumSamplesOutput;
+		}
 	}
 
 	LOGV("read() done.");

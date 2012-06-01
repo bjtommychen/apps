@@ -202,9 +202,13 @@ static void packet_queue_abort(PacketQueue *q)
 }
 #endif
 
+//Note: set all supported to MEDIA_MIMETYPE_AUDIO_MPEG, as it's decoded by ffcodec defined in OMXCodec.cpp
+#define MEDIA_MIMETYPE_AUDIO_FFCODEC MEDIA_MIMETYPE_AUDIO_MPEG
+#define MEDIA_MIMETYPE_VIDEO_FFCODEC MEDIA_MIMETYPE_VIDEO_AVC
+
 // ffmpeg avformat.
 static AVFormatContext *fc = NULL;
-static AVPacket apkt;		//Because it's not allocated. so no need to call av_free_packet().
+static AVPacket apkt; //Because it's not allocated. so no need to call av_free_packet().
 static int audioidx, videoidx;
 static bool hasVideo, hasAudio;
 static int bitrateA, bitrateV; // in Kbps.
@@ -311,6 +315,7 @@ FFExtractor::FFExtractor(const sp<DataSource> &source, const sp<AMessage> &meta)
 		mTrackV->meta->setInt64(kKeyDuration, fc->duration);
 		mTrackV->meta->setInt32(kKeyFFcodecid, vc->codec_id);
 		mTrackV->meta->setPointer(kKeyFFcodecctx, (void*) vc);
+		mTrackV->meta->setPointer(kKeyFFcodecstrm, (void*) fc->streams[videoidx]);
 
 		mTrackV->meta->setCString(kKeyFFextractor, "FFExtractor");
 
@@ -527,7 +532,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 					frame_size += apkt.size;
 					continue;
 				}
-				else
+				else if (apkt.stream_index == videoidx)
 				{
 					LOGV("got video when read audio. save video packet. then return");
 					packet_queue_put(&videoq, &apkt);
@@ -558,7 +563,7 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 					frame_size += apkt.size;
 					break;
 				}
-				else
+				else if (apkt.stream_index == audioidx)
 				{
 					packet_queue_put(&audioq, &apkt);
 					LOGV("got audio when read video. ");
@@ -582,26 +587,34 @@ status_t FFSource::read(MediaBuffer **out, const ReadOptions *options)
 
 	if (hasVideo)
 	{
-		bitrate = bitrateV;
-		if (bitrate == 0)
-		{
-			LOGE("bitrate %d, use time_base.", bitrate);
+//		if (fc->streams[videoidx]->avg_frame_rate.den && fc->streams[videoidx]->avg_frame_rate.num)
+//		{
+//			mCurrentTimeUs += AV_TIME_BASE / av_q2d(fc->streams[videoidx]->avg_frame_rate);
+//		}
+//		else
+//		{
 //			mCurrentTimeUs += av_q2d(fc->streams[videoidx]->codec->time_base) * 1000000L;
-			mCurrentTimeUs += AV_TIME_BASE / av_q2d(fc->streams[videoidx]->avg_frame_rate);
-		}
-		else
-		{
-			mCurrentTimeUs += frame_size * 8000ll / bitrate;
-		}
+//		}
+
+//		bitrate = bitrateV;
+//		if (1) //(bitrate == 0)
+//		{
+//			LOGE("bitrate %d, avg_frame_rate %lf.", bitrate, av_q2d(fc->streams[videoidx]->avg_frame_rate));
+////			mCurrentTimeUs += av_q2d(fc->streams[videoidx]->codec->time_base) * 1000000L;
+//			mCurrentTimeUs += AV_TIME_BASE / av_q2d(fc->streams[videoidx]->avg_frame_rate);
+//		}
+//		else
+//		{
+//			mCurrentTimeUs += frame_size * 8000ll / bitrate;
+//		}
+		LOGV(" video bitrate is %d, frame_rate %lf. time base %lf. ", fc->streams[videoidx]->codec->bit_rate, av_q2d(fc->streams[videoidx]->avg_frame_rate),
+				av_q2d(fc->streams[videoidx]->codec->time_base));
 	}
 	else if (hasAudio)
 	{
 		bitrate = bitrateA;
 		mCurrentTimeUs += frame_size * 8000ll / bitrate;
 	}
-
-//	LOGV(" video bitrate is %d, frame_rate %lf. time base %lf. ", fc->streams[videoidx]->codec->bit_rate, av_q2d(fc->streams[videoidx]->avg_frame_rate),
-//			av_q2d(fc->streams[videoidx]->codec->time_base));
 
 	*out = buffer;
 	LOGV("FFSource::read %d bytes.  mCurrentTimeUs %lld.", buffer->range_length(), mCurrentTimeUs);
@@ -736,12 +749,13 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 		break;
 	case CODEC_ID_AMR_NB:
 	case CODEC_ID_AMR_WB:
-		mimetypeA = MEDIA_MIMETYPE_AUDIO_AMR_NB;
+		mimetypeA = MEDIA_MIMETYPE_AUDIO_FFCODEC;
 		audiosupport = true;
+		break;
 	case CODEC_ID_COOK:
-		mimetypeA = MEDIA_MIMETYPE_AUDIO_RAW;
+		mimetypeA = MEDIA_MIMETYPE_AUDIO_FFCODEC;
 		audiosupport = true;
-
+		break;
 	default:
 		*confidence = 0.0f;
 		break;
@@ -768,7 +782,7 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 		case CODEC_ID_RV40:
 		case CODEC_ID_MPEG2VIDEO:
 		case CODEC_ID_MPEG4:
-			mimetypeV = MEDIA_MIMETYPE_VIDEO_AVC;
+			mimetypeV = MEDIA_MIMETYPE_VIDEO_FFCODEC;
 			videosupport = true;
 			break;
 		default:
