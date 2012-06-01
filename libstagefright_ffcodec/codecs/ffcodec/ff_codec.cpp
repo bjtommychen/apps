@@ -578,10 +578,6 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		buffer->meta_data()->setInt64(kKeyTime, mAnchorTimeUs + (mNumFramesOutput * 1000000) / sample_rate);
 		mNumFramesOutput += nb_samples;
 
-		LOGD(
-				"my delta %f,",
-				(float)buffer->range_length()
-						/ (ac->channels * ac->sample_rate * av_get_bytes_per_sample(ac->sample_fmt)));
 		*out = buffer;
 	}
 	else
@@ -647,16 +643,6 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 		int64_t timeUs;
 		CHECK(mInputBuffer->meta_data()->findInt64(kKeyTime, &timeUs));
 
-		{
-//			static int64_t timeUsBak = 0L;
-//			LOGD("VIDEO.timeus delta %lld.", timeUs - timeUsBak);
-//			timeUsBak = timeUs;
-//			LOGD("input buffer timeUs:%lld, mUsOutput:%lld,", timeUs, mUsOutput);
-//			mUsOutput += decoded_frame->pts;
-//			LOGD("%lld, %lld, %lld ", decoded_frame->pkt_dts, decoded_frame->pkt_dts,
-//					av_q2d(vc->time_base) * AV_TIME_BASE);
-		}
-
 		if (mInputBuffer->range_length() == 0)
 		{
 			mInputBuffer->release();
@@ -668,7 +654,13 @@ status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
 					+ (mNumFramesOutput * (AV_TIME_BASE / av_q2d(vstream->avg_frame_rate)));
 		else
 			timeUs = mAnchorTimeUs
-								+ (mNumFramesOutput * (AV_TIME_BASE / av_q2d(vstream->time_base)));
+								+ (mNumFramesOutput * (AV_TIME_BASE * av_q2d(vstream->time_base)));
+
+		{
+			static int64_t timeUsBak = 0L;
+			LOGD("VIDEO.timeus delta %lld.", timeUs - timeUsBak);
+			timeUsBak = timeUs;
+		}
 
 		if (!got_picture)
 			*out = new MediaBuffer(0);
