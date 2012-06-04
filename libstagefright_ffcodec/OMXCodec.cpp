@@ -322,6 +322,8 @@ static const CodecInfo kDecoderInfo[] = {
 
     { MEDIA_MIMETYPE_AUDIO_WMA, "FF_CODEC" },
     { MEDIA_MIMETYPE_AUDIO_MPEG, "FF_CODEC"},
+    { MEDIA_MIMETYPE_AUDIO_AAC, "FF_CODEC"},
+
     { MEDIA_MIMETYPE_AUDIO_MPEG, "MP3DecoderTommy" },
     { MEDIA_MIMETYPE_AUDIO_MPEG, "MP3Decoder" },
     

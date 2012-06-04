@@ -731,7 +731,7 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 		break;
 	case CODEC_ID_AMR_NB:
 	case CODEC_ID_AMR_WB:
-		mimetypeA = MEDIA_MIMETYPE_AUDIO_FFCODEC;
+		mimetypeA = MEDIA_MIMETYPE_AUDIO_AMR_WB;
 		audiosupport = true;
 		break;
 	case CODEC_ID_COOK:
