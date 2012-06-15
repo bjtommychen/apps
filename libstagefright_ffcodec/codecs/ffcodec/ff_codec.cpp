@@ -374,7 +374,10 @@ static void ff_CopyYuv(int width, int height, MediaBuffer *buff, AVFrame *frame)
 		src += frame->linesize[2];
 		dst += width / 2;
 	}
-	buff->set_range(0, buff->size());
+	LOGV("ff_CopyYuv set range %d, buff->size %d", width*height*3/2, buff->size());
+	//buff->set_range(0, buff->size());
+	buff->set_range(0, width*height*3/2);
+	
 }
 
 status_t FF_CODEC::read(MediaBuffer **out, const ReadOptions *options)
