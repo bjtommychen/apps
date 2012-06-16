@@ -1,3 +1,4 @@
+rm -rf ./tmp 
 mkdir tmp
 
 mkdir tmp/libavformat
@@ -20,7 +21,7 @@ cd tmp/libswresample
 ar x ../../../libswresample.a
 cd ../..
 
-arm-linux-androideabi-ar cru libABC.a tmp/libavformat/*.o tmp/libavcodec/*.o tmp/libavutil/*.o tmp/libswresample/*.o
+arm-linux-androideabi-ar cr libstagefright_ffmpeg.a tmp/libavformat/*.o tmp/libavcodec/*.o tmp/libavutil/*.o tmp/libswresample/*.o 
 
 
 
