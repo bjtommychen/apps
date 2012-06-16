@@ -1564,6 +1564,9 @@ static void show_banner(int argc, char **argv)
 {
 	printf("ffplay lite version %s by %s\t", VERSION, AUTHOR);
 	printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
+printf("avcodec version %d\n", avutil_version());
+printf("avcodec version %d\n", avcodec_version());
+printf("avformat version %d\n", avformat_version());	
 }
 
 static void show_options(int argc, char **argv)
