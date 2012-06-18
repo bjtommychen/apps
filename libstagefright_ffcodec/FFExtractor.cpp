@@ -735,12 +735,14 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 		audiosupport = true;
 		break;
 	case CODEC_ID_COOK:
+	case CODEC_ID_VORBIS:
+	default:
 		mimetypeA = MEDIA_MIMETYPE_AUDIO_FFCODEC;
 		audiosupport = true;
 		break;
-	default:
-		*confidence = 0.0f;
-		break;
+//	default:
+//		*confidence = 0.0f;
+//		break;
 	}
 	hasAudio = audiosupport;
 
@@ -764,12 +766,14 @@ bool SniffFF(const sp<DataSource> &source, String8 *mimeType, float *confidence,
 		case CODEC_ID_RV40:
 		case CODEC_ID_MPEG2VIDEO:
 		case CODEC_ID_MPEG4:
+		case CODEC_ID_VP8:
+		default:
 			mimetypeV = MEDIA_MIMETYPE_VIDEO_FFCODEC;
 			videosupport = true;
 			break;
-		default:
-			*confidence = 0.0f;
-			break;
+//		default:
+//			*confidence = 0.0f;
+//			break;
 		}
 		hasVideo = videosupport;
 	}
