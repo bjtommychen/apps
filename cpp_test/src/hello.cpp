@@ -1,23 +1,20 @@
 
-#ifndef __ARM_EABI__
+#ifndef i386
 #define ARCH_ARM 1
 #define ARCH_X86 0
+#warning "arch is ARM "
 #else
 #define ARCH_ARM 0
 #define ARCH_X86 1
+#warning "arch is X86 "
 #endif
 
 
-#if ARCH_X86
 #include<iostream>
 #include<fstream>
 using namespace std;
-#endif
-
 
 #if ARCH_ARM
-#include <iostream>
-using namespace std;
 #include <jni.h>
 #include <string.h>
 
