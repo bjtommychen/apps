@@ -34,6 +34,9 @@ import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.Bitmap.Config;
 
+import java.util.ArrayList;
+import java.io.File;
+
 public class FFplay extends Activity
 {
 	/** Called when the activity is first created. */
@@ -178,9 +181,29 @@ public class FFplay extends Activity
 
 		// initialize content source spinner
 		Spinner sourceSpinner = (Spinner) findViewById(R.id.spinner1);
-		ArrayAdapter<CharSequence> sourceAdapter = ArrayAdapter.createFromResource(this, R.array.source_array, android.R.layout.simple_spinner_item);
+//		ArrayAdapter<CharSequence> sourceAdapter = ArrayAdapter.createFromResource(this, R.array.source_array, android.R.layout.simple_spinner_item);
+		ArrayList<CharSequence> source_array = new ArrayList<CharSequence>();
+		ArrayAdapter<CharSequence> sourceAdapter = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item, source_array);
+//		
 		sourceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		sourceSpinner.setAdapter(sourceAdapter);
+		
+		{
+			File file = new File("/mnt/sdcard/srv/stream/");
+			if (file != null)
+			{
+				File[] files = file.listFiles();
+				for (File fileitem : files) {
+					String name;
+					name  = "/mnt/sdcard/srv/stream/" + fileitem.getName();
+					if (!fileitem.isDirectory())
+						sourceAdapter.add(name);
+					else
+						sourceAdapter.add("< " + name + " >"); // like
+				}
+			}
+		}
+		
 		sourceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
 		{
 
@@ -254,7 +277,7 @@ public class FFplay extends Activity
 				switch (msg.what)
 				{
 					case GUI_UPDATE_PROGRESS:
-						if ((frame - frame_fps) >= 20)
+						if ((frame - frame_fps) >= 30)
 						{
 							tend = System.currentTimeMillis();
 							telapsed = tend - tstart;
@@ -262,7 +285,9 @@ public class FFplay extends Activity
 							tstart = tend;
 							frame_fps = frame;
 						}
-						tv3.setText("frame " + frame + ", fps: " + fps);
+						String fps_str = String.format("%.2f", fps);
+						tv3.setText("Frame " + frame + ", -------  FPS: " + fps_str);
+//						tv3.setText("Frame " + frame);
 						if (progbar.getProgress() >= progbar.getMax())
 							progbar.setProgress(0);
 						progbar.incrementProgressBy(1);
