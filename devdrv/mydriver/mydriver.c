@@ -1,8 +1,8 @@
 
-#if 1
+#if 0
 
 /****************hellomod.c*******************************/
-#include <linux/module.h> //所有模块都需要的头文件
+#include <linux/module.h> //
 #include <linux/init.h> // init&exit相关宏
 MODULE_LICENSE("GPL");
 static int __init hello_init (void)
@@ -23,30 +23,30 @@ module_exit(hello_exit);
 /****************hellomod.c*******************************/
 
 
-#if 0
+#if 1
 
 //#define  __NO_VERSION__
-#include<linux/version.h> /*以下是本程序包含的头文件*/
-#include<linux/module.h>
-#include<linux/config.h>
-#include<asm-generic/uaccess.h>
-#include<linux/types.h>
-#include<linux/fs.h>
-#include<linux/mm.h>
-#include<linux/errno.h>
-#include<asm-generic/segment.h>
+//#include<linux/version.h> /*以下是本程序包含的头文件*/
+//#include<linux/module.h>
+//#include<linux/config.h>
+//#include<asm-generic/uaccess.h>
+//#include<linux/types.h>
+//#include<linux/fs.h>
+//#include<linux/mm.h>
+//#include<linux/errno.h>
+//#include<asm-generic/segment.h>
 
 
-#include "linux/kernel.h"  
-#include "linux/module.h"  
-#include "linux/fs.h"  
-#include "linux/init.h"  
-#include "linux/types.h"  
-#include "linux/errno.h"  
-#include "linux/uaccess.h"  
-#include "linux/kdev_t.h" 
+#include "linux/kernel.h"
+#include "linux/module.h"
+#include "linux/fs.h"
+#include "linux/init.h"
+#include "linux/types.h"
+#include "linux/errno.h"
+#include "linux/uaccess.h"
+#include "linux/kdev_t.h"
 
-//#include <linux/module.h> 
+//#include <linux/module.h>
 //#include <linux/init.h>
 //#include <linux/kernel.h>
 
@@ -93,14 +93,14 @@ static ssize_t device_write(struct file * file,const char * buf,size_t count,lof
 static int device_open(struct inode * inode,struct file * file) /*打开设备函数*/
 {
     temp = (char *)kmalloc(BUFSIZE,GFP_KERNEL);  /*为设备分配内存空间*/
-    MOD_INC_USE_COUNT;
+//    MOD_INC_USE_COUNT;
     return 0;
 }
 
 static int device_release(struct inode * inode,struct file * file)
 {
     kfree(temp);   /*释放设备占用内存空间*/
-    MOD_DEC_USE_COUNT;
+//    MOD_DEC_USE_COUNT;
     return 0;
 }
 
