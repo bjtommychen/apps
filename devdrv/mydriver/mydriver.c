@@ -142,7 +142,7 @@ static int __init  device_init_module(void)  /*登记设备函数,insmod时调用*/
     if(devid_major == 0)
         devid_major = num;
 
-    printk("\n\ndevice_init_module, major is %d.\n", devid_major);
+    printk(KERN_INFO"\n\ndevice_init_module, major is %d.\n", devid_major);
 
     return 0;
 }
@@ -150,7 +150,7 @@ static int __init  device_init_module(void)  /*登记设备函数,insmod时调用*/
 static void __exit  device_cleanup_module(void)  /*释放设备函数,rmmod时调用*/
 {
     unregister_chrdev(devid_major,"mydriver");
-    printk("device_cleanup_module.\n");
+    printk(KERN_INFO"device_cleanup_module.\n");
 }
 
 module_init(device_init_module);

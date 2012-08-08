@@ -13,5 +13,12 @@ all:
 	
 clean:
 	make -C $(KDIR) M=$$PWD clean
+	
+install:
+	insmod mydriver.ko
 
+uninstall:
+	rmmod mydriver
+	
+	
 endif
