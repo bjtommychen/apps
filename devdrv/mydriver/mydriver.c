@@ -95,9 +95,9 @@ static ssize_t device_write(struct file * file,const char * buf,size_t count,lof
     return count;
 }
 
-static int device_ioctl (struct inode * inode, struct file *file, unsigned int cmd, unsigned long argu)
+static int device_ioctl (struct inode * inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
-    printk("device_ioctl cmd 0x%x, argu is 0x%lx.\n", cmd, argu);
+    printk("device_ioctl cmd 0x%x, argu is 0x%lx.\n", cmd, arg);
     return 0;
 }
 
