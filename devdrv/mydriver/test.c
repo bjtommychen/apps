@@ -88,6 +88,8 @@ int main(void)
         printf("%c",buf1[i]);
     printf("\n");
 
+    ioctl(fd, 0x2011, 0x0310);
+
     close(fd);
 
     return 0;

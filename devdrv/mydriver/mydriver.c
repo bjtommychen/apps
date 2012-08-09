@@ -58,12 +58,6 @@ unsigned int devid_major = 0;
 /*  Function Definitions                                                      */
 /******************************************************************************/
 
-
-
-
-
-
-
 static ssize_t device_read(struct file * file,char * buf,size_t count,loff_t * f_pos)
 {
     int i;
@@ -101,6 +95,12 @@ static ssize_t device_write(struct file * file,const char * buf,size_t count,lof
     return count;
 }
 
+static int device_ioctl (struct inode * inode, struct file *file, unsigned int cmd, unsigned long argu)
+{
+    printk("device_ioctl cmd 0x%x, argu is 0x%lx.\n", cmd, argu);
+    return 0;
+}
+
 static int device_open(struct inode * inode,struct file * file) /*打开设备函数*/
 {
     work_buffer = (char *)kmalloc(BUFSIZE,GFP_KERNEL);  /*为设备分配内存空间*/
@@ -119,15 +119,14 @@ static int device_release(struct inode * inode,struct file * file)
 
 struct file_operations fops =   /*填充file_operations结构*/
 {
-read:
-    device_read,
-write:
-    device_write,
-open:
-    device_open,
-release:
-    device_release
-};
+    .owner = THIS_MODULE,
+    .read = device_read,
+     .write = device_write,
+      .open = device_open,
+       .release = device_release,
+       .ioctl = device_ioctl,
+
+    };
 
 static int __init  device_init_module(void)  /*登记设备函数,insmod时调用*/
 {
@@ -142,7 +141,7 @@ static int __init  device_init_module(void)  /*登记设备函数,insmod时调用*/
     if(devid_major == 0)
         devid_major = num;
 
-    printk(KERN_INFO"\n\ndevice_init_module, major is %d.\n", devid_major);
+    printk(KERN_INFO"\n\ndevice_init_module, major is %d. init at %s, %s\n", devid_major, __DATE__ ,__TIME__);
 
     return 0;
 }

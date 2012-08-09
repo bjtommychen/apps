@@ -1,15 +1,19 @@
-// make mydriver.ko
+#make mydriver.ko
 make clean all
 
-// install device
+#install device
+sudo rmmod mydriver
 sudo insmod mydriver.ko
 sudo lsmod
-dmesg 			//dump device msg.
-cat /proc/devices		//get device id.  return '250 mydriver'
+#dump device msg.
+dmesg 			
+#get device id.  return '250 mydriver'
+cat /proc/devices		
 rm /dev/myDriver
-mknod /dev/myDriver c 250 0 		//c is char file, 0 is minor number.
+#c is char file, 0 is minor number.
+mknod /dev/myDriver c 250 0 		
 
-// test
+# test
 gcc -o test test.c
 ./test
 

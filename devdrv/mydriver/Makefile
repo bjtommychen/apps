@@ -12,7 +12,7 @@ all:
 	$(MAKE) -C $(KDIR) M=$$PWD
 	
 clean:
-	make -C $(KDIR) M=$$PWD clean
+	$(MAKE) -C $(KDIR) M=$$PWD clean
 	
 install:
 	insmod mydriver.ko
