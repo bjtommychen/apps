@@ -28,6 +28,27 @@
 #include "linux/uaccess.h"
 #include "linux/kdev_t.h"
 
+//add for android
+//#include "malloc.h"
+//#include "linux/vmalloc.h"
+//#include <linux/stat.h>
+//#include <linux/sysctl.h>
+//#include <linux/sunrpc/debug.h>
+//#include <linux/string.h>
+//#include <net/ip_vs.h>
+//#include <linux/syscalls.h>
+//#include <linux/namei.h>
+//#include <linux/mount.h>
+//#include <linux/fs.h>
+//#include <linux/nsproxy.h>
+//#include <linux/pid_namespace.h>
+//#include <linux/file.h>
+//#include <linux/ctype.h>
+//#include <linux/netdevice.h>
+//#include <linux/kernel.h>
+#include <linux/slab.h>             // kmalloc
+
+
 /******************************************************************************/
 /*  Externs                                                                   */
 /******************************************************************************/
@@ -36,7 +57,9 @@
 /******************************************************************************/
 /*  Local Macro Definitions                                                   */
 /******************************************************************************/
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Tommy, August 2012");
+MODULE_DESCRIPTION("Demo module driver for Ubuntu/Android");
 
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
@@ -101,9 +124,9 @@ static int device_ioctl (struct inode * inode, struct file *file, unsigned int c
     return 0;
 }
 
-static int device_open(struct inode * inode,struct file * file) /*打开设备函数*/
+static int device_open(struct inode * inode,struct file * file)
 {
-    work_buffer = (char *)kmalloc(BUFSIZE,GFP_KERNEL);  /*为设备分配内存空间*/
+    work_buffer = (char *)kmalloc(BUFSIZE,GFP_KERNEL);  
 //    MOD_INC_USE_COUNT;
     printk("device_open.\n");
     return 0;
@@ -111,7 +134,7 @@ static int device_open(struct inode * inode,struct file * file) /*打开设备函数*/
 
 static int device_release(struct inode * inode,struct file * file)
 {
-    kfree(work_buffer);   /*释放设备占用内存空间*/
+    kfree(work_buffer);  
 //    MOD_DEC_USE_COUNT;
     printk("device_release.\n");
     return 0;
