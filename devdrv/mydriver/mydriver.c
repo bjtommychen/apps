@@ -57,9 +57,6 @@
 /******************************************************************************/
 /*  Local Macro Definitions                                                   */
 /******************************************************************************/
-MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("Tommy, August 2012");
-MODULE_DESCRIPTION("Demo module driver for Ubuntu/Android");
 
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
@@ -126,7 +123,7 @@ static int device_ioctl (struct inode * inode, struct file *file, unsigned int c
 
 static int device_open(struct inode * inode,struct file * file)
 {
-    work_buffer = (char *)kmalloc(BUFSIZE,GFP_KERNEL);  
+    work_buffer = (char *)kmalloc(BUFSIZE,GFP_KERNEL);
 //    MOD_INC_USE_COUNT;
     printk("device_open.\n");
     return 0;
@@ -134,7 +131,7 @@ static int device_open(struct inode * inode,struct file * file)
 
 static int device_release(struct inode * inode,struct file * file)
 {
-    kfree(work_buffer);  
+    kfree(work_buffer);
 //    MOD_DEC_USE_COUNT;
     printk("device_release.\n");
     return 0;
@@ -143,17 +140,21 @@ static int device_release(struct inode * inode,struct file * file)
 struct file_operations fops =   /*填充file_operations结构*/
 {
     .owner = THIS_MODULE,
-    .read = device_read,
-     .write = device_write,
-      .open = device_open,
-       .release = device_release,
-       .ioctl = device_ioctl,
+     .read = device_read,
+      .write = device_write,
+       .open = device_open,
+        .release = device_release,
+         .ioctl = device_ioctl,
 
-    };
+      };
+
+static char banner[] __initdata = KERN_INFO "Android Virtual Demo Driver, (c) 2012 TommyChen\n";
 
 static int __init  device_init_module(void)  /*登记设备函数,insmod时调用*/
 {
     int num;
+
+    printk(KERN_INFO"\n\n%s", banner);
 
     num = register_chrdev(0,"mydriver",&fops); /*系统自动返回一个未被占用的设备号*/
     if(num < 0)      /*登记未成功,提示并返回*/
@@ -164,7 +165,7 @@ static int __init  device_init_module(void)  /*登记设备函数,insmod时调用*/
     if(devid_major == 0)
         devid_major = num;
 
-    printk(KERN_INFO"\n\ndevice_init_module, major is %d. init at %s, %s\n", devid_major, __DATE__ ,__TIME__);
+    printk(KERN_INFO"device_init_module, major is %d. init at %s, %s\n", devid_major, __DATE__ ,__TIME__);
 
     return 0;
 }
@@ -177,4 +178,8 @@ static void __exit  device_cleanup_module(void)  /*释放设备函数,rmmod时调用*/
 
 module_init(device_init_module);
 module_exit(device_cleanup_module);
+
+MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Tommy, August 2012");
+MODULE_DESCRIPTION("Demo module driver for Ubuntu/Android");
 
