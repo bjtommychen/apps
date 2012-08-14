@@ -53,9 +53,9 @@
 /******************************************************************************/
 /*  Local Variables                                                           */
 /******************************************************************************/
-#define BUFSIZE 256  /*Éè±¸ÖÐ°üº¬µÄ×î´ó×Ö·ûÊý*/
+#define BUFSIZE 256  /*ï¿½è±¸ï¿½Ð°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½*/
 
-static char * work_buffer;  /*¸ÃÖ¸ÕëÓÃÓÚÎªÕâ¸öÐéÄâµÄÉè±¸·ÖÅäÄÚ´æ¿Õ¼ä*/
+static char * work_buffer;  /*ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½*/
 static unsigned int devid_major = 0;
 
 static struct resource		*s3cc_jpeg_mem;
@@ -75,12 +75,12 @@ static ssize_t device_read(struct file * file,char * buf,size_t count,loff_t * f
 {
     int i;
 
-    if(count>BUFSIZE)   /*Èç¹ûÒªÇó¶Á³öµÄÊýÄ¿¶àÓÚÉè±¸¹ÌÓÐµÄÊýÄ¿ÔòÌáÊ¾²¢·µ»Ø*/
+    if(count>BUFSIZE)   /*ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
     {
         printk("Can't Read , the Count is to Big !\n");
         return  -EFAULT;
     }
-    for(i = 0; i < count; i++) /*·ñÔò,½øÐÐ¶Á³ö²Ù×÷*/
+    for(i = 0; i < count; i++) /*ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
     {
         //__put_user(work_buffer[i],buf);
         *buf = work_buffer[i]+1;
@@ -94,12 +94,12 @@ static ssize_t device_read(struct file * file,char * buf,size_t count,loff_t * f
 static ssize_t device_write(struct file * file,const char * buf,size_t count,loff_t * f_pos)
 {
     int i;
-    if(count>BUFSIZE)   /*ÒªÇóÐ´ÈëµÄÊýÄ¿±ÈÉè±¸µÄÈÝÁ¿´óÔòÌáÊ¾²¢·µ»Ø*/
+    if(count>BUFSIZE)   /*Òªï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
     {
         printk("Can't Write , the Count is to Big\n");
         return  -EFAULT;
     }
-    for(i = 0; i < count; i++) /*·ñÔò,½øÐÐÐ´Èë²Ù×÷*/
+    for(i = 0; i < count; i++) /*ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½*/
     {
         __get_user(work_buffer[i],buf);
         buf++;
@@ -130,7 +130,7 @@ static int device_release(struct inode * inode,struct file * file)
     return 0;
 }
 
-struct file_operations fops =   /*Ìî³äfile_operations½á¹¹*/
+struct file_operations fops =   /*ï¿½ï¿½ï¿½file_operationsï¿½á¹¹*/
 {
     .owner = THIS_MODULE,
      .read = device_read,
@@ -148,7 +148,7 @@ static struct miscdevice s3cc_jpeg_miscdev = {
 };
 
 
-static int s3cc_jpeg_probe(struct platform_device *pdev)
+static int __init s3cc_jpeg_probe(struct platform_device *pdev)
 {
 	struct resource 	*res;
     static int		ret;
@@ -182,7 +182,7 @@ static int s3cc_jpeg_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int s3cc_jpeg_remove(struct platform_device *dev)
+static int __init s3cc_jpeg_remove(struct platform_device *dev)
 {
 	misc_deregister(&s3cc_jpeg_miscdev);
 	return 0;
@@ -205,20 +205,20 @@ static struct platform_driver s3cc_jpeg_driver = {
 static char banner[] __initdata = KERN_INFO "Android Virtual Demo Driver, (c) 2012 TommyChen , Build on " __DATE__ ", "__TIME__;
 
 
-static int __init  device_init(void)  /*µÇ¼ÇÉè±¸º¯Êý,insmodÊ±µ÷ÓÃ*/
+static int __init  device_init(void)  /*ï¿½Ç¼ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½,insmodÊ±ï¿½ï¿½ï¿½ï¿½*/
 {
     int num;
 
     printk(KERN_INFO"\n\n%s", banner);
 
 #ifdef AUTO_MKNOD
-    num = register_chrdev(0 /*0*/,"mydriver",&fops); /*ÏµÍ³×Ô¶¯·µ»ØÒ»¸öÎ´±»Õ¼ÓÃµÄÉè±¸ºÅ*/
+    num = register_chrdev(0 /*0*/,"mydriver",&fops); /*ÏµÍ³ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Î´ï¿½ï¿½Õ¼ï¿½Ãµï¿½ï¿½è±¸ï¿½ï¿½*/
     my_class = class_create(THIS_MODULE, "test_class_mydriver");
     device_create(my_class, NULL, MKDEV(num, 0), NULL, "%s", DEVNAME);
 #else
-    num = register_chrdev(0,"mydriver",&fops); /*ÏµÍ³×Ô¶¯·µ»ØÒ»¸öÎ´±»Õ¼ÓÃµÄÉè±¸ºÅ*/
+    num = register_chrdev(0,"mydriver",&fops); /*ÏµÍ³ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Î´ï¿½ï¿½Õ¼ï¿½Ãµï¿½ï¿½è±¸ï¿½ï¿½*/
 #endif
-    if(num < 0)      /*µÇ¼ÇÎ´³É¹¦,ÌáÊ¾²¢·µ»Ø*/
+    if(num < 0)      /*ï¿½Ç¼ï¿½Î´ï¿½É¹ï¿½,ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
     {
         printk("Can't Got the devid_major Number !\n");
         return num;
@@ -231,7 +231,7 @@ static int __init  device_init(void)  /*µÇ¼ÇÉè±¸º¯Êý,insmodÊ±µ÷ÓÃ*/
     return 0;
 }
 
-static void __exit  device_exit(void)  /*ÊÍ·ÅÉè±¸º¯Êý,rmmodÊ±µ÷ÓÃ*/
+static void __exit  device_exit(void)  /*ï¿½Í·ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½,rmmodÊ±ï¿½ï¿½ï¿½ï¿½*/
 {
     unregister_chrdev(devid_major,"mydriver");
 #ifdef AUTO_MKNOD
@@ -246,10 +246,11 @@ static int __init s3cc_jpeg_init(void)
 {
     int ret;
     
-    printk(KERN_INFO"\n\n%s", banner);
-	ret = platform_driver_register(&s3cc_jpeg_driver);
+    printk(KERN_INFO"\n\n%s", banner); 
     misc_register(&s3cc_jpeg_miscdev);
-    printk(KERN_INFO"mydriver: s3cc_jpeg_init.\n");
+
+	ret = platform_driver_register(&s3cc_jpeg_driver);
+    printk(KERN_INFO"mydriver: s3cc_jpeg_init. return %d.\n", ret);
     return ret;
 }
 
