@@ -43,7 +43,9 @@
 /******************************************************************************/
 /*  Local Macro Definitions                                                   */
 /******************************************************************************/
-
+#define AUTO_MKNOD              // no need 'mknod' if needed.
+#define DEV_MAJOR_NUM       (249)
+#define DEVNAME         "myDriver"
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
 /******************************************************************************/
@@ -141,7 +143,7 @@ struct file_operations fops =   /*填充file_operations结构*/
 
 static struct miscdevice s3cc_jpeg_miscdev = {
 	minor:		MISC_DYNAMIC_MINOR,
-	name:		"myDriver",
+	name:		DEVNAME,
 	fops:		&fops
 };
 
@@ -196,14 +198,11 @@ static struct platform_driver s3cc_jpeg_driver = {
 	.resume		= NULL,
 	.driver		= {
 			.owner	= THIS_MODULE,
-			.name	= "myDriver",
+			.name	= DEVNAME,
 	},
 };
 
 static char banner[] __initdata = KERN_INFO "Android Virtual Demo Driver, (c) 2012 TommyChen , Build on " __DATE__ ", "__TIME__;
-
-#define AUTO_MKNOD              // no need 'mknod' if needed.
-#define DEV_MAJOR_NUM       (249)
 
 
 static int __init  device_init(void)  /*登记设备函数,insmod时调用*/
@@ -215,7 +214,7 @@ static int __init  device_init(void)  /*登记设备函数,insmod时调用*/
 #ifdef AUTO_MKNOD
     num = register_chrdev(0 /*0*/,"mydriver",&fops); /*系统自动返回一个未被占用的设备号*/
     my_class = class_create(THIS_MODULE, "test_class_mydriver");
-    device_create(my_class, NULL, MKDEV(num, 0), NULL, "%s", "myDriver");
+    device_create(my_class, NULL, MKDEV(num, 0), NULL, "%s", DEVNAME);
 #else
     num = register_chrdev(0,"mydriver",&fops); /*系统自动返回一个未被占用的设备号*/
 #endif
@@ -224,7 +223,7 @@ static int __init  device_init(void)  /*登记设备函数,insmod时调用*/
         printk("Can't Got the devid_major Number !\n");
         return num;
     }
-    if(devid_major == 0)
+    if(devid_major == 0) 
         devid_major = num;
 
     printk(KERN_INFO"device_init_module, major is %d.\n", devid_major );
@@ -245,21 +244,26 @@ static void __exit  device_exit(void)  /*释放设备函数,rmmod时调用*/
 
 static int __init s3cc_jpeg_init(void)
 {
+    int ret;
+    
     printk(KERN_INFO"\n\n%s", banner);
-    printk(KERN_INFO"mydriver: s3cc_jpeg_init.");
-	return platform_driver_register(&s3cc_jpeg_driver);
+	ret = platform_driver_register(&s3cc_jpeg_driver);
+    misc_register(&s3cc_jpeg_miscdev);
+    printk(KERN_INFO"mydriver: s3cc_jpeg_init.\n");
+    return ret;
 }
 
 static void __exit s3cc_jpeg_exit(void)
 {
 	platform_driver_unregister(&s3cc_jpeg_driver);
+    misc_deregister(&s3cc_jpeg_miscdev);
     printk(KERN_INFO"mydriver: s3cc_jpeg_exit.");
 }
 
-module_init(device_init);
-module_exit(device_exit);
-//module_init(s3cc_jpeg_init);
-//module_exit(s3cc_jpeg_exit);
+//module_init(device_init);
+//module_exit(device_exit);
+module_init(s3cc_jpeg_init);
+module_exit(s3cc_jpeg_exit);
 
 
 MODULE_LICENSE("GPL v2");
