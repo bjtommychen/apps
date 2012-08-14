@@ -53,7 +53,7 @@
 
 int main(void)
 {
-    int fd;
+    int fd = -1;
     int i;
     int len;
     char *buf="we love duanduan! god bless our family!\n";
@@ -62,7 +62,13 @@ int main(void)
     fd = open("/dev/myDriver",O_RDWR); 
     if (fd == -1)
     {
-        printf("Can't open file \n");
+        printf("Can't open file /dev/myDriver\n");
+        fd = open("/dev/mydriver",O_RDWR); 
+    }
+    
+    if (fd == -1)
+    {
+        printf("Can't open file /dev/mydriver\n");
         exit(-1);
     }
     len = strlen(buf);
