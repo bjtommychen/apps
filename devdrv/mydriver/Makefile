@@ -2,6 +2,10 @@ obj-m:=mydriver.o
 
 ARCH=$(BUILD_ARCH)
 
+ifeq ($(ARCH),)
+ARCH=x86
+endif
+
 ifeq ($(ARCH),arm)
 	KDIR ?= /mnt/nfs/cm9src/kernel/samsung/p1
 	PWD := $(shell pwd)
@@ -28,7 +32,7 @@ ifeq ($(ARCH),x86)
 
 all:
 	@echo "*** \033[1mBuild for x86 \033[0m ***" 
-	$(MAKE) -C $(KDIR) M=$$PWD modules
+	$(MAKE) -C $(KDIR) M=$$PWD modules  
 	@echo "*** \033[1mBuild done!\033[0m ***" 
 	
 clean:
