@@ -2,13 +2,13 @@
 *
 *    Template.c    -   Template source file
 *
-*    Copyright (c) 2012 Tommy 
+*    Copyright (c) 2012 Tommy
 *    All Rights Reserved.
 *
 *    Use of Tommy's code is governed by terms and conditions
 *    stated in the accompanying licensing statement.
 *
-*    Description: 
+*    Description:
 *
 *    Rivision Table
 * ------------------------------------------------------------------------------
@@ -16,7 +16,7 @@
 * ------------------------------------------------------------------------------
 *    Tommy  2/27/2012  created this file.
 *
-*	$Id$
+*   $Id$
 *******************************************************************************/
 
 #include<stdio.h>
@@ -59,16 +59,26 @@ int main(void)
     char *buf="we love duanduan! god bless our family!\n";
     char buf1[200];
 
-    fd = open("/dev/myDriver",O_RDWR); 
     if (fd == -1)
     {
-        printf("Can't open file /dev/myDriver\n");
-        fd = open("/dev/mydriver",O_RDWR); 
+        fd = open("/dev/myDriver",O_RDWR);
+        if (fd == -1)
+            printf("Can't open file /dev/myDriver\n");
+        else
+            printf("Open file /dev/myDriver OK.\n");
     }
-    
+
     if (fd == -1)
     {
-        printf("Can't open file /dev/mydriver\n");
+        fd = open("/dev/mydriver",O_RDWR);
+        if (fd == -1)
+            printf("Can't open file /dev/mydriver\n");
+        else
+            printf("Open file /dev/mydriver OK.\n");
+    }
+
+    if (fd == -1)
+    {
         exit(-1);
     }
     len = strlen(buf);
@@ -81,7 +91,7 @@ int main(void)
         printf("%c",buf1[i]);
     printf("\n");
 
-    for(i=0;i<len;i++)
+    for(i=0; i<len; i++)
     {
         buf1[i] = buf[i] - 1;
     }
