@@ -38,6 +38,7 @@
 
 //#define PAGE_SIZE           (4*1024)
 
+#if 0
 #define MAX_JPG_WIDTH        3072//3264
 #define MAX_JPG_HEIGHT       2048//2448
 
@@ -57,6 +58,48 @@
 
 #define JPG_TOTAL_BUF_SIZE			(JPG_STREAM_BUF_SIZE + JPG_STREAM_THUMB_BUF_SIZE \
 			      + JPG_FRAME_BUF_SIZE + JPG_FRAME_THUMB_BUF_SIZE + JPG_RGB_BUF_SIZE)
+#else
+#define MAX_JPG_WIDTH                   800
+#define MAX_JPG_HEIGHT                  480
+#define MAX_JPG_RESOLUTION              (MAX_JPG_WIDTH * MAX_JPG_HEIGHT)
+
+#define MAX_JPG_THUMBNAIL_WIDTH         320
+#define MAX_JPG_THUMBNAIL_HEIGHT        240
+#define MAX_JPG_THUMBNAIL_RESOLUTION    (MAX_JPG_THUMBNAIL_WIDTH *  \
+                                            MAX_JPG_THUMBNAIL_HEIGHT)
+
+#define MAX_RGB_WIDTH                   800
+#define MAX_RGB_HEIGHT                  480
+#define MAX_RGB_RESOLUTION              (MAX_RGB_WIDTH * MAX_RGB_HEIGHT)
+
+/*******************************************************************************/
+/* define JPG & image memory */
+/* memory area is 4k(PAGE_SIZE) aligned because of VirtualCopyEx() */
+#define JPG_STREAM_BUF_SIZE     \
+        (MAX_JPG_RESOLUTION / PAGE_SIZE + 1) * PAGE_SIZE
+#define JPG_STREAM_THUMB_BUF_SIZE   \
+        (MAX_JPG_THUMBNAIL_RESOLUTION / PAGE_SIZE + 1) * PAGE_SIZE
+#define JPG_FRAME_BUF_SIZE  \
+        ((MAX_JPG_RESOLUTION * 3) / PAGE_SIZE + 1) * PAGE_SIZE
+#define JPG_FRAME_THUMB_BUF_SIZE    \
+        ((MAX_JPG_THUMBNAIL_RESOLUTION * 3) / PAGE_SIZE + 1) * PAGE_SIZE
+#define JPG_RGB_BUF_SIZE    \
+        ((MAX_RGB_RESOLUTION * 4) / PAGE_SIZE + 1) * PAGE_SIZE
+
+#define JPG_TOTAL_BUF_SIZE  (JPG_STREAM_BUF_SIZE + \
+                             JPG_STREAM_THUMB_BUF_SIZE + \
+                             JPG_FRAME_BUF_SIZE + \
+                             JPG_FRAME_THUMB_BUF_SIZE + \
+                             JPG_RGB_BUF_SIZE)
+
+#define JPG_MAIN_START      0x00
+#define JPG_THUMB_START     JPG_STREAM_BUF_SIZE
+#define IMG_MAIN_START      (JPG_STREAM_BUF_SIZE + JPG_STREAM_THUMB_BUF_SIZE)
+#define IMG_THUMB_START     (IMG_MAIN_START + JPG_FRAME_BUF_SIZE)
+/*******************************************************************************/
+
+#endif
+
 
 typedef	unsigned char	UCHAR;
 typedef unsigned long	ULONG;
@@ -70,15 +113,15 @@ typedef unsigned char	UINT8;
 //\\10.10.32.73\andev\cm9src\device\samsung\p1-common\libs3cjpeg\JpegEncoder.h
 
 
-typedef enum {
-    JPEG_SET_ENCODE_WIDTH,
-    JPEG_SET_ENCODE_HEIGHT,
-    JPEG_SET_ENCODE_QUALITY,
-    JPEG_SET_ENCODE_IN_FORMAT,
-    JPEG_SET_SAMPING_MODE,
-    JPEG_SET_THUMBNAIL_WIDTH,
-    JPEG_SET_THUMBNAIL_HEIGHT
-} jpeg_conf;
+#define JPEG_IOCTL_MAGIC                'J'
+#define IOCTL_JPG_DECODE                _IO(JPEG_IOCTL_MAGIC, 1)
+#define IOCTL_JPG_ENCODE                _IO(JPEG_IOCTL_MAGIC, 2)
+#define IOCTL_JPG_GET_STRBUF            _IO(JPEG_IOCTL_MAGIC, 3)
+#define IOCTL_JPG_GET_FRMBUF            _IO(JPEG_IOCTL_MAGIC, 4)
+#define IOCTL_JPG_GET_THUMB_STRBUF      _IO(JPEG_IOCTL_MAGIC, 5)
+#define IOCTL_JPG_GET_THUMB_FRMBUF      _IO(JPEG_IOCTL_MAGIC, 6)
+#define IOCTL_JPG_GET_PHY_FRMBUF        _IO(JPEG_IOCTL_MAGIC, 7)
+#define IOCTL_JPG_GET_PHY_THUMB_FRMBUF  _IO(JPEG_IOCTL_MAGIC, 8)
 
 typedef enum {
     JPG_FAIL,
@@ -172,139 +215,6 @@ typedef struct {
     jpg_enc_proc_param  *thumb_enc_param;
 } jpg_args;
 
-#if 0
-typedef enum tagSAMPLE_MODE_T{
-	JPG_444,
-	JPG_422,
-	JPG_420, 
-	JPG_411,
-	JPG_400,
-	JPG_SAMPLE_UNKNOWN
-}SAMPLE_MODE_T;
-
-typedef enum tagIMAGE_QUALITY_TYPE_T{
-	JPG_QUALITY_LEVEL_1 = 0, /*high quality*/
-	JPG_QUALITY_LEVEL_2,
-	JPG_QUALITY_LEVEL_3,
-	JPG_QUALITY_LEVEL_4     /*low quality*/
-}IMAGE_QUALITY_TYPE_T;
-
-typedef enum tagJPEGConf{
-	JPEG_GET_DECODE_WIDTH,
-	JPEG_GET_DECODE_HEIGHT,
-	JPEG_GET_SAMPING_MODE,
-	JPEG_SET_ENCODE_WIDTH,
-	JPEG_SET_ENCODE_HEIGHT,
-	JPEG_SET_ENCODE_QUALITY,
-	JPEG_SET_ENCODE_THUMBNAIL,
-	JPEG_SET_SAMPING_MODE,
-	JPEG_SET_THUMBNAIL_WIDTH,
-	JPEG_SET_THUMBNAIL_HEIGHT
-}JPEGConf;
-
-typedef enum tagJPEG_ERRORTYPE{
-	JPEG_FAIL,
-	JPEG_OK,
-	JPEG_ENCODE_FAIL,
-	JPEG_ENCODE_OK,
-	JPEG_DECODE_FAIL,
-	JPEG_DECODE_OK,
-	JPEG_HEADER_PARSE_FAIL,
-	JPEG_HEADER_PARSE_OK,
-	JPEG_UNKNOWN_ERROR
-}JPEG_ERRORTYPE;
-
-typedef enum tagJPEG_SCALER{
-	JPEG_USE_HW_SCALER=1,
-	JPEG_USE_SW_SCALER=2
-}JPEG_SCALER;
-
-typedef struct tagExifFileInfo{
-	char	Make[32]; 
-	char	Model[32]; 
-	char	Version[32]; 
-	char	DateTime[32]; 
-	char	CopyRight[32]; 
-
-	UINT	Height; 
-	UINT	Width;
-	UINT	Orientation; 
-	UINT	ColorSpace; 
-	UINT	Process;
-	UINT	Flash; 
-
-	UINT	FocalLengthNum; 
-	UINT	FocalLengthDen; 
-
-	UINT	ExposureTimeNum; 
-	UINT	ExposureTimeDen; 
-
-	UINT	FNumberNum; 
-	UINT	FNumberDen; 
-
-	UINT	ApertureFNumber; 
-
-	int		SubjectDistanceNum; 
-	int		SubjectDistanceDen; 
-
-	UINT	CCDWidth;
-
-	int		ExposureBiasNum; 
-	int		ExposureBiasDen; 
-
-
-	int		WhiteBalance; 
-
-	UINT	MeteringMode; 
-
-	int		ExposureProgram;
-
-	UINT	ISOSpeedRatings[2]; 
-	
-	UINT	FocalPlaneXResolutionNum;
-	UINT	FocalPlaneXResolutionDen;
-
-	UINT	FocalPlaneYResolutionNum;
-	UINT	FocalPlaneYResolutionDen;
-
-	UINT	FocalPlaneResolutionUnit;
-
-	UINT	XResolutionNum;
-	UINT	XResolutionDen;
-	UINT	YResolutionNum;
-	UINT	YResolutionDen;
-	UINT	RUnit; 
-
-	int		BrightnessNum; 
-	int		BrightnessDen; 
-
-	char	UserComments[150];
-}ExifFileInfo;
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-int SsbSipJPEGDecodeInit(void);
-int SsbSipJPEGEncodeInit(void);
-JPEG_ERRORTYPE SsbSipJPEGDecodeExe(int dev_fd);
-JPEG_ERRORTYPE SsbSipJPEGEncodeExe(int dev_fd, ExifFileInfo *Exif, JPEG_SCALER scaler);
-void *SsbSipJPEGGetDecodeInBuf(int dev_fd, long size);
-void *SsbSipJPEGGetDecodeOutBuf (int dev_fd, long *size);
-void *SsbSipJPEGGetEncodeInBuf(int dev_fd, long size);
-void *SsbSipJPEGGetEncodeOutBuf (int dev_fd, long *size);
-JPEG_ERRORTYPE SsbSipJPEGSetConfig (JPEGConf type, INT32 value);
-JPEG_ERRORTYPE SsbSipJPEGGetConfig (JPEGConf type, INT32 *value);
-JPEG_ERRORTYPE SsbSipJPEGDecodeDeInit (int dev_fd);
-JPEG_ERRORTYPE SsbSipJPEGEncodeDeInit (int dev_fd);
-
-
-#ifdef __cplusplus
-}
-#endif
-#endif
 
 #endif
 

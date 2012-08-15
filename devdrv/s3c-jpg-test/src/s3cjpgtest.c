@@ -51,17 +51,6 @@
 #define JPG_DRIVER_NAME     "/dev/s3c-jpg"
 #define POST_DRIVER_NAME    "/dev/s3c-pp"
 
-
-#define IOCTL_JPG_DECODE                0x00000002
-#define IOCTL_JPG_ENCODE                0x00000003
-#define IOCTL_JPG_GET_STRBUF            0x00000004
-#define IOCTL_JPG_GET_FRMBUF            0x00000005
-#define IOCTL_JPG_GET_THUMB_STRBUF      0x0000000A
-#define IOCTL_JPG_GET_THUMB_FRMBUF      0x0000000B
-#define IOCTL_JPG_GET_PHY_FRMBUF        0x0000000C
-#define IOCTL_JPG_GET_PHY_THUMB_FRMBUF  0x0000000D
-
-
 #define R_RGB565(x)     (unsigned char) (((x) >> 8) & 0xF8)
 #define G_RGB565(x)     (unsigned char) (((x) >> 3) & 0xFC)
 #define B_RGB565(x)     (unsigned char) ((x) << 3)
@@ -72,85 +61,7 @@
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
 /******************************************************************************/
-/*
-typedef enum tagENCDEC_TYPE_T
-{
-    JPG_MAIN,
-    JPG_THUMBNAIL
-} ENCDEC_TYPE_T;
 
-typedef struct tagJPG_DEC_PROC_PARAM
-{
-    SAMPLE_MODE_T   sampleMode;
-    ENCDEC_TYPE_T   decType;
-    UINT32  width;
-    UINT32  height;
-    UINT32  dataSize;
-    UINT32  fileSize;
-} JPG_DEC_PROC_PARAM;
-
-typedef struct tagJPG_ENC_PROC_PARAM
-{
-    SAMPLE_MODE_T   sampleMode;
-    ENCDEC_TYPE_T   encType;
-    IMAGE_QUALITY_TYPE_T quality;
-    UINT32  width;
-    UINT32  height;
-    UINT32  dataSize;
-    UINT32  fileSize;
-} JPG_ENC_PROC_PARAM;
-
-typedef struct tagJPG_CTX
-{
-    UINT    debugPrint;
-    char    *InBuf;
-    char    *OutBuf;
-    char    *InThumbBuf;
-    char    *OutThumbBuf;
-    char    *mappedAddr;
-    UINT8   thumbnailFlag;
-    JPG_DEC_PROC_PARAM  *decParam;
-    JPG_ENC_PROC_PARAM  *encParam;
-    JPG_ENC_PROC_PARAM  *thumbEncParam;
-    ExifFileInfo *ExifInfo;
-} JPG_CTX;
-*/
-
-//#define JPG_CTX jpg_args
-
-typedef struct {
-    char    *in_buf;
-    char    *phy_in_buf;
-    int     in_buf_size;
-    char    *out_buf;
-    char    *phy_out_buf;
-    int     out_buf_size;
-    char    *in_thumb_buf;
-    char    *phy_in_thumb_buf;
-    int     in_thumb_buf_size;
-    char    *out_thumb_buf;
-    char    *phy_out_thumb_buf;
-    int     out_thumb_buf_size;
-    char    *mmapped_addr;
-    jpg_dec_proc_param  *dec_param;
-    jpg_enc_proc_param  *enc_param;
-    jpg_enc_proc_param  *thumb_enc_param;
-} jpg_args22; //fixme.
-
-typedef struct tagJPG_CTX
-{
-    int    debugPrint;
-    char    *InBuf;
-    char    *OutBuf;
-    char    *InThumbBuf;
-    char    *OutThumbBuf;
-    char    *mappedAddr;
-    int   thumbnailFlag;
-    jpg_dec_proc_param  *decParam;
-    jpg_enc_proc_param  *encParam;
-    jpg_enc_proc_param  *thumbEncParam;
-   // ExifFileInfo *ExifInfo;
-} JPG_CTX;
 
 /******************************************************************************/
 /*  Local Variables                                                           */
@@ -159,11 +70,11 @@ int dev_fd;
 
 FILE    *fpin, *fpout;
 unsigned long    width, height, samplemode;
-char    *InBuf = NULL, *OutBuf = NULL;
-char    outFilename[128], inFilename[128];
+//char    *in_buf = NULL, *out_buf = NULL;
+char    outFilename[128] ="", inFilename[128]="";
 unsigned long infileSize, outfileSize, streamSize;
 
-JPG_CTX *jCtx;
+jpg_args *jCtx;
 
 struct timeval start;
 struct timeval stop;
@@ -183,14 +94,37 @@ static void show_banner(int argc, char **argv)
 /******************************************************************************/
 static void initDecodeParam(void)
 {
-    jCtx = (JPG_CTX *)malloc(sizeof(JPG_CTX));
-    memset(jCtx, 0x00, sizeof(JPG_CTX));
+    jCtx = (jpg_args *)malloc(sizeof(jpg_args));
+    memset(jCtx, 0x00, sizeof(jpg_args));
 
-    jCtx->decParam = (jpg_dec_proc_param *)malloc(sizeof(jpg_dec_proc_param));
-    memset(jCtx->decParam, 0x00, sizeof(jpg_dec_proc_param));
+    //dec
+    jCtx->dec_param = (jpg_dec_proc_param *)malloc(sizeof(jpg_dec_proc_param));
+    memset(jCtx->dec_param, 0x00, sizeof(jpg_dec_proc_param));
+    jCtx->dec_param->dec_type = JPG_MAIN;
+    jCtx->dec_param->out_format = YCBCR_420;
 
-    jCtx->debugPrint = TRUE;
-    jCtx->decParam->dec_type = JPG_MAIN;
+    //enc
+//    jCtx->enc_param = (jpg_enc_proc_param *)malloc(sizeof(jpg_enc_proc_param));
+//    memset(jCtx->enc_param, 0x00, sizeof(jpg_enc_proc_param));
+//    jCtx->enc_param->sample_mode = JPG_420;
+//    jCtx->enc_param->enc_type = JPG_MAIN;
+//    jCtx->enc_param->width = 320;
+//    jCtx->enc_param->height= 240;
+//    jCtx->enc_param->quality = JPG_QUALITY_LEVEL_2;
+//    jCtx->enc_param->in_format = JPG_MODESEL_YCBCR;
+//    jCtx->enc_param->sample_mode = JPG_422;
+
+//    //enc thum
+//    jCtx->thumb_enc_param = (jpg_enc_proc_param *)malloc(sizeof(jpg_enc_proc_param));
+//    memset(jCtx->thumb_enc_param, 0x00, sizeof(jpg_enc_proc_param));
+//    jCtx->thumb_enc_param->sample_mode = JPG_420;
+//    jCtx->thumb_enc_param->enc_type = JPG_THUMBNAIL;
+//    jCtx->thumb_enc_param->width = 320;
+//    jCtx->thumb_enc_param->height= 240;
+//    jCtx->thumb_enc_param->quality = JPG_QUALITY_LEVEL_2;
+//    jCtx->thumb_enc_param->in_format = JPG_MODESEL_YCBCR;
+//    jCtx->thumb_enc_param->sample_mode = JPG_422;
+
 }
 
 int main(int argc, char **argv)
@@ -216,38 +150,30 @@ int main(int argc, char **argv)
     fseek(fpin, 0, SEEK_END);
     infileSize = ftell(fpin);
     fseek(fpin, 0, SEEK_SET);
-    printf(" infile size %d bytes . \n", infileSize);
-    
+    printf("infile size %d bytes . \n", infileSize);
+
     //////////////////////////////////////////////////////////////
     // 1. handle Init                                           //
     //////////////////////////////////////////////////////////////
 
-{
-    int fd;
-
-    printf(" test rtc\n");
-    fd = open("/dev/rtc", O_RDONLY);
-    if(fd >=0)
-        printf(" open rtc ok!\n");
-}
-
     initDecodeParam();
-    
-//    dev_fd = open(JPG_DRIVER_NAME, O_RDWR);
-    dev_fd = open("/dev/rtc", O_RDONLY);
+
+    dev_fd = open(JPG_DRIVER_NAME, O_RDWR);
     if(dev_fd < 0)
     {
         printf("JPEG Driver open failed\n");
         return -1;
     }
-    jCtx->mappedAddr = (char *) mmap(0,
-                                     JPG_TOTAL_BUF_SIZE,
-                                     PROT_READ | PROT_WRITE,
-                                     MAP_SHARED,
-                                     dev_fd,
-                                     0
-                                    );
-    if (jCtx->mappedAddr == NULL)
+    printf("dev_fd is %d.\n", dev_fd);
+    jCtx->mmapped_addr = (char *)MAP_FAILED;
+    jCtx->mmapped_addr = (char *) mmap(0,
+                                       JPG_TOTAL_BUF_SIZE,
+                                       PROT_READ | PROT_WRITE,
+                                       MAP_SHARED,
+                                       dev_fd,
+                                       0
+                                      );
+    if (jCtx->mmapped_addr == MAP_FAILED)
     {
         printf( "JPEG mmap failed\n");
         return -1;
@@ -257,27 +183,47 @@ int main(int argc, char **argv)
     //////////////////////////////////////////////////////////////
     // 3. get Input buffer address                              //
     //////////////////////////////////////////////////////////////
-    jCtx->decParam->file_size = infileSize;
-    jCtx->InBuf = InBuf=(char *)ioctl(dev_fd, IOCTL_JPG_GET_STRBUF, jCtx->mappedAddr);
-    printf("inBuf : 0x%x\n", InBuf);
+    jCtx->dec_param->file_size = infileSize;
+//    jCtx->dec_param->data_size = infileSize;
+    jCtx->in_buf_size = infileSize;
+    printf("mmapped_addr : 0x%lx\n", jCtx->mmapped_addr);
+    jCtx->in_buf = (char *)ioctl(dev_fd, IOCTL_JPG_GET_STRBUF, jCtx->mmapped_addr);
+    printf("in_buf : 0x%lx\n", jCtx->in_buf);
 
+//    jCtx->out_buf = (char *)ioctl(dev_fd, IOCTL_JPG_GET_FRMBUF, jCtx->mmapped_addr);
+//    printf("Decodeout_buf : 0x%x  size : %d\n", jCtx->out_buf, jCtx->dec_param->data_size);
+
+    //enc
+//    jCtx->enc_param->data_size = 320*240*2;
+//    jCtx->in_buf = (char *)ioctl(dev_fd, IOCTL_JPG_GET_FRMBUF, jCtx->mmapped_addr);
+//    printf("in_buf : 0x%lx\n", jCtx->in_buf);
+
+//    jCtx->phy_in_buf = (char *)ioctl(dev_fd, IOCTL_JPG_GET_PHY_FRMBUF, jCtx->mmapped_addr);
+//    printf("phy_in_buf : 0x%lx\n", jCtx->phy_in_buf);
 
     //////////////////////////////////////////////////////////////
     // 4. put JPEG frame to Input buffer                        //
     //////////////////////////////////////////////////////////////
-    fread(InBuf, 1, infileSize, fpin);
+    printf("read jpeg data in .");
+    fread(jCtx->in_buf, 1, infileSize, fpin);
     fclose(fpin);
+    printf(" done\n");
 
 
     //////////////////////////////////////////////////////////////
     // 5. Decode JPEG frame                                     //
     //////////////////////////////////////////////////////////////
-    if(jCtx->decParam->dec_type == JPG_MAIN)
+    if(jCtx->dec_param->dec_type == JPG_MAIN)
     {
-        ioctl(dev_fd, IOCTL_JPG_DECODE, jCtx->decParam);
+        ioctl(dev_fd, IOCTL_JPG_DECODE, jCtx);
 
-        printf("decParam->width : %d decParam->height : %d\n", jCtx->decParam->width, jCtx->decParam->height);
-        printf("streamSize : %d\n", jCtx->decParam->data_size);
+        printf("dec_param->width : %d dec_param->height : %d\n", jCtx->dec_param->width, jCtx->dec_param->height);
+
+//        printf(" enc start.\n");
+//        jCtx->enc_param->enc_type = JPG_MAIN;
+//        ioctl(dev_fd, IOCTL_JPG_ENCODE, jCtx);
+//        printf(" enc done.\n");
+
     }
     else
     {
@@ -287,37 +233,35 @@ int main(int argc, char **argv)
     //////////////////////////////////////////////////////////////
     // 6. get Output buffer address                             //
     //////////////////////////////////////////////////////////////
-    jCtx->OutBuf = (char *)ioctl(dev_fd, IOCTL_JPG_GET_FRMBUF, jCtx->mappedAddr);
+    jCtx->out_buf = (char *)ioctl(dev_fd, IOCTL_JPG_GET_FRMBUF, jCtx->mmapped_addr);
 
-    printf("DecodeOutBuf : 0x%x  size : %d\n", jCtx->OutBuf, jCtx->decParam->data_size);
-    streamSize = jCtx->decParam->data_size;
-
-    printf("OutBuf : 0x%x streamsize : %d\n", OutBuf, streamSize);
+    streamSize = jCtx->dec_param->data_size;
+    printf("Decodeout_buf : 0x%x  size : %d\n", jCtx->out_buf, jCtx->dec_param->data_size);
 
     //////////////////////////////////////////////////////////////
     // 7. get decode config.                                    //
     //////////////////////////////////////////////////////////////
-    width = (INT32)jCtx->decParam->width;
-    height = (INT32)jCtx->decParam->height;
-    samplemode = (INT32)jCtx->decParam->sample_mode;
+    width = (INT32)jCtx->dec_param->width;
+    height = (INT32)jCtx->dec_param->height;
+    samplemode = (INT32)jCtx->dec_param->sample_mode;
 
     printf("width : %d height : %d samplemode : %d\n", width, height, samplemode);
 
     //////////////////////////////////////////////////////////////
     // 8. wirte output file & dispaly to LCD                    //
     //////////////////////////////////////////////////////////////
-    fwrite(OutBuf, 1, streamSize, fpout);
+    fwrite(jCtx->out_buf, 1, streamSize, fpout);
     fclose(fpout);
 
     //////////////////////////////////////////////////////////////
     // 9. finalize handle                                      //
     //////////////////////////////////////////////////////////////
-    munmap(jCtx->mappedAddr, JPG_TOTAL_BUF_SIZE);
+    munmap(jCtx->mmapped_addr, JPG_TOTAL_BUF_SIZE);
 
     close(dev_fd);
 
-    if(jCtx->decParam != NULL)
-        free(jCtx->decParam);
+    if(jCtx->dec_param != NULL)
+        free(jCtx->dec_param);
 
     free(jCtx);
 
