@@ -37,6 +37,78 @@
 
 #include "JPGApi.h"
 
+/*
+struct s3c_platform_jpeg {
+	unsigned int max_main_width;
+	unsigned int max_main_height;
+	unsigned int max_thumb_width;
+	unsigned int max_thumb_height;
+};
+
+static struct s3c_platform_jpeg default_jpeg_data __initdata = {
+	.max_main_width		= 2560,
+	.max_main_height	= 1920,
+	.max_thumb_width	= 0,
+	.max_thumb_height	= 0,
+};
+
+void __init s3c_jpeg_set_platdata(struct s3c_platform_jpeg *pd)
+{
+	struct s3c_platform_jpeg *npd;
+
+	if (!pd)
+		pd = &default_jpeg_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_jpeg), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+	else
+		s3c_device_jpeg.dev.platform_data = npd;
+}
+
+static struct resource s3c_jpeg_resource[] = {
+	[0] = {
+		.start = S5PV210_PA_JPEG,
+		.end   = S5PV210_PA_JPEG + S5PV210_SZ_JPEG - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = IRQ_JPEG,
+		.end   = IRQ_JPEG,
+		.flags = IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device s3c_device_jpeg = {
+	.name             = "s3c-jpg",
+	.id               = -1,
+	.num_resources    = ARRAY_SIZE(s3c_jpeg_resource),
+	.resource         = s3c_jpeg_resource,
+};
+
+#ifdef CONFIG_VIDEO_JPEG_V2
+static struct s3c_platform_jpeg jpeg_plat __initdata = {
+	.max_main_width		= 1280,
+	.max_main_height	= 960,
+	.max_thumb_width	= 400,
+	.max_thumb_height	= 240,
+};
+#endif
+
+\\10.10.32.73\andev\cm9src\kernel\samsung\p1\arch\arm\plat-s5p\devs.c
+\\10.10.32.73\andev\cm9src\kernel\samsung\p1\arch\arm\plat-s5p\include\plat\jpeg.h
+\\10.10.32.73\andev\cm9src\kernel\samsung\p1\arch\arm\mach-s5pv210\mach-p1.c
+
+Tommy: 
+looks like limit is 1280x960. and this is used in s3c_jpg_plat_init() in s3c-jpeg.c
+can't get the jpg_reserved_mem_size in bytes, maybe about 4M bytes.
+#define jpg_reserved_mem_size		\
+	((unsigned int)s5p_get_media_memsize_bank(S5P_MDEV_JPEG, 0))
+until now, decode 1280x960 good.
+but if decode 1600x1200, looks like IOCTL_JPG_DECODE done, but system crash when try to fwrite out.
+*/
+
+
 /******************************************************************************/
 /*  Externs                                                                   */
 /******************************************************************************/
