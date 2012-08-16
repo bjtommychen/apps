@@ -95,9 +95,19 @@ static struct s3c_platform_jpeg jpeg_plat __initdata = {
 };
 #endif
 
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_JPEG 		(4096 * SZ_1K)
+	[4] = {
+		.id = S5P_MDEV_JPEG,
+		.name = "jpeg",
+		.bank = 0,
+		.memsize = S5PV210_VIDEO_SAMSUNG_MEMSIZE_JPEG,
+		.paddr = 0,
+	},
+
 \\10.10.32.73\andev\cm9src\kernel\samsung\p1\arch\arm\plat-s5p\devs.c
 \\10.10.32.73\andev\cm9src\kernel\samsung\p1\arch\arm\plat-s5p\include\plat\jpeg.h
 \\10.10.32.73\andev\cm9src\kernel\samsung\p1\arch\arm\mach-s5pv210\mach-p1.c
+\\10.10.32.73\andev\cm9src\kernel\samsung\p1\arch\arm\plat-s5p\bootmem.c
 
 Tommy: 
 looks like limit is 1280x960. and this is used in s3c_jpg_plat_init() in s3c-jpeg.c
