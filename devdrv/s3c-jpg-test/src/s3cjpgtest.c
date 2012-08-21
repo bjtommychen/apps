@@ -111,6 +111,7 @@ static struct s3c_platform_jpeg jpeg_plat __initdata = {
 
 Tommy: 
 looks like limit is 1280x960. and this is used in s3c_jpg_plat_init() in s3c-jpeg.c
+1280x960*3 + 400*240*3 = 4Mbytes.
 can't get the jpg_reserved_mem_size in bytes, maybe about 4M bytes.
 #define jpg_reserved_mem_size		\
 	((unsigned int)s5p_get_media_memsize_bank(S5P_MDEV_JPEG, 0))
