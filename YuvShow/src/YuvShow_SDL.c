@@ -548,6 +548,8 @@ int main(int argc, char *argv[])
         frames = fileSize / get_framesize_in_bytes(w, h, format);
 
     printf("width %d , height %d , frames %d\n", w, h, frames);
+	if (frames == 0)
+		frames = 1;
 //  getchar();
 //  exit(0);
 
