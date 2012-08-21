@@ -1,12 +1,12 @@
 /*
  * Project Name JPEG API for HW JPEG IP IN WINCE
- * Copyright  2007 Samsung Electronics Co, Ltd. All Rights Reserved. 
+ * Copyright  2007 Samsung Electronics Co, Ltd. All Rights Reserved.
  *
  * This software is the confidential and proprietary information
- * of Samsung Electronics  ("Confidential Information").   
+ * of Samsung Electronics  ("Confidential Information").
  * you shall not disclose such Confidential Information and shall use
  * it only in accordance with the terms of the license agreement
- * you entered into with Samsung Electronics 
+ * you entered into with Samsung Electronics
  *
  * This file implements JPEG driver.
  *
@@ -16,55 +16,11 @@
  */
 #ifndef __JPG_API_H__
 #define __JPG_API_H__
- 
-#if 0
-#define MAX_JPG_WIDTH				1600
-#define MAX_JPG_HEIGHT				1200
-#define MAX_YUV_SIZE				(MAX_JPG_WIDTH * MAX_JPG_HEIGHT * 3)
-#define	MAX_FILE_SIZE				(MAX_JPG_WIDTH * MAX_JPG_HEIGHT)
-#define MAX_JPG_THUMBNAIL_WIDTH		320
-#define MAX_JPG_THUMBNAIL_HEIGHT	240
-#define MAX_YUV_THUMB_SIZE			(MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT * 3)
-#define	MAX_FILE_THUMB_SIZE			(MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT)
-#define EXIF_FILE_SIZE				28800
 
-#define JPG_STREAM_BUF_SIZE			(MAX_JPG_WIDTH * MAX_JPG_HEIGHT)
-#define JPG_STREAM_THUMB_BUF_SIZE	(MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT)
-#define JPG_FRAME_BUF_SIZE			(MAX_JPG_WIDTH * MAX_JPG_HEIGHT * 3)
-#define JPG_FRAME_THUMB_BUF_SIZE	(MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT * 3)
-
-#define JPG_TOTAL_BUF_SIZE			(JPG_STREAM_BUF_SIZE + JPG_STREAM_THUMB_BUF_SIZE \
-									+ JPG_FRAME_BUF_SIZE + JPG_FRAME_THUMB_BUF_SIZE)
-#endif
 //#define PAGE_SIZE           (4*1024)
 
-#if 1
-#define MAX_JPG_WIDTH        2400//3264
-#define MAX_JPG_HEIGHT       1500//2448
-
-#define MAX_JPG_THUMBNAIL_WIDTH	 320
-#define MAX_JPG_THUMBNAIL_HEIGHT 240
-
-#define MAX_RGB_WIDTH        800
-#define MAX_RGB_HEIGHT       480
-/*******************************************************************************/
-// define JPG & image memory 
-// memory area is 4k(PAGE_SIZE) aligned because of VirtualCopyEx()
-#define JPG_STREAM_BUF_SIZE        ((MAX_JPG_WIDTH * MAX_JPG_HEIGHT )/PAGE_SIZE + 1)*PAGE_SIZE
-#define JPG_STREAM_THUMB_BUF_SIZE  ((MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT )/PAGE_SIZE + 1)*PAGE_SIZE
-#define JPG_FRAME_BUF_SIZE         ((MAX_JPG_WIDTH * MAX_JPG_HEIGHT * 3)/PAGE_SIZE + 1)*PAGE_SIZE
-#define JPG_FRAME_THUMB_BUF_SIZE   ((MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT * 3)/PAGE_SIZE + 1)*PAGE_SIZE
-#define JPG_RGB_BUF_SIZE           ((MAX_RGB_WIDTH * MAX_RGB_HEIGHT*4)/PAGE_SIZE + 1)*PAGE_SIZE
-
-#define JPG_TOTAL_BUF_SIZE			(JPG_STREAM_BUF_SIZE + JPG_STREAM_THUMB_BUF_SIZE \
-			      + JPG_FRAME_BUF_SIZE + JPG_FRAME_THUMB_BUF_SIZE + JPG_RGB_BUF_SIZE)
-
-#endif
-
-
-
 #if 0
-
+// Tommy: this is the original one copied from jpeg encode, which is the 1st one can work for decode.
 #define MAX_JPG_WIDTH                   800
 #define MAX_JPG_HEIGHT                  480
 #define MAX_JPG_RESOLUTION              (MAX_JPG_WIDTH * MAX_JPG_HEIGHT)
@@ -72,7 +28,7 @@
 #define MAX_JPG_THUMBNAIL_WIDTH         320
 #define MAX_JPG_THUMBNAIL_HEIGHT        240
 #define MAX_JPG_THUMBNAIL_RESOLUTION    (MAX_JPG_THUMBNAIL_WIDTH *  \
-                                            MAX_JPG_THUMBNAIL_HEIGHT)
+        MAX_JPG_THUMBNAIL_HEIGHT)
 
 #define MAX_RGB_WIDTH                   800
 #define MAX_RGB_HEIGHT                  480
@@ -82,15 +38,15 @@
 /* define JPG & image memory */
 /* memory area is 4k(PAGE_SIZE) aligned because of VirtualCopyEx() */
 #define JPG_STREAM_BUF_SIZE     \
-        (MAX_JPG_RESOLUTION / PAGE_SIZE + 1) * PAGE_SIZE
+    (MAX_JPG_RESOLUTION / PAGE_SIZE + 1) * PAGE_SIZE
 #define JPG_STREAM_THUMB_BUF_SIZE   \
-        (MAX_JPG_THUMBNAIL_RESOLUTION / PAGE_SIZE + 1) * PAGE_SIZE
+    (MAX_JPG_THUMBNAIL_RESOLUTION / PAGE_SIZE + 1) * PAGE_SIZE
 #define JPG_FRAME_BUF_SIZE  \
-        ((MAX_JPG_RESOLUTION * 3) / PAGE_SIZE + 1) * PAGE_SIZE
+    ((MAX_JPG_RESOLUTION * 3) / PAGE_SIZE + 1) * PAGE_SIZE
 #define JPG_FRAME_THUMB_BUF_SIZE    \
-        ((MAX_JPG_THUMBNAIL_RESOLUTION * 3) / PAGE_SIZE + 1) * PAGE_SIZE
+    ((MAX_JPG_THUMBNAIL_RESOLUTION * 3) / PAGE_SIZE + 1) * PAGE_SIZE
 #define JPG_RGB_BUF_SIZE    \
-        ((MAX_RGB_RESOLUTION * 4) / PAGE_SIZE + 1) * PAGE_SIZE
+    ((MAX_RGB_RESOLUTION * 4) / PAGE_SIZE + 1) * PAGE_SIZE
 
 #define JPG_TOTAL_BUF_SIZE  (JPG_STREAM_BUF_SIZE + \
                              JPG_STREAM_THUMB_BUF_SIZE + \
@@ -106,14 +62,60 @@
 
 #endif
 
+#if 0
+//Tommy: can be used to decode 1600x1200. temp use. 
+#define MAX_JPG_WIDTH               1600
+#define MAX_JPG_HEIGHT              1200
+#define MAX_YUV_SIZE                (MAX_JPG_WIDTH * MAX_JPG_HEIGHT * 3)
+#define MAX_FILE_SIZE               (MAX_JPG_WIDTH * MAX_JPG_HEIGHT)
+#define MAX_JPG_THUMBNAIL_WIDTH     320
+#define MAX_JPG_THUMBNAIL_HEIGHT    240
+#define MAX_YUV_THUMB_SIZE          (MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT * 3)
+#define MAX_FILE_THUMB_SIZE         (MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT)
+#define EXIF_FILE_SIZE              28800
 
-typedef	unsigned char	UCHAR;
-typedef unsigned long	ULONG;
-typedef	unsigned int	UINT;
-typedef unsigned long	DWORD;
-typedef unsigned int	UINT32;
-typedef int				INT32;
-typedef unsigned char	UINT8;
+#define JPG_STREAM_BUF_SIZE         (MAX_JPG_WIDTH * MAX_JPG_HEIGHT)
+#define JPG_STREAM_THUMB_BUF_SIZE   (MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT)
+#define JPG_FRAME_BUF_SIZE          (MAX_JPG_WIDTH * MAX_JPG_HEIGHT * 3)
+#define JPG_FRAME_THUMB_BUF_SIZE    (MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT * 3)
+
+#define JPG_TOTAL_BUF_SIZE          (JPG_STREAM_BUF_SIZE + JPG_STREAM_THUMB_BUF_SIZE \
+                                     + JPG_FRAME_BUF_SIZE + JPG_FRAME_THUMB_BUF_SIZE)
+#endif
+
+
+#if 1
+//Tommy: after change the reserved mem size from 4M to 16M bytes, we can use this one.
+//In general, the 'JPG_TOTAL_BUF_SIZE' is the most important value here.
+#define MAX_JPG_WIDTH        2400//3264
+#define MAX_JPG_HEIGHT       1500//2448
+
+#define MAX_JPG_THUMBNAIL_WIDTH  320
+#define MAX_JPG_THUMBNAIL_HEIGHT 240
+
+#define MAX_RGB_WIDTH        800
+#define MAX_RGB_HEIGHT       480
+/*******************************************************************************/
+// define JPG & image memory
+// memory area is 4k(PAGE_SIZE) aligned because of VirtualCopyEx()
+#define JPG_STREAM_BUF_SIZE        ((MAX_JPG_WIDTH * MAX_JPG_HEIGHT )/PAGE_SIZE + 1)*PAGE_SIZE
+#define JPG_STREAM_THUMB_BUF_SIZE  ((MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT )/PAGE_SIZE + 1)*PAGE_SIZE
+#define JPG_FRAME_BUF_SIZE         ((MAX_JPG_WIDTH * MAX_JPG_HEIGHT * 3)/PAGE_SIZE + 1)*PAGE_SIZE
+#define JPG_FRAME_THUMB_BUF_SIZE   ((MAX_JPG_THUMBNAIL_WIDTH * MAX_JPG_THUMBNAIL_HEIGHT * 3)/PAGE_SIZE + 1)*PAGE_SIZE
+#define JPG_RGB_BUF_SIZE           ((MAX_RGB_WIDTH * MAX_RGB_HEIGHT*4)/PAGE_SIZE + 1)*PAGE_SIZE
+
+#define JPG_TOTAL_BUF_SIZE          (JPG_STREAM_BUF_SIZE + JPG_STREAM_THUMB_BUF_SIZE \
+                                     + JPG_FRAME_BUF_SIZE + JPG_FRAME_THUMB_BUF_SIZE + JPG_RGB_BUF_SIZE)
+
+#endif
+
+typedef unsigned char   UCHAR;
+typedef unsigned long   ULONG;
+typedef unsigned int    UINT;
+typedef unsigned long   DWORD;
+typedef unsigned int    UINT32;
+typedef int             INT32;
+typedef unsigned char   UINT8;
 //typedef enum {FALSE, TRUE} BOOL;
 
 //\\10.10.32.73\andev\cm9src\device\samsung\p1-common\libs3cjpeg\JpegEncoder.h
@@ -129,7 +131,8 @@ typedef unsigned char	UINT8;
 #define IOCTL_JPG_GET_PHY_FRMBUF        _IO(JPEG_IOCTL_MAGIC, 7)
 #define IOCTL_JPG_GET_PHY_THUMB_FRMBUF  _IO(JPEG_IOCTL_MAGIC, 8)
 
-typedef enum {
+typedef enum
+{
     JPG_FAIL,
     JPG_SUCCESS,
     OK_HD_PARSING,
@@ -139,13 +142,15 @@ typedef enum {
     ERR_UNKNOWN
 } jpg_return_status;
 
-typedef enum {
+typedef enum
+{
     JPG_RGB16,
     JPG_YCBYCR,
     JPG_TYPE_UNKNOWN
 } image_type_t;
 
-typedef enum {
+typedef enum
+{
     JPG_444,
     JPG_422,
     JPG_420,
@@ -156,31 +161,36 @@ typedef enum {
     JPG_SAMPLE_UNKNOWN
 } sample_mode_t;
 
-typedef enum {
+typedef enum
+{
     YCBCR_422,
     YCBCR_420,
     YCBCR_SAMPLE_UNKNOWN
 } out_mode_t;
 
-typedef enum {
+typedef enum
+{
     JPG_MODESEL_YCBCR = 1,
     JPG_MODESEL_RGB,
     JPG_MODESEL_UNKNOWN
 } in_mode_t;
 
-typedef enum {
+typedef enum
+{
     JPG_MAIN,
     JPG_THUMBNAIL
 } encode_type_t;
 
-typedef enum {
+typedef enum
+{
     JPG_QUALITY_LEVEL_1,        /* high */
     JPG_QUALITY_LEVEL_2,
     JPG_QUALITY_LEVEL_3,
     JPG_QUALITY_LEVEL_4         /* low */
 } image_quality_type_t;
 
-typedef struct {
+typedef struct
+{
     sample_mode_t   sample_mode;
     encode_type_t   dec_type;
     out_mode_t      out_format;
@@ -190,7 +200,8 @@ typedef struct {
     uint32_t        file_size;
 } jpg_dec_proc_param;
 
-typedef struct {
+typedef struct
+{
     sample_mode_t       sample_mode;
     encode_type_t       enc_type;
     in_mode_t           in_format;
@@ -202,7 +213,8 @@ typedef struct {
     uint32_t            set_framebuf;
 } jpg_enc_proc_param;
 
-typedef struct {
+typedef struct
+{
     char    *in_buf;
     char    *phy_in_buf;
     int     in_buf_size;
