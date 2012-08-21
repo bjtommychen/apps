@@ -34,11 +34,12 @@
 #include <fcntl.h>
 #include "linux/rtc.h"
 #include <sys/mman.h>
+#include <sys/time.h>
 
 #include "JPGApi.h"
 
 /*
-struct s3c_platform_jpeg {
+struct s3c_platform_jpeg { 
 	unsigned int max_main_width;
 	unsigned int max_main_height;
 	unsigned int max_thumb_width;
@@ -119,6 +120,39 @@ until now, decode 1280x960 good.
 but if decode 1600x1200, looks like IOCTL_JPG_DECODE done, but system crash when try to fwrite out.
 */
 
+/* dmesg log
+
+<6>[    2.573328] 
+<6>[    2.573981] S3C JPEG Driver, (c) 2007 Samsung Electronics
+<6>[    2.574187] JPEG driver for S5PV210
+<4>[    2.574329] s3c_jpeg_probe called. 
+<4>[    2.574431] s3c_jpg_plat_init called. 
+<7>[    2.574621] s3c_jpg_plat_init: Resolution: Main (1280 x  960), Thumb ( 400 x  240)
+<7>[    2.574731] s3c_jpg_plat_init: JPG Stream: Main(1228800 bytes @ 0x0), Thumb(98304 bytes @ 0x12c000)
+<7>[    2.574925] s3c_jpg_plat_init: YUV frame: Main(2457600 bytes @ 0x144000), Thumb(192512 bytes @ 0x39c000)
+<7>[    2.575116] s3c_jpg_plat_init: Total buffer size : 3977216 bytes
+<7>[    2.575427] s3c_jpeg_probe: JPG_Init
+
+<7>[  158.282340] s3c_jpeg_open: JPG_open 
+<7>[  158.282456] s3c_jpeg_mmap: s3c_jpeg_mmap: Reserved memory (4194304), required memory (3977216)
+<7>[  158.282463] mmap size (3391488). 
+<7>[  158.283061] s3c_jpeg_ioctl: IOCTL_JPG_GET_STRBUF
+<7>[  158.284093] s3c_jpeg_ioctl: IOCTL_JPEG_DECODE
+<7>[  158.284686] decode_jpg: enter decode_jpg function
+<7>[  158.284875] reset_jpg: s3c_jpeg_base f0800000
+<7>[  158.292851] s3c_jpeg_irq: =====enter s3c_jpeg_irq===== 
+<7>[  158.292943] s3c_jpeg_irq: int_status : 0x00000040 status : 0x00000000
+<7>[  158.293108] decode_jpg: sample_mode : 2
+<7>[  158.293194] decode_jpg: decode size:: width : 640 height : 480
+<7>[  158.293348] get_yuv_size: get_yuv_size width(640) height(480)
+<7>[  158.293464] s3c_jpeg_ioctl: IOCTL_JPG_GET_FRMBUF
+<7>[  158.315505] s3c_jpeg_release: JPG_Close
+
+
+
+
+*/
+
 
 /******************************************************************************/
 /*  Externs                                                                   */
@@ -141,6 +175,8 @@ but if decode 1600x1200, looks like IOCTL_JPG_DECODE done, but system crash when
 #define TRUE    1
 #define FALSE   0
 #define DEBUG   1
+
+#define LOOPNUM (10L)
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
 /******************************************************************************/
@@ -170,7 +206,27 @@ static void show_banner(int argc, char **argv)
     printf("s3c-jpg test v %s by %s.\t", VERSION, AUTHOR);
     printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
 }
+
 
+static unsigned int measureTime_inMs(struct timeval *start, struct timeval *stop)
+{
+	unsigned int sec, usec, time;
+
+	sec = stop->tv_sec - start->tv_sec;
+	if(stop->tv_usec >= start->tv_usec)
+	{
+		usec = stop->tv_usec - start->tv_usec;
+	}
+   	else
+	{	
+		usec = stop->tv_usec + 1000000 - start->tv_usec;
+		sec--;
+  	}
+	time = sec*1000 + ((double)usec)/1000;
+	return time;
+}
+
+    
 
 /******************************************************************************/
 /*  Function Definitions                                                      */
@@ -212,6 +268,12 @@ static void initDecodeParam(void)
 
 int main(int argc, char **argv)
 {
+    int len;
+	struct timeval start;
+	struct timeval stop;
+	unsigned int	time = 0;    
+    int loop = LOOPNUM;
+
     show_banner(argc, argv);
 
     strcpy(inFilename, "in.jpg");
@@ -248,6 +310,7 @@ int main(int argc, char **argv)
         return -1;
     }
     printf("dev_fd is %d.\n", dev_fd);
+    printf("JPEG mmap %d bytes. need < reserved memory size.\n", JPG_TOTAL_BUF_SIZE);
     jCtx->mmapped_addr = (char *)MAP_FAILED;
     jCtx->mmapped_addr = (char *) mmap(0,
                                        JPG_TOTAL_BUF_SIZE,
@@ -298,8 +361,18 @@ int main(int argc, char **argv)
     //////////////////////////////////////////////////////////////
     if(jCtx->dec_param->dec_type == JPG_MAIN)
     {
-        ioctl(dev_fd, IOCTL_JPG_DECODE, jCtx);
 
+        while(loop--)
+        {
+    		gettimeofday(&start, NULL);
+            ioctl(dev_fd, IOCTL_JPG_DECODE, jCtx);
+    		gettimeofday(&stop, NULL);
+            time += measureTime_inMs(&start, &stop);
+            printf("No.%d, diff %d ms.\n", loop, measureTime_inMs(&start, &stop));
+        }
+
+        printf("Hw codec performance is %ldK pixel/second.\n", (jCtx->dec_param->width*jCtx->dec_param->height*LOOPNUM)/time);
+        
         printf("dec_param->width : %d dec_param->height : %d\n", jCtx->dec_param->width, jCtx->dec_param->height);
 
 //        printf(" enc start.\n");
@@ -310,8 +383,11 @@ int main(int argc, char **argv)
     }
     else
     {
-        // thumbnail decode, for the future work.
+        // thumbnail decode, for the future work. 
     }
+
+
+
 
     //////////////////////////////////////////////////////////////
     // 6. get Output buffer address                             //
@@ -333,7 +409,8 @@ int main(int argc, char **argv)
     //////////////////////////////////////////////////////////////
     // 8. wirte output file & dispaly to LCD                    //
     //////////////////////////////////////////////////////////////
-    fwrite(jCtx->out_buf, 1, streamSize, fpout);
+    len = fwrite(jCtx->out_buf, 1, streamSize, fpout);
+    printf("write %d bytes.\n", len);
     fclose(fpout);
 
     //////////////////////////////////////////////////////////////
