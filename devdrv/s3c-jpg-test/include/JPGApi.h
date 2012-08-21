@@ -38,9 +38,9 @@
 #endif
 //#define PAGE_SIZE           (4*1024)
 
-#if 0
-#define MAX_JPG_WIDTH        3072//3264
-#define MAX_JPG_HEIGHT       2048//2448
+#if 1
+#define MAX_JPG_WIDTH        2400//3264
+#define MAX_JPG_HEIGHT       1500//2448
 
 #define MAX_JPG_THUMBNAIL_WIDTH	 320
 #define MAX_JPG_THUMBNAIL_HEIGHT 240
@@ -60,7 +60,10 @@
 			      + JPG_FRAME_BUF_SIZE + JPG_FRAME_THUMB_BUF_SIZE + JPG_RGB_BUF_SIZE)
 
 #endif
-#if 1
+
+
+
+#if 0
 
 #define MAX_JPG_WIDTH                   800
 #define MAX_JPG_HEIGHT                  480
