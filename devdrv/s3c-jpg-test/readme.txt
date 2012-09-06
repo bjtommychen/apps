@@ -45,6 +45,19 @@ boot boot.img', make sure flash no error msg.
 6. now, as the reserved memory size upto 16M bytes, we can decode jpeg upto 
 2272x1704 now. Test OK !
 
+Ref:
+If want to use MFC to video hw decode, read http://blog.csdn.net/willand1981/article/details/5746917
+MFC init will load fw from file 
+for cm9
+../cm9src/kernel/samsung/p1/drivers/media/video/samsung/mfc50/mfc_opr.c mfc_load_firmware(), 
+get fw (max size limit to 512kbytes) from mfc_get_fw_buff_vaddr(). 
+get *mfc_port0_base_vaddr = phys_to_virt(mfc_port0_base_paddr);
+mfc_port0_base_paddr set by s3c_mfc_set_platdata(). bank 0 size 14M, bank 1 size 21M.
+how to use ../cm9src/kernel/samsung/p1/firmware/samsung_mfc_fw.bin.ihex ???
+
+
+
+
 
 
 /*
