@@ -278,4 +278,6 @@ module_exit(s3cc_jpeg_exit);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Tommy, August 2012");
 MODULE_DESCRIPTION("Demo module driver for Ubuntu/Android");
+MODULE_VERSION("V1.0");
+MODULE_ALIAS("SimpleMyDriver");
 
