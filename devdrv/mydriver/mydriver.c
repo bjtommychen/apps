@@ -114,6 +114,13 @@ static int device_ioctl (struct inode * inode, struct file *file, unsigned int c
     return 0;
 }
 
+
+static int device_ioctl_unlocked (struct file *file, unsigned int cmd, unsigned long arg)
+{
+    printk("device_ioctl_unlocked cmd 0x%x, argu is 0x%lx.\n", cmd, arg);
+    return 0;
+}
+
 static int device_open(struct inode * inode,struct file * file)
 {
     work_buffer = (char *)kmalloc(BUFSIZE,GFP_KERNEL);
@@ -137,7 +144,9 @@ struct file_operations fops =
     .write = device_write,
     .open = device_open,
     .release = device_release,
-    .ioctl = device_ioctl,
+    
+	//.ioctl = device_ioctl,
+	//.unlocked_ioctl = device_ioctl_unlocked,		//Tommy: use this from Kernel 2.6.36, as ioctl() removed.
 
 };
 
