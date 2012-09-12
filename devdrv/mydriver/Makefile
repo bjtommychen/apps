@@ -8,8 +8,8 @@ endif
 
 ifeq ($(ARCH),arm)
 	#KDIR ?= /mnt/nfs/bejquad4/andev/cm9src/kernel/samsung/p1
-	KDIR ?= /mnt/nfs/bejquad4/andev/panda/android/kernel/
-	#KDIR ?= /mnt/nfs/bejquad3/home/schai/android/kernel
+	#KDIR ?= /mnt/nfs/bejquad4/andev/panda/android/kernel/
+	KDIR ?= /mnt/nfs/bejquad3/home/schai/android/kernel
 	PWD := $(shell pwd)
 	CROSS_COMPILE=/mnt/nfs/bejquad4/andev/cm9src/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
 	# CROSS_COMPILE=arm-linux-androideabi-  //this on make OK, but failed to insmod.
