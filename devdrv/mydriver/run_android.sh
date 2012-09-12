@@ -15,6 +15,8 @@ arm-linux-androideabi-gcc --sysroot /srv/android-ndk/platforms/android-14/arch-a
 # sudo rmmod mydriver
 # sudo insmod mydriver.ko
 # sudo lsmod | grep mydriver
+
+#now, we enable AUTO_MKNOD in mydriver.c,  it will auto mknode, so no need below
 #dump device msg.
 # dmesg | tail			
 #get device id.  return '249 mydriver'
@@ -23,5 +25,7 @@ arm-linux-androideabi-gcc --sysroot /srv/android-ndk/platforms/android-14/arch-a
 #c is char file, 0 is minor number.
 # mknod /dev/myDriver c 249 0 		
 # ls /dev/* | grep myDriver
+
+# test
 # ./test.out
 
