@@ -21,15 +21,17 @@
 #include <linux/slab.h>
 #include <linux/rpmsg.h>
 
-#define MSG		("hello world!")
-#define MSG_LIMIT	100
+#define MSG		("hello ")
+#define MSG_LIMIT	10
 
 static void rpmsg_sample_cb(struct rpmsg_channel *rpdev, void *data, int len,
 						void *priv, u32 src)
 {
 	int err;
 	static int rx_count;
+	char sendstr[256] = "";
 
+	
 	dev_info(&rpdev->dev, "incoming msg %d (src: 0x%x)\n", ++rx_count, src);
 
 	print_hex_dump(KERN_DEBUG, __func__, DUMP_PREFIX_NONE, 16, 1,
@@ -42,7 +44,9 @@ static void rpmsg_sample_cb(struct rpmsg_channel *rpdev, void *data, int len,
 	}
 
 	/* send a new message now */
-	err = rpmsg_send(rpdev, MSG, strlen(MSG));
+	sprintf(sendstr, "%s %d", MSG, rx_count);
+	err = rpmsg_send(rpdev, sendstr, strlen(sendstr));
+	//err = rpmsg_send(rpdev, MSG, strlen(MSG));
 	if (err)
 		pr_err("rpmsg_send failed: %d\n", err);
 }
@@ -51,7 +55,9 @@ static int rpmsg_sample_probe(struct rpmsg_channel *rpdev)
 {
 	int err;
 
-	dev_info(&rpdev->dev, "new channel: 0x%x <-> 0x%x!\n",
+	printk(" rpmsg client: probe \n");
+	
+	dev_info(&rpdev->dev, "new channel, src<->dst : 0x%x <-> 0x%x!\n",
 			rpdev->src, rpdev->dst);
 
 	/* send a message to our remote processor */
@@ -86,11 +92,13 @@ static struct rpmsg_driver rpmsg_sample_client_driver = {
 
 static int __init init(void)
 {
+	printk(" rpmsg client: init \n");
 	return register_rpmsg_driver(&rpmsg_sample_client_driver);
 }
 
 static void __exit fini(void)
 {
+	printk(" rpmsg client: fini \n");
 	unregister_rpmsg_driver(&rpmsg_sample_client_driver);
 }
 module_init(init);
@@ -98,3 +106,5 @@ module_exit(fini);
 
 MODULE_DESCRIPTION("Virtio remote processor messaging sample client driver");
 MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Tommy Chen, 2012.09");
+
