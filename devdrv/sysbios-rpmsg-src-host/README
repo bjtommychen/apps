@@ -9,3 +9,23 @@ Copy these files to Linux kernel tree: <kernel>/tools/rpmsg:
 From <kernel>/tools/rpmsg type "build_samples" to build.
 
 Copy omx_sample and/or omx_benchmark to target.
+
+
+//TOMMY NOTES
+root@android:/mnt/sdcard/srv # ./omx_sample
+./omx_sample
+omx_sample: Connected to OMX
+omx_sample (1): OMX_GetHandle (H264_decoder).
+        msg_id: 99, fxn_idx: 5, data_size: 13, data: OMX_Callback
+omx_sample (1): Got omx_handle: 0x5c0ffee5
+omx_sample(1): OMX_SetParameter (0x5c0ffee5)
+omx_sample (1): Got result 0
+omx_sample: Closed connection to OMX!
+
+root@android:/mnt/sdcard/srv # ./omx_benchmark
+./omx_benchmark
+omx_sample: Connected to OMX
+omx_benchmarkex: called fxnDouble(1)), result = 0
+exec_cmd time (1): 184875
+exec_cmd avg time: 184875 usecs
+omx_sample: Closed connection to OMX!
