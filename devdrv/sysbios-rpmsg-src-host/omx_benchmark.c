@@ -69,7 +69,8 @@
 #include <time.h>
 #include <sys/eventfd.h>
 
-#include "../../include/linux/rpmsg_omx.h"
+//#include "../../include/linux/rpmsg_omx.h"
+#include "rpmsg_omx.h"
 
 #include "omx_packet.h"
 
