@@ -1,0 +1,5 @@
+# Note: copy to Linux kernel repo, tools/rpmsg to build.
+# Use static linking to run the executable in Android environment
+
+arm-none-linux-gnueabi-gcc omx_sample.c -o omx_sample -lpthread --static
+arm-none-linux-gnueabi-gcc omx_benchmark.c -o omx_benchmark -lrt --static
