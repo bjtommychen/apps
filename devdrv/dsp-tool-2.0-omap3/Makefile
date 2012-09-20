@@ -1,8 +1,8 @@
-CROSS_COMPILE ?= arm-linux-
+CROSS_COMPILE ?= arm-linux-androideabi-
 CC := $(CROSS_COMPILE)gcc
 
-CFLAGS := -O2 -Wall -Wextra -Wno-unused-parameter -ansi -std=c99
-LDFLAGS := -Wl,--as-needed
+CFLAGS := -O2 -Wall -Wextra -Wno-unused-parameter -ansi -std=c99 --sysroot /srv/android-ndk/platforms/android-9/arch-arm/ 
+LDFLAGS := -Wl,--as-needed --sysroot /srv/android-ndk/platforms/android-9/arch-arm/ 
 
 override CFLAGS += -D_GNU_SOURCE
 
