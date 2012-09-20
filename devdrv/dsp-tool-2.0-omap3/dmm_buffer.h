@@ -17,6 +17,8 @@
 #include <stdlib.h> /* for calloc, free */
 #include <string.h> /* for memset */
 
+#include "malloc.h" //Tommy
+
 #include "dsp_bridge.h"
 #include "log.h"
 
@@ -136,9 +138,13 @@ dmm_buffer_allocate(dmm_buffer_t *b,
 	pr_debug("%p", b);
 	free(b->allocated_data);
 	if (b->alignment != 0) {
+#if 0   //Tommy: we have no posix_memalign in Android.
 		if (posix_memalign(&b->allocated_data, b->alignment, ROUND_UP(size, b->alignment)) != 0)
 			b->allocated_data = NULL;
-		b->data = b->allocated_data;
+#else
+        b->allocated_data = memalign(b->alignment, ROUND_UP(size, b->alignment));
+#endif
+        b->data = b->allocated_data;
 	}
 	else
 		b->data = b->allocated_data = malloc(size);
