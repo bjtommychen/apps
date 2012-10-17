@@ -1,0 +1,6 @@
+# Note: copy to Linux kernel repo, tools/rpmsg to build.
+# Use static linking to run the executable in Android environment
+# arm-none-linux-gnueabi-gcc omx_sample.c -o omx_sample -lpthread --static
+# arm-none-linux-gnueabi-gcc omx_benchmark.c -o omx_benchmark -lrt --static
+arm-linux-androideabi-gcc -I/mnt/nfs/bejquad4/andev/panda/android/prebuilt/ndk/android-ndk-r7/platforms/android-14/arch-arm/usr/include/ --sysroot /mnt/nfs/bejquad4/andev/panda/android/prebuilt/ndk/android-ndk-r7/platforms/android-14/arch-arm/ -I/mnt/nfs/bejquad4/andev/panda/android/external/kernel-headers/original/linux/ omx_sample.c -o omx_sample  --static -fPIC -mandroid -DANDROID -DOS_ANDROID
+arm-linux-androideabi-gcc -I/mnt/nfs/bejquad4/andev/panda/android/prebuilt/ndk/android-ndk-r7/platforms/android-14/arch-arm/usr/include/ --sysroot /mnt/nfs/bejquad4/andev/panda/android/prebuilt/ndk/android-ndk-r7/platforms/android-14/arch-arm/ -I/mnt/nfs/bejquad4/andev/panda/android/external/kernel-headers/original/linux/ omx_benchmark.c -o omx_benchmark  --static -fPIC -mandroid -DANDROID -DOS_ANDROID

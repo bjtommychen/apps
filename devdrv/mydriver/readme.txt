@@ -12,9 +12,10 @@ $ gunzip ./config.gz
 $ cp config /path/to/kernel/.config 
  
 Next we have to prepare our kernel source for our module.
-Tommy: modules_prepare ! 
+Tommy: modules_prepare !  do as user root, by 'su -' to enter.
 $ cd /mnt/nfs/cm9src/kernel/samsung/p1
 $ make ARCH=arm CROSS_COMPILE=arm-linux-androideabi- modules_prepare
+Use modules_prepare.sh for easier.
 
 2. insmod failed.
 Ref http://blog.csdn.net/douniwan5788/article/details/7603178
