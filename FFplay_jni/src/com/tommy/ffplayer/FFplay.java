@@ -64,6 +64,7 @@ public class FFplay extends Activity
 	public native byte[] FFplayGetPCM();
 
 	private final static String TAG = "ffplay-java";
+	
 	// AUDIO TRACK
 	private AudioTrack at = null;
 	private int min_buf_size;
@@ -73,15 +74,19 @@ public class FFplay extends Activity
 	private int at_srate = 44100;
 	private int at_channel = AudioFormat.CHANNEL_OUT_STEREO;
 	private int frame, frame_fps;
+	
 	// VIEW
 	private Button btn_open, btn_play, btn_stop;
 	private ToggleButton tbtn_output;
 	private TextView tv1, tv2, tv3, tv4;
 	private ProgressBar progbar;
+	private final static String StartDir = "/mnt/sdcard/stream/";
+	
 	// HANDLE
 	private Handler handler_UI = null;
 	protected static final int GUI_UPDATE_PROGRESS = 0x100;
 	protected static final int GUI_PLAYEND = 0x101;
+	
 	// SURFACE
 	private SurfaceView mSurfaceView1;
 	private SurfaceHolder mSurfaceHolder1;
@@ -152,7 +157,7 @@ public class FFplay extends Activity
 		tv3 = (TextView) findViewById(R.id.TextView3);
 		tv4 = (TextView) findViewById(R.id.TextView4);
 		progbar = (ProgressBar) findViewById(R.id.progressBar1);
-		Log.i(TAG, "ffplay oncreate !");
+		Log.i(TAG, "ffplay onCreate !");
 
 		mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceView1);
 		mSurfaceHolder1 = mSurfaceView1.getHolder();
@@ -189,13 +194,13 @@ public class FFplay extends Activity
 		sourceSpinner.setAdapter(sourceAdapter);
 		
 		{
-			File file = new File("/mnt/sdcard/srv/stream/");
+			File file = new File(StartDir);
 			if (file != null)
 			{
 				File[] files = file.listFiles();
 				for (File fileitem : files) {
 					String name;
-					name  = "/mnt/sdcard/srv/stream/" + fileitem.getName();
+					name  = StartDir + fileitem.getName();
 					if (!fileitem.isDirectory())
 						sourceAdapter.add(name);
 					else
@@ -241,8 +246,11 @@ public class FFplay extends Activity
 	protected void onDestroy()
 	{
 		bRunning = false;
-		at.stop();
-		at.flush();
+		if (at != null)
+		{
+			at.stop();
+			at.flush();
+		}
 		FFplayCloseFile();
 		bOpenfile = false;
 		FFplayExit();
@@ -351,7 +359,8 @@ public class FFplay extends Activity
 		{
 			if (bOpenfile == false)
 				return;
-			at.play();
+			if (at != null)
+				at.play();
 			tv4.setText("");
 			bRunning = true;
 
@@ -388,7 +397,8 @@ public class FFplay extends Activity
 										outpcm = FFplayGetPCM();
 										if (bAVoutput && outpcm != null)
 										{
-											at.write(outpcm, 0, outpcm.length);
+											if (at != null)
+												at.write(outpcm, 0, outpcm.length);
 										}
 									}
 								} else if (decinfo.type == 2)
@@ -435,8 +445,11 @@ public class FFplay extends Activity
 							}
 							// Thread.sleep(1);
 						}
-						at.stop();
-						at.flush();
+						if (at != null)
+						{
+							at.stop();
+							at.flush();
+						}
 						FFplayCloseFile();
 						bOpenfile = false;
 						bRunning = false;
@@ -476,14 +489,43 @@ public class FFplay extends Activity
 	 */
 	private void AudioTrack_init()
 	{
+
+        final int TEST_SR = 22050;
+        final int TEST_CONF = AudioFormat.CHANNEL_OUT_STEREO;
+        final int TEST_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
+        final int TEST_MODE = AudioTrack.MODE_STREAM;
+        final int TEST_STREAM_TYPE = AudioManager.STREAM_MUSIC;
+        
+		
+		
 		// Get Min Buffer Size
+        //-------- initialization --------------
+//      int minBuffSize = AudioTrack.getMinBufferSize(TEST_SR, TEST_CONF, TEST_FORMAT);
 		min_buf_size = AudioTrack.getMinBufferSize(at_srate, at_channel, AudioFormat.ENCODING_PCM_16BIT);
 
 		// New
 		at = new AudioTrack(AudioManager.STREAM_MUSIC, at_srate, at_channel, AudioFormat.ENCODING_PCM_16BIT, min_buf_size * 2, AudioTrack.MODE_STREAM);
+//        at = new AudioTrack(TEST_STREAM_TYPE, TEST_SR, TEST_CONF, TEST_FORMAT, 
+//        		min_buf_size, TEST_MODE);		
+		
+		if (at != null)
+		{
+			Log.d(TAG, "AudioTrack init done!");
+		}
 		Log.d(TAG, "volume " + at.getMinVolume() + " -- " + at.getMaxVolume());
 		Log.d(TAG, "audio track's min. buffer is " + min_buf_size);
 		Log.d(TAG, "audio track native sample rate is " + at.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC));
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
