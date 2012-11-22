@@ -123,6 +123,7 @@ AVFrame *vframe, *aframe;
 AVPacket avpkt;
 AVFormatContext *fc;
 int audioidx, videoidx;
+int hasVideo, hasAudio;
 
 int frame, got_picture, len;
 FILE *f = NULL;
@@ -143,6 +144,37 @@ jintArray jarray_rgb = NULL;
 /******************************************************************************/
 /*  Local Function Declarations                                               */
 /******************************************************************************/
+
+#define AUDIO_RESAMPLE_SIZE		(1024*20)
+static int audio_resample_converter(AVCodecContext *audioc, unsigned char *src,
+		int nb_samples, unsigned char *dst, int* dstlen)
+{ // Need format convert, check swr_convert() for details.
+	struct SwrContext *swr_ctx;
+	unsigned char swr_tmpbuff[AUDIO_RESAMPLE_SIZE];
+	unsigned char *in[] =
+	{ src };
+	unsigned char *out[] =
+	{ swr_tmpbuff };
+	int len2;
+
+	V("enter resample !\n");
+	swr_ctx = swr_alloc_set_opts(NULL, audioc->channel_layout,
+			AV_SAMPLE_FMT_S16, audioc->sample_rate, audioc->channel_layout,
+			audioc->sample_fmt, audioc->sample_rate, 0, NULL);
+	swr_init(swr_ctx);
+	len2 = swr_convert(swr_ctx, (uint8_t **) out,
+			sizeof(swr_tmpbuff) / audioc->channels
+					/ av_get_bytes_per_sample(AV_SAMPLE_FMT_S16),
+			(const uint8_t **) in, nb_samples);
+	swr_free(&swr_ctx);
+	V("resample output %d samples.\n", len2);
+	len2 *= audioc->channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
+	memcpy(dst, swr_tmpbuff, len2);
+	if (dstlen)
+		*dstlen = len2;
+
+	return len2;
+}
 
 /******************************************************************************/
 /*  Function Definitions                                                      */
@@ -166,8 +198,8 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayInit(JNIEnv* env, jobject thiz)
 #ifdef OPT_TOMMY_NEON
 	I("***************  TOMMY OPTIMIZED USING NEON  ********************\n");
 #endif
-	I("avcodec version %d\n", avcodec_version());
-	I("avformat version %d\n", avformat_version());
+	I("*********  avcodec version %d\n", avcodec_version());
+	I("*********  avformat version %d\n", avformat_version());
 	I("*****************************************************************\n");
 
 //	avcodec_init();
@@ -225,19 +257,24 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 	streaminfo[0] = 0;
 	strcpy(streaminfo, "-------------------------------------------------\n");
 	sprintf(streaminfo, "%snb_streams is %d\n", streaminfo, fc->nb_streams);
+	hasVideo = hasAudio = 0;
+
 	for (i = 0; i < fc->nb_streams; i++)
 	{
 		AVStream *st = fc->streams[i];
 		sprintf(streaminfo, "%sStream #%d: \n", streaminfo, i);
+
 		switch (fc->streams[i]->codec->codec_type)
 		{
 		case AVMEDIA_TYPE_VIDEO:
 			videoidx = i;
 			sprintf(streaminfo, "%sVideo. ", streaminfo);
+			hasVideo = 1;
 			break;
 		case AVMEDIA_TYPE_AUDIO:
 			audioidx = i;
 			sprintf(streaminfo, "%sAudio. ", streaminfo);
+			hasAudio = 1;
 			break;
 		default:
 			I("OTHER AVMEDIA. ");
@@ -252,34 +289,46 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
 	};
 
 	I("%s", streaminfo);
-	vc = fc->streams[videoidx]->codec;
-	ac = fc->streams[audioidx]->codec;
 
-	vcodec = avcodec_find_decoder(vc->codec_id);
-	acodec = avcodec_find_decoder(ac->codec_id);
-	if (!acodec || !vcodec)
+	acodec = vcodec = 0;
+	ac = vc = 0;
+	if (hasVideo)
 	{
-		E( "codec not found\n");
+		vc = fc->streams[videoidx]->codec;
+		vcodec = avcodec_find_decoder(vc->codec_id);
+	}
+	if (hasAudio)
+	{
+		ac = fc->streams[audioidx]->codec;
+		acodec = avcodec_find_decoder(ac->codec_id);
+	}
+
+	if (!acodec && !vcodec)
+	{
+		E( "at least one codec not found\n");
 		return (1);
 	}
 
-	vframe = avcodec_alloc_frame();
-	aframe = avcodec_alloc_frame();
-
-	if (vcodec->capabilities & CODEC_CAP_TRUNCATED)
-		vc->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+	if (hasVideo)
+	{
+		vframe = avcodec_alloc_frame();
+		if (vcodec->capabilities & CODEC_CAP_TRUNCATED)
+			vc->flags |= CODEC_FLAG_TRUNCATED; /* we do not send complete frames */
+	}
+	if (hasAudio)
+		aframe = avcodec_alloc_frame();
 
 	/* For some codecs, such as msmpeg4 and mpeg4, width and height
 	 MUST be initialized there because this information is not
 	 available in the bitstream. */
 
 	/* open it */
-	if (avcodec_open2(ac, acodec, 0) < 0)
+	if (acodec && avcodec_open2(ac, acodec, 0) < 0)
 	{
 		E( "could not open acodec.");
 		return (1);
 	}
-	if (avcodec_open2(vc, vcodec, 0) < 0)
+	if (vcodec && avcodec_open2(vc, vcodec, 0) < 0)
 	{
 		E( "could not open vcodec.");
 		return (1);
@@ -294,12 +343,20 @@ jint Java_com_tommy_ffplayer_FFplay_FFplayOpenFile(JNIEnv* env, jobject thiz,
  */
 jint Java_com_tommy_ffplayer_FFplay_FFplayCloseFile(JNIEnv* env, jobject thiz)
 {
-	avcodec_close(ac);
-	av_free(ac);
-	avcodec_close(vc);
-	av_free(vc);
-	av_free(vframe);
-	av_free(aframe);
+	if (ac)
+	{
+		avcodec_close(ac);
+		av_free(ac);
+	}
+	if (vc)
+	{
+		avcodec_close(vc);
+		av_free(vc);
+	}
+	if (vframe)
+		av_free(vframe);
+	if (aframe)
+		av_free(aframe);
 
 	if (vout)
 	{
@@ -341,7 +398,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 
 	while (av_read_frame(fc, &avpkt) >= 0)
 	{
-		if (avpkt.stream_index == videoidx)
+		if (hasVideo && avpkt.stream_index == videoidx)
 		{
 //			D("Got video frame.");
 			while (avpkt.size > 0)
@@ -393,7 +450,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 		}
 
 		// Decode Audio
-		if (avpkt.stream_index == audioidx)
+		if (hasAudio && avpkt.stream_index == audioidx)
 		{
 			while (avpkt.size > 0)
 			{
@@ -420,8 +477,8 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					D("got audio frame. %d samples.", aframe->nb_samples);
 					decinfo.channel = ac->channels;
 					decinfo.samplerate = ac->sample_rate;
-					decinfo.bitspersample =
-							(ac->sample_fmt == AV_SAMPLE_FMT_S16) ? 16 : 0;			// Only support S16 format.
+					decinfo.bitspersample = 16; //Support all, include float format.
+//							(ac->sample_fmt == AV_SAMPLE_FMT_S16) ? 16 : 0; // Only support S16 format.
 					decinfo.type = 1;
 					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
 					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
@@ -486,16 +543,16 @@ jintArray Java_com_tommy_ffplayer_FFplay_FFplayConvertRGB(JNIEnv* env,
 	return jarray_rgb;
 }
 
-jint Java_com_tommy_ffplayer_FFplay_FFplayConvertGray(JNIEnv* env,
-		jobject thiz, jintArray buf)
+jint Java_com_tommy_ffplayer_FFplay_FFplayConvertGray(JNIEnv* env, jobject thiz,
+		jintArray buf)
 {
 	int i, j;
 	int len = vframe->height * vframe->linesize[0];
 	int *dst;
 	char *src = vframe->data[0];
-	jint *elems = (*env)->GetIntArrayElements(env, buf, (jboolean*)NULL);
+	jint *elems = (*env)->GetIntArrayElements(env, buf, (jboolean*) NULL);
 
-	dst =(int*) elems;
+	dst = (int*) elems;
 	for (j = 0; j < vframe->height; j++)
 	{
 		for (i = 0; i < vframe->linesize[0]; i++)
@@ -524,16 +581,20 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayGetPCM(JNIEnv* env,
 		D("FFplayGetPCM alloc %d mem done.", aout_len);
 		aout = malloc(aout_len);
 	}
-//	if (jarray_aud == NULL)
+
+	if (ac->sample_fmt == AV_SAMPLE_FMT_S16)
 	{
-//		jarray_aud = (*env)->NewByteArray(env, aout_len);
-//		D("FFplayGetPCM alloc jarray_aud done.");
+		memcpy(aout + aout_offset, aframe->data[0], outsize);
+	}
+	else
+	{
+		outsize = audio_resample_converter(ac, aframe->data[0],
+				aframe->nb_samples, (uint8_t*) aout + aout_offset, NULL);
 	}
 
 	if ((aout_offset + outsize) >= aout_len)
 	{ //buffer full.
 		jarray_aud = (*env)->NewByteArray(env, aout_len);
-		memcpy(aout + aout_offset, aframe->data[0], outsize);
 		(*env)->SetByteArrayRegion(env, jarray_aud, 0, aout_len, aout);
 		aout_offset = 0;
 		D( "return audio frame. %d bytes.", aout_len);
@@ -541,7 +602,6 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayGetPCM(JNIEnv* env,
 	}
 	else
 	{ // not enough pcm, not output.
-		memcpy(aout + aout_offset, aframe->data[0], outsize);
 		aout_offset += outsize;
 		return NULL;
 	}
