@@ -1,12 +1,6 @@
-
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
-
-#thumb arm
-LOCAL_ARM_MODE := arm
-#armeabi armeabi-v7a x86
-TARGET_ARCH_ABI := armeabi-v7a
 
 LOCAL_MODULE    := ffplay_jni
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/src $(LOCAL_PATH)/include
@@ -21,6 +15,6 @@ LOCAL_SRC_FILES := src/ffplay-jni.c
 				   
 
 # for logging
-LOCAL_LDLIBS    += -Lprebuilt  -llog -lavformat  -lavcodec  -lavutil -lswresample -lz
+LOCAL_LDLIBS    += -L$(LOCAL_PATH)/prebuilt  -llog -lavformat  -lavcodec  -lavutil -lswresample -lz
 
 include $(BUILD_SHARED_LIBRARY)
