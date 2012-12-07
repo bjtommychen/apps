@@ -95,7 +95,7 @@
 #  define  V(...)  do {} while (0)
 #endif
 
-#define PCMOUTLEN			(16*1024)
+#define PCMOUTLEN			(24*1024)
 #define MAGIC_ID				(0xdeaf)
 /******************************************************************************/
 /*  Local Type Definitions                                                    */
@@ -111,6 +111,10 @@ typedef struct
 	uint16_t yuv_format;
 	uint16_t width, height;
 	uint16_t linesizeY, linesizeU, linesizeV;
+	//Duration
+	uint16_t duration;
+
+	uint16_t null[64];
 } DecOutInfo;
 
 /******************************************************************************/
@@ -395,6 +399,7 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 {
 	int hdr_len = decinfo.header_len;
 	jbyteArray jarray_hdr;
+	int got_audio_frame = 0;
 
 	while (av_read_frame(fc, &avpkt) >= 0)
 	{
@@ -415,7 +420,8 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					decinfo.linesizeY = vframe->linesize[0];
 					decinfo.linesizeU = vframe->linesize[1];
 					decinfo.linesizeV = vframe->linesize[2];
-
+					decinfo.duration = fc->duration / AV_TIME_BASE;
+					V("duration is %d", decinfo.duration);
 #if 1
 					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
 					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
@@ -452,9 +458,8 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 		// Decode Audio
 		if (hasAudio && avpkt.stream_index == audioidx)
 		{
-			while (avpkt.size > 0)
+			while (got_audio_frame == 0 && avpkt.size > 0)
 			{
-				int got_audio_frame = 0;
 				AVFrame *decoded_frame = NULL;
 
 //				D("Got audio frame. ");
@@ -467,40 +472,40 @@ jbyteArray Java_com_tommy_ffplayer_FFplay_FFplayDecodeFrame(JNIEnv* env,
 					D("avpkt.size  %d bytes left.\n", avpkt.size);
 					E("Error while decoding\n");
 
-					avpkt.size -= 1;
-					avpkt.data += 1;
-					continue;
+					avpkt.size = 0;
 				}
-
-				if (got_audio_frame)
+				else
 				{
-					D("got audio frame. %d samples.", aframe->nb_samples);
-					decinfo.channel = ac->channels;
-					decinfo.samplerate = ac->sample_rate;
-					decinfo.bitspersample = 16; //Support all, include float format.
+					if (got_audio_frame)
+					{
+						D("got audio frame. %d samples.", aframe->nb_samples);
+						decinfo.channel = ac->channels;
+						decinfo.samplerate = ac->sample_rate;
+						decinfo.bitspersample = 16; //Support all, include float format.
 //							(ac->sample_fmt == AV_SAMPLE_FMT_S16) ? 16 : 0; // Only support S16 format.
-					decinfo.type = 1;
-					jarray_hdr = (*env)->NewByteArray(env, hdr_len);
-					(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
-							(jbyte*) &decinfo);
+						decinfo.type = 1;
+						jarray_hdr = (*env)->NewByteArray(env, hdr_len);
+						(*env)->SetByteArrayRegion(env, jarray_hdr, 0, hdr_len,
+								(jbyte*) &decinfo);
 //					(*env)->DeleteLocalRef(env, jarray_hdr);
-					return jarray_hdr;
+						return jarray_hdr;
 #if 0
-					jbyte *outbuf = (jbyte*) aframe->data[0];
-					int outsize = av_samples_get_buffer_size(NULL, ac->channels,
-							aframe->nb_samples, ac->sample_fmt, 1);
-					decinfo.type = 1;
-					jarray_pcm = (*env)->NewByteArray(env, outsize + hdr_len);
-					(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
-							(jbyte*) &decinfo);
-					(*env)->SetByteArrayRegion(env, jarray_pcm, hdr_len, outsize,
-							(jbyte*) outbuf);
+						jbyte *outbuf = (jbyte*) aframe->data[0];
+						int outsize = av_samples_get_buffer_size(NULL, ac->channels,
+								aframe->nb_samples, ac->sample_fmt, 1);
+						decinfo.type = 1;
+						jarray_pcm = (*env)->NewByteArray(env, outsize + hdr_len);
+						(*env)->SetByteArrayRegion(env, jarray_pcm, 0, hdr_len,
+								(jbyte*) &decinfo);
+						(*env)->SetByteArrayRegion(env, jarray_pcm, hdr_len, outsize,
+								(jbyte*) outbuf);
 #endif
-				}
+					}
 
-				avpkt.size -= len;
-				avpkt.data += len;
-			}
+					avpkt.size -= len;
+					avpkt.data += len;
+				}
+			} //while
 //			break;
 		}
 
