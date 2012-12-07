@@ -3,7 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical" >
-
+
+
+
     <TextView
         android:id="@+id/TextView1"
         android:layout_width="wrap_content"
@@ -26,7 +28,7 @@
         android:editable="true"
         android:text="@string/hello" >
     </TextView>
-
+
     <LinearLayout
         android:id="@+id/linearLayout3"
         android:layout_width="match_parent"
@@ -34,9 +36,26 @@
 
         <Spinner
             android:id="@+id/spinner1"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="0.88" />
+            android:layout_width="600dp"
+            android:layout_height="match_parent" />
+
+        <Button
+            android:id="@+id/button_open"
+            android:layout_width="102dp"
+            android:layout_height="wrap_content"
+            android:text="Open" />
+
+        <Button
+            android:id="@+id/button_play"
+            android:layout_width="102dp"
+            android:layout_height="wrap_content"
+            android:text="Play" />
+
+        <Button
+            android:id="@+id/button_stop"
+            android:layout_width="102dp"
+            android:layout_height="wrap_content"
+            android:text="Stop" />
 
         <ToggleButton
             android:id="@+id/toggleButton1"
@@ -53,27 +72,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >
 
-        <Button
-            android:id="@+id/button_open"
-            android:layout_width="102dp"
-            android:layout_height="wrap_content"
-            android:text="Open" />
-
-        <Button
-            android:id="@+id/button_play"
-            android:layout_width="102dp"
-            android:layout_height="wrap_content"
-            android:text="Play" />
-
-
-        <Button
-            android:id="@+id/button_stop"
-            android:layout_width="102dp"
-            android:layout_height="wrap_content"
-            android:text="Stop" />
-
     </LinearLayout>
-
+
+
+
     <TextView
         android:id="@+id/TextView4"
         android:layout_width="match_parent"
