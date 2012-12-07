@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.webkit.WebIconDatabase;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -101,6 +102,8 @@ public class FFplay extends Activity
 	// Add this class to emulate structure in C.
 	private class DecInfo
 	{
+		static final int buflen = 64;
+		
 		short magic; // must be MAGIC_ID
 		short header_len; // sizeof this structure.
 		short type; // 1: audio, 2:video
@@ -110,14 +113,16 @@ public class FFplay extends Activity
 		short yuv_format;
 		short width, height;
 		short linesizeY, linesizeU, linesizeV;
+		// Duration
+		short duration_in_second;
 
 		public void parse(byte[] buf)
 		{
 			int i;
 			short v;
-			short[] hdr = new short[20];
-			for (i = 0; i < 12; i++)
-			{
+			short[] hdr = new short[buflen/2];
+			for (i = 0; i < buflen/2; i++)
+			{	// Do swap.
 				hdr[i] = (short) (((short) buf[2 * i + 1] & 0xff) << 8 | (short) buf[2 * i] & 0xff);
 				// Log.v(TAG, "decinfo parse." + i + " value " +
 				// String.format("0x%x", hdr[i]));
@@ -134,6 +139,7 @@ public class FFplay extends Activity
 			linesizeY = hdr[9];
 			linesizeU = hdr[10];
 			linesizeV = hdr[11];
+			duration_in_second = hdr[12];
 			// Log.v(TAG, "decinfo parse." + header_len + " width " + width);
 		}
 	}
@@ -153,11 +159,14 @@ public class FFplay extends Activity
 		btn_stop = (Button) findViewById(R.id.button_stop);
 		btn_stop.setOnClickListener(handler_btnstop);
 		tbtn_output = (ToggleButton) findViewById(R.id.toggleButton1);
+		tbtn_output.setTextColor(Color.RED);
+
 		tv1 = (TextView) findViewById(R.id.TextView1);
 		tv2 = (TextView) findViewById(R.id.TextView2);
 		tv3 = (TextView) findViewById(R.id.TextView3);
 		tv4 = (TextView) findViewById(R.id.TextView4);
 		progbar = (ProgressBar) findViewById(R.id.progressBar1);
+
 		Log.i(TAG, "ffplay onCreate !");
 
 		mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceView1);
@@ -312,6 +321,7 @@ public class FFplay extends Activity
 						}
 						String fps_str = String.format("%.2f", fps);
 						tv3.setText("Frame " + frame + ", -------  FPS: " + fps_str);
+						Log.v(TAG, "DURATION IS " + decinfo.duration_in_second);
 //						tv3.setText("Frame " + frame);
 						if (progbar.getProgress() >= progbar.getMax())
 							progbar.setProgress(0);
