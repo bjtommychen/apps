@@ -81,6 +81,7 @@ public class FFplay extends Activity
 	private TextView tv1, tv2, tv3, tv4;
 	private ProgressBar progbar;
 	private final static String StartDir = "/mnt/sdcard/stream/";
+	private final static String StartDir2 = "/mnt/ext_sdcard/stream/";
 	
 	// HANDLE
 	private Handler handler_UI = null;
@@ -194,18 +195,34 @@ public class FFplay extends Activity
 		sourceSpinner.setAdapter(sourceAdapter);
 		
 		{
-			File file = new File(StartDir);
-			if (file != null)
+			File file;
+			File[] files;
+			String PathName;
+			
+			PathName = StartDir;
+			file = new File(PathName);
+			files = file.listFiles();
+			if (file == null || files == null)
 			{
-				File[] files = file.listFiles();
+				PathName = StartDir2;
+				file = new File(PathName);
+				files = file.listFiles();
+			}
+			
+			if (files != null)
+			{
 				for (File fileitem : files) {
 					String name;
-					name  = StartDir + fileitem.getName();
+					name  = PathName + fileitem.getName();
 					if (!fileitem.isDirectory())
 						sourceAdapter.add(name);
 					else
 						sourceAdapter.add("< " + name + " >"); // like
 				}
+			}
+			else
+			{
+				sourceAdapter.add("Empty, no file found! ");
 			}
 		}
 		
