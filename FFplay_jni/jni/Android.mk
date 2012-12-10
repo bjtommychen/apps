@@ -10,7 +10,7 @@ ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)
 	LOCAL_CFLAGS += -DOPT_TOMMY_NEON -mfloat-abi=softfp -mfpu=neon -DHAVE_NEON=1
 endif
 
-LOCAL_SRC_FILES := src/ffplay-jni.c
+LOCAL_SRC_FILES := src/ffplay-jni.c src/packet_queue.c
 
 # for logging
 LOCAL_LDLIBS    := -llog  -lz
