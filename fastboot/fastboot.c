@@ -213,6 +213,7 @@ void list_devices(void) {
 
 void usage(void)
 {
+	fprintf(stderr, "This is Tommy Modified Version !\n");
     fprintf(stderr,
 /*           1234567890123456789012345678901234567890123456789012345678901234567890123456 */
             "usage: fastboot [ <option> ] <command>\n"
