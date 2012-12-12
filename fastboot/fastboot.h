@@ -52,6 +52,9 @@ void fb_queue_command(const char *cmd, const char *msg);
 void fb_queue_download(const char *name, void *data, unsigned size);
 void fb_queue_notice(const char *notice);
 int fb_execute_queue(usb_handle *usb);
+/* tommy add */
+void fb_queue_listparts(); 
+void fb_queue_mmcwrite(const char *slot, const char *ptn);
 
 /* util stuff */
 void die(const char *fmt, ...);

@@ -213,7 +213,7 @@ void list_devices(void) {
 
 void usage(void)
 {
-	fprintf(stderr, "This is Tommy Modified Version !\n");
+	fprintf(stderr, "********** This is Tommy Modified Version ! %s **********\n", __DATE__);
     fprintf(stderr,
 /*           1234567890123456789012345678901234567890123456789012345678901234567890123456 */
             "usage: fastboot [ <option> ] <command>\n"
@@ -240,6 +240,11 @@ void usage(void)
             "  -i <vendor id>                           specify a custom USB vendor id\n"
             "  -b <base_addr>                           specify a custom kernel base address\n"
             "  -n <page size>                           specify the nand page size. default: 2048\n"
+			"Tommy added.\n"
+			"  download <filename>						download a file to buffer, max 512M bytes. \n"
+            "  mmcwrite:slot <partition>				write downloaded to a flash partition of slot 0/1\n"
+			"  listparts								list partitions.\n"
+			
         );
 }
 
@@ -711,7 +716,46 @@ int main(int argc, char **argv)
             wants_reboot = 1;
         } else if(!strcmp(*argv, "oem")) {
             argc = do_oem_command(argc, argv);
-        } else {
+        } 
+#if 1
+		/* tommy add here */
+		else if(!strcmp(*argv, "listparts"))
+		{
+			printf("Sending Tommy's Commands.\n");
+			skip(1);
+			fb_queue_listparts();		
+		}
+		
+		else if(!strcmp(*argv, "download"))
+		{
+            char *pname = argv[1];
+            char *fname = 0;
+            require(2);
+            fname = argv[1];
+            skip(2);
+
+            if (fname == 0) die("cannot determine image filename for '%s'", pname);
+            data = load_file(fname, &sz);
+            if (data == 0) die("cannot load '%s'\n", fname);
+			
+			printf("Sending Tommy's Commands.\n");
+			fb_queue_download(fname, data, sz);
+		}
+
+		else if(!strncmp(*argv, "mmcwrite", 8))
+		{
+            char *pname = argv[1];
+			char *slotname = argv[0];
+            char *fname = 0;
+            require(2);
+            skip(2);
+
+			printf("Sending Tommy's Commands.\n");
+			fb_queue_mmcwrite(slotname+9, pname);
+		}
+#endif		
+		
+		else {
             usage();
             return 1;
         }
