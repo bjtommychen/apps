@@ -213,7 +213,7 @@ void list_devices(void) {
 
 void usage(void)
 {
-	fprintf(stderr, "********** This is Tommy Modified Version ! %s **********\n", __DATE__);
+    fprintf(stderr, "********** This is Tommy Modified Version ! %s **********\n", __DATE__);
     fprintf(stderr,
 /*           1234567890123456789012345678901234567890123456789012345678901234567890123456 */
             "usage: fastboot [ <option> ] <command>\n"
@@ -240,11 +240,11 @@ void usage(void)
             "  -i <vendor id>                           specify a custom USB vendor id\n"
             "  -b <base_addr>                           specify a custom kernel base address\n"
             "  -n <page size>                           specify the nand page size. default: 2048\n"
-			"Tommy added.\n"
-			"  download <filename>						download a file to buffer, max 512M bytes. \n"
-            "  mmcwrite:slot <partition>				write downloaded to a flash partition of slot 0/1\n"
-			"  listparts								list partitions.\n"
-			
+            "Tommy added.\n"
+            "  download <filename>          download a file to buffer, max 512M bytes. \n"
+            "  mmcwrite:slot <partition>    write downloaded to a flash partition of slot 0/1. Note: 'all' means ENTIRE MMC DISK !\n"
+            "  listparts                    list partitions.\n"
+            
         );
 }
 
@@ -718,16 +718,16 @@ int main(int argc, char **argv)
             argc = do_oem_command(argc, argv);
         } 
 #if 1
-		/* tommy add here */
-		else if(!strcmp(*argv, "listparts"))
-		{
-			printf("Sending Tommy's Commands.\n");
-			skip(1);
-			fb_queue_listparts();		
-		}
-		
-		else if(!strcmp(*argv, "download"))
-		{
+        /* tommy add here */
+        else if(!strcmp(*argv, "listparts"))
+        {
+            printf("Sending Tommy's Commands.\n");
+            skip(1);
+            fb_queue_listparts();        
+        }
+        
+        else if(!strcmp(*argv, "download"))
+        {
             char *pname = argv[1];
             char *fname = 0;
             require(2);
@@ -737,25 +737,25 @@ int main(int argc, char **argv)
             if (fname == 0) die("cannot determine image filename for '%s'", pname);
             data = load_file(fname, &sz);
             if (data == 0) die("cannot load '%s'\n", fname);
-			
-			printf("Sending Tommy's Commands.\n");
-			fb_queue_download(fname, data, sz);
-		}
+            
+            printf("Sending Tommy's Commands.\n");
+            fb_queue_download(fname, data, sz);
+        }
 
-		else if(!strncmp(*argv, "mmcwrite", 8))
-		{
+        else if(!strncmp(*argv, "mmcwrite", 8))
+        {
             char *pname = argv[1];
-			char *slotname = argv[0];
+            char *slotname = argv[0];
             char *fname = 0;
             require(2);
             skip(2);
 
-			printf("Sending Tommy's Commands.\n");
-			fb_queue_mmcwrite(slotname+9, pname);
-		}
-#endif		
-		
-		else {
+            printf("Sending Tommy's Commands.\n");
+            fb_queue_mmcwrite(slotname+9, pname);
+        }
+#endif        
+        
+        else {
             usage();
             return 1;
         }
