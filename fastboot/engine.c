@@ -146,6 +146,22 @@ void fb_queue_flash(const char *ptn, void *data, unsigned sz)
     a->msg = mkmsg("writing '%s'", ptn);
 }
 
+void fb_queue_listparts()
+{
+   Action *a;
+
+    a = queue_action(OP_COMMAND, "listparts");
+    a->msg = mkmsg("list mmc partitions.");
+}
+
+void fb_queue_mmcwrite(const char *slot, const char *ptn)
+{
+    Action *a;
+
+    a = queue_action(OP_COMMAND, "mmcwrite:%s:%s", slot, ptn);
+    a->msg = mkmsg("mmcwrite slot %s, writing '%s'", slot, ptn);
+}
+
 static int match(char *str, const char **value, unsigned count)
 {
     const char *val;
