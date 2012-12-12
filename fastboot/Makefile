@@ -6,46 +6,47 @@
 #-------------------------------------------------------------------------
 
 CC=gcc -m32
-LINKER=gcc -m32
+LINKER=gcc -m32 
 AS=as -g3 
 AR=ar
+MD=mkdir -p
 SIZE=size -t 
 RM=rm -f
-CFLAGS= -O2 -Wall -I. -I../include -I./inc 
-LD_FLAGS  = -Map
+CFLAGS=-O2 -Wall -I. -I../include -I./inc 
+LD_FLAGS= -Map
 
-LIBS = 
+LIBS2LINK = ./libzipfile.a ./libunz.a
 
 FEATURES = -DHAVE_CONFIG_H -DDEBUG
 
+#SRC DIR
+SRC_DIR = .
+
 #OBJ DIR
-OBJ_DIR = .
+OBJ_DIR = obj
 OUT_FILE =fastboot
 DEPFILE =local.d
 
 #LIB DIR
-LIB_DIR = .
+LIB_DIR = lib
 LIB_FILE = libfastboot.a
 
 #MAP
 MAP_FILE = fastboot.map
 
 # OBJECT FILES
-OLD_OBJECTS = \
- 		protocol.o engine.o bootimg.o usb_linux.o util_linux.o
- 		
-OLD_APP_OBJECTS = fastboot.o
+SRC_FILES := protocol.c engine.c bootimg.c usb_linux.c util_linux.c
+OBJECTS = $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o, $(SRC_FILES)))
 
-OBJECTS = $(addprefix $(OBJ_DIR)/, $(OLD_OBJECTS))
-APP_OBJECTS = $(addprefix $(OBJ_DIR)/, $(OLD_APP_OBJECTS))
-OBJECTS_ASM = $(addprefix $(OBJ_DIR)/, $(OLD_OBJECTS_ASM))
+APP_FILES := fastboot.c 
+APP_OBJECTS = $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o, $(APP_FILES)))
 
 #PHONY
 .PHONY : all 
 
 all : out
 
-out : showtarget $(OUT_FILE)
+out : mkworkdir showtarget $(OUT_FILE)
 	
 showtarget:
 	@echo "*** Make object for "$(TARGET)" ***"
@@ -55,6 +56,9 @@ info:
 	@echo "--------  Makefile for ZSP V 1.1---------!!!"
 	@echo "make info/mkdep/clean/all/sdnm/zdnm/mklib"
 	@echo ""
+
+mkworkdir:
+	$(MD) $(OBJ_DIR)
 	
 mklib : $(LIB_DIR)/$(LIB_FILE)
 
@@ -64,34 +68,39 @@ mkmap : $(LIB_DIR)/$(LIB_FILE) $(APP_OBJECTS)
 clean:
 	$(RM) $(OBJ_DIR)/*.o
 	$(RM) $(OUT_FILE)
-	$(RM) $(LIB_DIR)/libfastboot.a
+	$(RM) $(LIB_DIR)/$(LIB_FILE)
 	$(RM) $(MAP_FILE)
 
 mkdep : deldep $(patsubst %.o,%.d, $(OBJECTS))
 .PHONY : mkdep
 
+test:
+	echo $(addprefix $(SRC_DIR)/, $(patsubst %.o,%.c, $(patsubst $(OBJ_DIR)/%,%,$(OBJECTS))))
+
 deldep:
 	$(RM) $(DEFILE)
 
 $(OUT_FILE) : $(LIB_DIR)/$(LIB_FILE) $(APP_OBJECTS)
-	$(CC) -o $(OUT_FILE) $(APP_OBJECTS) $(LIB_DIR)/$(LIB_FILE) ./libzipfile.a ./libunz.a
+	$(CC) -o $(OUT_FILE) $(APP_OBJECTS) $(LIB_DIR)/$(LIB_FILE) $(LIBS2LINK) 
 	@echo "--------  Build done ---------!!!"
 	@echo ""
 
 $(patsubst %.o,%.d, $(OBJECTS)) : 
 	$(CC) -MM $(patsubst %.d,%.c, $(patsubst $(OBJ_DIR)/%,%,$@))  >> $(DEPFILE)
 
-$(OBJECTS)  : $(patsubst %.o,%.c, $@)
-	mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) $(CFLAGS_OPT) $(FEATURES) -o $@ -c $(patsubst %.o,%.c, $(patsubst $(OBJ_DIR)/%,%,$@))
+$(OBJECTS)  : $(addprefix $(SRC_DIR)/, $(patsubst %.o,%.c, $(patsubst $(OBJ_DIR)/%,%,$(OBJECTS))))
+	$(CC) $(CFLAGS) $(CFLAGS_OPT) $(FEATURES) -o $@ -c $(addprefix $(SRC_DIR)/, $(patsubst %.o,%.c, $(patsubst $(OBJ_DIR)/%,%,$@)))
 
+$(APP_OBJECTS)  : $(addprefix $(SRC_DIR)/, $(patsubst %.o,%.c, $(patsubst $(OBJ_DIR)/%,%,$(APP_OBJECTS))))
+	$(CC) $(CFLAGS) $(CFLAGS_OPT) $(FEATURES) -o $@ -c $(addprefix $(SRC_DIR)/, $(patsubst %.o,%.c, $(patsubst $(OBJ_DIR)/%,%,$@)))
+	
 ../obj/example.o : $(patsubst %.o,%.c, $@)
-	mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) $(CFLAGS_OPT) $(FEATURES) -o $@ -c $(patsubst %.o,%.c, $(patsubst $(OBJ_DIR)/%,%,$@))
+#	mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) $(CFLAGS_OPT) $(FEATURES) -o $@ -c $(patsubst %.o,%.c, 
 
-$(LIB_DIR)/$(LIB_FILE) : $(OBJECTS) $(OBJECTS_ASM)
+$(LIB_DIR)/$(LIB_FILE) : $(OBJECTS)
 	mkdir -p $(LIB_DIR)
-	$(AR) -r $(LIB_DIR)/$(LIB_FILE) $(OBJECTS) $(OBJECTS_ASM)
+	$(AR) -r $(LIB_DIR)/$(LIB_FILE) $(OBJECTS)
 	@echo "--------  Make libary done ---------!!!"
 	@echo ""
 	$(SIZE) $(LIB_DIR)/$(LIB_FILE)
