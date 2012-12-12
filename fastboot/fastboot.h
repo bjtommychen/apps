@@ -41,7 +41,7 @@ char *fb_get_error(void);
 #define FB_RESPONSE_SZ 64
 
 /* engine.c - high level command queue engine */
-void fb_queue_flash(const char *ptn, void *data, unsigned sz);;
+void fb_queue_flash(const char *ptn, void *data, unsigned sz);
 void fb_queue_erase(const char *ptn);
 void fb_queue_require(const char *prod, const char *var, int invert,
         unsigned nvalues, const char **value);
@@ -55,6 +55,7 @@ int fb_execute_queue(usb_handle *usb);
 /* tommy add */
 void fb_queue_listparts(); 
 void fb_queue_mmcwrite(const char *slot, const char *ptn);
+
 
 /* util stuff */
 void die(const char *fmt, ...);
