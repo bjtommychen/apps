@@ -1,0 +1,20 @@
+
+TARGETNAME=USBcmder
+TARGETTYPE=PROGRAM
+#LIBRARY
+
+UMTYPE=console
+UMBASE=0x01000000
+
+TARGETPATH=obj
+
+INCLUDES=..\..
+
+
+TARGETLIBS= $(DDK_LIB_PATH)\usbd.lib \
+            $(SDK_LIB_PATH)\setupapi.lib
+
+SOURCES=      \
+        RwBulk.c  \
+        RwBulk.rc
+
