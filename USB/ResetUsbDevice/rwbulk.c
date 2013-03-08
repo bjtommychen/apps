@@ -56,7 +56,7 @@ Revision History:
 #include <stdlib.h>
 
 #define DEBUG
-#define DEVNAME_MATCH  "asfasdfasdf"
+#define DEVNAME_MATCH  "vid_0bb4&pid_0fff"
 //#define OPEN_DEVIE_FAST               //Open faster, using CreateFile.
 
 char devname_string[256]="";
@@ -514,7 +514,7 @@ BOOL Send_USB_Cmd(HANDLE hDEV, SCSI_CMD_BLOCK * cmd)
 
     status = DeviceIoControl(fileHandle,
                              IOCTL_INTERNAL_USB_RESET_PORT,
-                             0, 0, 0, 0, NULL, (LPOVERLAPPED)NULL);
+                             NULL, 0, NULL, 0, NULL, (LPOVERLAPPED)NULL);
 
     if (!status)
     {
