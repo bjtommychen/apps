@@ -4,7 +4,7 @@
 
 #define VER_FILETYPE    VFT_DLL
 #define VER_FILESUBTYPE VFT2_UNKNOWN
-#define VER_FILEDESCRIPTION_STR     "MyZ USB Commander App"
+#define VER_FILEDESCRIPTION_STR     "USB Reset App"
 #define VER_INTERNALNAME_STR        "RwBulk.sys"
 #define VER_ORIGINALFILENAME_STR    "RwBulk.sys"
 
