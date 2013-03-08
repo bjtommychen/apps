@@ -3,6 +3,9 @@ TARGETNAME=USBcmder
 TARGETTYPE=PROGRAM
 #LIBRARY
 
+#Tommy add this for latest winddk 7600.
+USE_MSVCRT=1
+
 UMTYPE=console
 UMBASE=0x01000000
 
