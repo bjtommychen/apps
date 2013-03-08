@@ -10,6 +10,23 @@
 
 int verbose = 0;
 
+
+// Device vendor and product id.
+#define MY_VID 0x0666
+#define MY_PID 0x0001
+
+// Device configuration and interface id.
+#define MY_CONFIG 1
+#define MY_INTF 0
+
+// Device endpoint(s)
+#define EP_IN 0x81
+#define EP_OUT 0x01
+
+// Device of bytes to transfer.
+#define BUF_SIZE 64
+
+
 void print_endpoint(struct usb_endpoint_descriptor *endpoint)
 {
     printf("      bEndpointAddress: %02xh\n", endpoint->bEndpointAddress);
@@ -180,10 +197,13 @@ printf("%.*s\n", 3, "abc");        // 输出abc >3是一样的效果 因为输出类型type = 
     return 0;
 }
 
+
 int main(int argc, char *argv[])
 {
     struct usb_bus *bus;
-    struct usb_device *dev;
+    usb_dev_handle *dev;
+    char tmp[BUF_SIZE] = {1,2,3,4,5,6,7,8,};
+    int ret;
 
     if (argc > 1 && !strcmp(argv[1], "-v"))
         verbose = 1;
@@ -200,6 +220,7 @@ int main(int argc, char *argv[])
             print_device(bus->root_dev, 0);
         else
         {
+            struct usb_device *dev;
 
             for (dev = bus->devices; dev; dev = dev->next)
                 print_device(dev, 0);
@@ -207,8 +228,51 @@ int main(int argc, char *argv[])
     }
 
 #if 1
-    dev = bus->devices;
-    usb_reset(dev);
+    bus = usb_get_busses();
+    dev = usb_open(bus->devices);
+
+//    usb_reset(dev);
+
+#if 1//def TEST_SET_CONFIGURATION
+    if (usb_set_configuration(dev, MY_CONFIG) < 0)
+    {
+        printf("error setting config #%d: %s\n", MY_CONFIG, usb_strerror());
+        usb_close(dev);
+        return 0;
+    }
+    else
+    {
+        printf("success: set configuration #%d\n", MY_CONFIG);
+    }
+#endif
+
+#if 1//def TEST_CLAIM_INTERFACE
+    if (usb_claim_interface(dev, 0) < 0)
+    {
+        printf("error claiming interface #%d:\n%s\n", MY_INTF, usb_strerror());
+        usb_close(dev);
+        return 0;
+    }
+    else
+    {
+        printf("success: claim_interface #%d\n", MY_INTF);
+    }
+#endif
+
+
+//    ret = transfer_bulk_async(dev, EP_OUT, tmp, sizeof(tmp), 5000);
+    // Running a sync write test
+    ret = usb_bulk_write(dev, EP_OUT, tmp, sizeof(tmp), 5000);
+    if (ret < 0)
+    {
+        printf("error writing:\n%s\n", usb_strerror());
+    }
+    else
+    {
+        printf("success: bulk write %d bytes\n", ret);
+    }
+    
+    usb_close(dev);
 #endif
 
     return 0;
