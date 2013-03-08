@@ -1066,7 +1066,7 @@ void process_fileio(int argc, char *argv[])
     PCBW pcbw = (PCBW) (scsicmd.CDB);
     FILE *fpin = 0, *fpout = 0;
     char msgc_shadow[512*2];
-    volatile PMSGXCHG pmsgc = (volatile PMSGXCHG) msgc_shadow;
+    PMSGXCHG pmsgc = (PMSGXCHG) msgc_shadow;
     char *fbuff;
     unsigned long fin_len, lenin, readlen;
     unsigned long fout_len, lenout, writelen;
