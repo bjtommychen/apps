@@ -3,23 +3,23 @@
 
 // Enables this example to work with a device running the
 // libusb-win32 PIC Benchmark Firmware.
-#define BENCHMARK_DEVICE
+//#define BENCHMARK_DEVICE
 
 //////////////////////////////////////////////////////////////////////////////
 // TEST SETUP (User configurable)
 
 // Issues a Set configuration request
-#define TEST_SET_CONFIGURATION
+//#define TEST_SET_CONFIGURATION
 
 // Issues a claim interface request
-#define TEST_CLAIM_INTERFACE
+//#define TEST_CLAIM_INTERFACE
 
 // Use the libusb-win32 async transfer functions. see
 // transfer_bulk_async() below.
-#define TEST_ASYNC
+//#define TEST_ASYNC
 
 // Attempts one bulk read.
-#define TEST_BULK_READ
+//#define TEST_BULK_READ
 
 // Attempts one bulk write.
 // #define TEST_BULK_WRITE
@@ -28,8 +28,8 @@
 // DEVICE SETUP (User configurable)
 
 // Device vendor and product id.
-#define MY_VID 0x0666
-#define MY_PID 0x0001
+#define MY_VID 0x0bb4
+#define MY_PID 0x0fff
 
 // Device configuration and interface id.
 #define MY_CONFIG 1
@@ -58,8 +58,10 @@ usb_dev_handle *open_dev(void)
 
     for (bus = usb_get_busses(); bus; bus = bus->next)
     {
+		printf("bus\n");
         for (dev = bus->devices; dev; dev = dev->next)
         {
+			printf("dev:vid:0x%x, pid:0x%x\n", dev->descriptor.idVendor, dev->descriptor.idProduct);
             if (dev->descriptor.idVendor == MY_VID
                     && dev->descriptor.idProduct == MY_PID)
             {
@@ -176,6 +178,11 @@ int main(void)
 #ifdef TEST_CLAIM_INTERFACE
     usb_release_interface(dev, 0);
 #endif
+
+
+	//usb_reset(dev);
+
+
 
     if (dev)
     {
