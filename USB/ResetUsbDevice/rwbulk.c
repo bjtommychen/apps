@@ -25,7 +25,7 @@ Notes:
 
 
 Revision History:
-
+ 
         11/17/97: created
 
 --*/
@@ -56,7 +56,7 @@ Revision History:
 #include <stdlib.h>
 
 #define DEBUG
-#define DEVNAME_MATCH  "vid_0bb4"
+#define DEVNAME_MATCH  "asfasdfasdf"
 //#define OPEN_DEVIE_FAST               //Open faster, using CreateFile.
 
 char devname_string[256]="";
@@ -219,7 +219,6 @@ OpenOneDevice(IN HDEVINFO HardwareDeviceInfo, IN PSP_DEVICE_INTERFACE_DATA Devic
 
 #ifdef DEBUG
     printf("\nAttempting to open... \n%s\n", functionClassDeviceData->DevicePath);
-    printf("devname:%s\ndevname_string:%s\n", devName, devname_string);
 #endif
 
     // search 'usb', if not found, return now. used to skip ide....
@@ -328,7 +327,7 @@ HANDLE OpenUsbDevice(LPGUID pGuid, char *outNameBuf)
             // the routine can be called repeatedly to get information about several interfaces
             // exposed by one or more devices.
 #ifdef DEBUG
-            printf("Open device No.%d -------- ", i);
+            printf("\nOpen device No.%d -------- ", i);
 #endif
 
             if (SetupDiEnumDeviceInterfaces(hardwareDeviceInfo, 0, // We don't care about specific PDOs
@@ -605,6 +604,7 @@ int _cdecl main(int argc, char *argv[])
 
     devname_string[0] = 0;
     strcpy(devname_string, DEVNAME_MATCH);
+    printf("devname_string is %s.\n", devname_string);
 
     if (argv[1][0] == '-' || argv[1][0] == '/')
     {
