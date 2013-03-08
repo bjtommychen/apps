@@ -49,7 +49,7 @@ SRC_FILES +=
 		
 OBJECTS = $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o, $(SRC_FILES)))
 
-APP_FILES := src/bulk.c 
+APP_FILES := src/testlibusb.c 
 APP_OBJECTS = $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o, $(APP_FILES)))
 
 #PHONY
