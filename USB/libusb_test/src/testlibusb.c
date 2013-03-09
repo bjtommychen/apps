@@ -21,7 +21,7 @@ int verbose = 0;
 
 // Device endpoint(s)
 #define EP_IN 0x81
-#define EP_OUT 0x01
+#define EP_OUT 0x02
 
 // Device of bytes to transfer.
 #define BUF_SIZE 64
@@ -202,8 +202,13 @@ int main(int argc, char *argv[])
 {
     struct usb_bus *bus;
     usb_dev_handle *dev;
-    char tmp[BUF_SIZE] = {1,2,3,4,5,6,7,8,};
+    char tmp[BUF_SIZE] = {'T','E','S','T',' ','D','A','T','A',};
+    char string[256] = {0, };
     int ret;
+    int i, j;
+    char usbc1[] = {0x55,0x53,0x42,0x43,0xb0,0x2a,0x0e,0x87,0x24,0x00,0x00,0x00,0x80,0x00,0x06,0x12,0x00,0x00,0x00,0x24,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+
+//    printf("Enter main()\n");
 
     if (argc > 1 && !strcmp(argv[1], "-v"))
         verbose = 1;
@@ -211,11 +216,18 @@ int main(int argc, char *argv[])
     usb_init();
     usb_set_debug(255);
 
+    printf("usb_init done!\n");
+
     usb_find_busses();
     usb_find_devices();
 
+    printf("usb_find busses/devices done!\n");
+
+    i = 0;
     for (bus = usb_get_busses(); bus; bus = bus->next)
     {
+        printf(" No. %d\n", i++);
+        
         if (bus->root_dev && !verbose)
             print_device(bus->root_dev, 0);
         else
@@ -232,6 +244,13 @@ int main(int argc, char *argv[])
     dev = usb_open(bus->devices);
 
 //    usb_reset(dev);
+#if 0
+    for(j=0; j<4; j++)
+    {
+        i = usb_get_string_simple(dev, j, string, sizeof(string));
+        printf("get string index %d, return %d bytes\n", j, i);
+    }
+#endif
 
 #if 1//def TEST_SET_CONFIGURATION
     if (usb_set_configuration(dev, MY_CONFIG) < 0)
@@ -257,12 +276,24 @@ int main(int argc, char *argv[])
     {
         printf("success: claim_interface #%d\n", MY_INTF);
     }
+
+#else
+i = usb_control_msg(dev, 0x01, 0x0b, 0, 0, tmp, sizeof(tmp), 5000);
+printf(" return %d bytes\n", i);
 #endif
 
+//23.0  CTL    01 0b 00 00  00 00 00 00                            SET INTERFACE            5.1.0        
+//23.0  CTL    a1 fe 00 00  00 00 01 00                            GET MAX LUN              6.1.0 
+//int usb_control_msg(usb_dev_handle *dev, int requesttype, int request,
+//                    int value, int index, char *bytes, int size,
+//                    int timeout);
+    i = usb_control_msg(dev, 0xa1, 0xfe, 0, 1, tmp, sizeof(tmp), 5000);
+    printf(" return %d bytes\n", i);
 
+#if 1
 //    ret = transfer_bulk_async(dev, EP_OUT, tmp, sizeof(tmp), 5000);
     // Running a sync write test
-    ret = usb_bulk_write(dev, EP_OUT, tmp, sizeof(tmp), 5000);
+    ret = usb_bulk_write(dev, EP_OUT, usbc1, sizeof(usbc1), 5000);
     if (ret < 0)
     {
         printf("error writing:\n%s\n", usb_strerror());
@@ -271,6 +302,36 @@ int main(int argc, char *argv[])
     {
         printf("success: bulk write %d bytes\n", ret);
     }
+
+    ret = usb_bulk_read(dev, EP_IN, tmp, sizeof(tmp), 5000);
+    if (ret < 0)
+    {
+        printf("error writing:\n%s\n", usb_strerror());
+    }
+    else
+    {
+        printf("success: bulk write %d bytes\n", ret);
+    }
+
+    ret = usb_bulk_read(dev, EP_IN, tmp, sizeof(tmp), 5000);
+    if (ret < 0)
+    {
+        printf("error writing:\n%s\n", usb_strerror());
+    }
+    else
+    {
+        printf("success: bulk write %d bytes\n", ret);
+    }
+
+#endif
+
+/*
+    for(j=0; j<4; j++)
+    {
+        i = usb_get_string_simple(dev, j, string, sizeof(string));
+        printf("get string index %d, return %d bytes\n", j, i);
+    }
+*/
     
     usb_close(dev);
 #endif
