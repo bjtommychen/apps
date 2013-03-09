@@ -332,7 +332,7 @@ printf(" return %d bytes\n", i);
         printf("get string index %d, return %d bytes\n", j, i);
     }
 */
-    
+    usb_reset(dev);
     usb_close(dev);
 #endif
 
