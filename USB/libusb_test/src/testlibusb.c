@@ -235,13 +235,16 @@ int main(int argc, char *argv[])
             struct usb_device *dev;
 
             for (dev = bus->devices; dev; dev = dev->next)
+            {
                 print_device(dev, 0);
+            }
         }
     }
 
-#if 1
     bus = usb_get_busses();
     dev = usb_open(bus->devices);
+
+#if 1
 
 //    usb_reset(dev);
 #if 0
@@ -266,7 +269,7 @@ int main(int argc, char *argv[])
 #endif
 
 #if 1//def TEST_CLAIM_INTERFACE
-    if (usb_claim_interface(dev, 0) < 0)
+    if (usb_claim_interface(dev, MY_INTF) < 0)
     {
         printf("error claiming interface #%d:\n%s\n", MY_INTF, usb_strerror());
         usb_close(dev);
@@ -278,8 +281,8 @@ int main(int argc, char *argv[])
     }
 
 #else
-i = usb_control_msg(dev, 0x01, 0x0b, 0, 0, tmp, sizeof(tmp), 5000);
-printf(" return %d bytes\n", i);
+//    i = usb_control_msg(dev, 0x01, 0x0b, 0, 0, tmp, sizeof(tmp), 5000);
+//    printf(" return %d bytes\n", i);
 #endif
 
 //23.0  CTL    01 0b 00 00  00 00 00 00                            SET INTERFACE            5.1.0        
@@ -291,8 +294,6 @@ printf(" return %d bytes\n", i);
     printf(" return %d bytes\n", i);
 
 #if 1
-//    ret = transfer_bulk_async(dev, EP_OUT, tmp, sizeof(tmp), 5000);
-    // Running a sync write test
     ret = usb_bulk_write(dev, EP_OUT, usbc1, sizeof(usbc1), 5000);
     if (ret < 0)
     {
@@ -306,35 +307,28 @@ printf(" return %d bytes\n", i);
     ret = usb_bulk_read(dev, EP_IN, tmp, sizeof(tmp), 5000);
     if (ret < 0)
     {
-        printf("error writing:\n%s\n", usb_strerror());
+        printf("error read:\n%s\n", usb_strerror());
     }
     else
     {
-        printf("success: bulk write %d bytes\n", ret);
+        printf("success: bulk read %d bytes\n", ret);
     }
 
     ret = usb_bulk_read(dev, EP_IN, tmp, sizeof(tmp), 5000);
     if (ret < 0)
     {
-        printf("error writing:\n%s\n", usb_strerror());
+        printf("error read:\n%s\n", usb_strerror());
     }
     else
     {
-        printf("success: bulk write %d bytes\n", ret);
+        printf("success: bulk read %d bytes\n", ret);
     }
-
 #endif
 
-/*
-    for(j=0; j<4; j++)
-    {
-        i = usb_get_string_simple(dev, j, string, sizeof(string));
-        printf("get string index %d, return %d bytes\n", j, i);
-    }
-*/
+#endif  //all
+
     usb_reset(dev);
     usb_close(dev);
-#endif
 
     return 0;
 }
