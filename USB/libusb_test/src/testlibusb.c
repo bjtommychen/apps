@@ -20,8 +20,8 @@ int verbose = 0;
 #define MY_INTF 0
 
 // Device endpoint(s)
-#define EP_IN 0x81
-#define EP_OUT 0x02
+#define EP_IN 0x82
+#define EP_OUT 0x01
 
 // Device of bytes to transfer.
 #define BUF_SIZE 64
@@ -78,20 +78,20 @@ void print_configuration(struct usb_config_descriptor *config)
 
 void print_device_descriptor(struct usb_device_descriptor *desc, int indent)
 {
-	printf("%.*sbLength:             %u\n",    indent, "                    ", desc->bLength);
-	printf("%.*sbDescriptorType:     %02Xh\n", indent, "                    ", desc->bDescriptorType);
-	printf("%.*sbcdUSB:              %04Xh\n", indent, "                    ", desc->bcdUSB);
-	printf("%.*sbDeviceClass:        %02Xh\n", indent, "                    ", desc->bDeviceClass);
-	printf("%.*sbDeviceSubClass:     %02Xh\n", indent, "                    ", desc->bDeviceSubClass);
-	printf("%.*sbDeviceProtocol:     %02Xh\n", indent, "                    ", desc->bDeviceProtocol);
-	printf("%.*sbMaxPacketSize0:     %02Xh\n", indent, "                    ", desc->bMaxPacketSize0);
-	printf("%.*sidVendor:            %04Xh\n", indent, "                    ", desc->idVendor);
-	printf("%.*sidProduct:           %04Xh\n", indent, "                    ", desc->idProduct);
-	printf("%.*sbcdDevice:           %04Xh\n", indent, "                    ", desc->bcdDevice);
-	printf("%.*siManufacturer:       %u\n",    indent, "                    ", desc->iManufacturer);
-	printf("%.*siProduct:            %u\n",    indent, "                    ", desc->iProduct);
-	printf("%.*siSerialNumber:       %u\n",    indent, "                    ", desc->iSerialNumber);
-	printf("%.*sbNumConfigurations:  %u\n",    indent, "                    ", desc->bNumConfigurations);
+    printf("%.*sbLength:             %u\n",    indent, "                    ", desc->bLength);
+    printf("%.*sbDescriptorType:     %02Xh\n", indent, "                    ", desc->bDescriptorType);
+    printf("%.*sbcdUSB:              %04Xh\n", indent, "                    ", desc->bcdUSB);
+    printf("%.*sbDeviceClass:        %02Xh\n", indent, "                    ", desc->bDeviceClass);
+    printf("%.*sbDeviceSubClass:     %02Xh\n", indent, "                    ", desc->bDeviceSubClass);
+    printf("%.*sbDeviceProtocol:     %02Xh\n", indent, "                    ", desc->bDeviceProtocol);
+    printf("%.*sbMaxPacketSize0:     %02Xh\n", indent, "                    ", desc->bMaxPacketSize0);
+    printf("%.*sidVendor:            %04Xh\n", indent, "                    ", desc->idVendor);
+    printf("%.*sidProduct:           %04Xh\n", indent, "                    ", desc->idProduct);
+    printf("%.*sbcdDevice:           %04Xh\n", indent, "                    ", desc->bcdDevice);
+    printf("%.*siManufacturer:       %u\n",    indent, "                    ", desc->iManufacturer);
+    printf("%.*siProduct:            %u\n",    indent, "                    ", desc->iProduct);
+    printf("%.*siSerialNumber:       %u\n",    indent, "                    ", desc->iSerialNumber);
+    printf("%.*sbNumConfigurations:  %u\n",    indent, "                    ", desc->bNumConfigurations);
 }
 
 int print_device(struct usb_device *dev, int level)
@@ -138,19 +138,16 @@ int print_device(struct usb_device *dev, int level)
         snprintf(description, sizeof(description), "%04X - %04X",
                  dev->descriptor.idVendor, dev->descriptor.idProduct);
 
-/*
+    /*
+    C/C++ code
+    // %.*s 其中的.*表示显示的精度 对字符串输出(s)类型来说就是宽度
+    // 这个*代表的值由后面的参数列表中的整数型(int)值给出
 
-C/C++ code
-// %.*s 其中的.*表示显示的精度 对字符串输出(s)类型来说就是宽度
-// 这个*代表的值由后面的参数列表中的整数型(int)值给出
-
-// 例如：
-printf("%.*s\n", 1, "abc");        // 输出a
-printf("%.*s\n", 2, "abc");        // 输出ab
-printf("%.*s\n", 3, "abc");        // 输出abc >3是一样的效果 因为输出类型type = s，遇到'\0'会结束
-
-*/
-
+    // 例如：
+    printf("%.*s\n", 1, "abc");        // 输出a
+    printf("%.*s\n", 2, "abc");        // 输出ab
+    printf("%.*s\n", 3, "abc");        // 输出abc >3是一样的效果 因为输出类型type = s，遇到'\0'会结束
+    */
 
     printf("\n%.*sDev #%d: %s", level * 2, "                    ", dev->devnum,
            description);
@@ -164,14 +161,14 @@ printf("%.*s\n", 3, "abc");        // 输出abc >3是一样的效果 因为输出类型type = 
             if (ret > 0)
                 printf(" - Serial Number: %s\n", string);
         }
-		else
-			printf("\n");
+        else
+            printf("\n");
     }
-	else
-		printf("\n");
+    else
+        printf("\n");
 
-	if (verbose)
-		print_device_descriptor(&dev->descriptor, level * 2);
+    if (verbose)
+        print_device_descriptor(&dev->descriptor, level * 2);
 
     if (udev)
         usb_close(udev);
@@ -198,62 +195,44 @@ printf("%.*s\n", 3, "abc");        // 输出abc >3是一样的效果 因为输出类型type = 
 }
 
 
-int main(int argc, char *argv[])
+struct usb_bus *bus;
+usb_dev_handle *dev;
+
+static int test_open()
 {
-    struct usb_bus *bus;
-    usb_dev_handle *dev;
-    char tmp[BUF_SIZE] = {'T','E','S','T',' ','D','A','T','A',};
-    char string[256] = {0, };
-    int ret;
-    int i, j;
-    char usbc1[] = {0x55,0x53,0x42,0x43,0xb0,0x2a,0x0e,0x87,0x24,0x00,0x00,0x00,0x80,0x00,0x06,0x12,0x00,0x00,0x00,0x24,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-
-//    printf("Enter main()\n");
-
-    if (argc > 1 && !strcmp(argv[1], "-v"))
-        verbose = 1;
-
-    usb_init();
-    usb_set_debug(255);
-
-    printf("usb_init done!\n");
-
-    usb_find_busses();
-    usb_find_devices();
-
-    printf("usb_find busses/devices done!\n");
-
-    i = 0;
-    for (bus = usb_get_busses(); bus; bus = bus->next)
-    {
-        printf(" No. %d\n", i++);
-        
-        if (bus->root_dev && !verbose)
-            print_device(bus->root_dev, 0);
-        else
-        {
-            struct usb_device *dev;
-
-            for (dev = bus->devices; dev; dev = dev->next)
-            {
-                print_device(dev, 0);
-            }
-        }
-    }
-
     bus = usb_get_busses();
     dev = usb_open(bus->devices);
+}
 
-#if 1
+static int test_close()
+{
+    usb_close(dev);
+}
 
-//    usb_reset(dev);
-#if 0
+static int test_getstring()
+{
+    int i,j;
+    char string[256] = {0, };
     for(j=0; j<4; j++)
     {
         i = usb_get_string_simple(dev, j, string, sizeof(string));
         printf("get string index %d, return %d bytes\n", j, i);
+        if (i>0 && i<20)
+        printf("string is %s.\n", string);
     }
-#endif
+}
+
+static int test_reset()
+{
+    usb_reset(dev);
+}
+
+static int test_udisk()
+{
+    char tmp[BUF_SIZE] = {'T','E','S','T',' ','D','A','T','A',};
+    int ret;
+    int i, j;
+    char usbc1[] = {0x55,0x53,0x42,0x43,0xb0,0x2a,0x0e,0x87,0x24,0x00,0x00,0x00,0x80,0x00,0x06,0x12,0x00,0x00,0x00,0x24,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
 #if 1//def TEST_SET_CONFIGURATION
     if (usb_set_configuration(dev, MY_CONFIG) < 0)
@@ -285,8 +264,8 @@ int main(int argc, char *argv[])
 //    printf(" return %d bytes\n", i);
 #endif
 
-//23.0  CTL    01 0b 00 00  00 00 00 00                            SET INTERFACE            5.1.0        
-//23.0  CTL    a1 fe 00 00  00 00 01 00                            GET MAX LUN              6.1.0 
+//23.0  CTL    01 0b 00 00  00 00 00 00                            SET INTERFACE            5.1.0
+//23.0  CTL    a1 fe 00 00  00 00 01 00                            GET MAX LUN              6.1.0
 //int usb_control_msg(usb_dev_handle *dev, int requesttype, int request,
 //                    int value, int index, char *bytes, int size,
 //                    int timeout);
@@ -325,11 +304,177 @@ int main(int argc, char *argv[])
     }
 #endif
 
-#endif  //all
+}
 
-    usb_reset(dev);
-    usb_close(dev);
+static int test_fastboot_boot()
+{
+    int fileSize = 0;
+    char filename[256] = "";
+    FILE *fp;
+    char tmp[BUF_SIZE] = {'T','E','S','T',' ','D','A','T','A',};
+    int ret;
+    int i, j;
+
+    printf("Emulate 'fastboot oem boot x-loader.img'\n");
+
+#if 1//def TEST_SET_CONFIGURATION
+    if (usb_set_configuration(dev, MY_CONFIG) < 0)
+    {
+        printf("error setting config #%d: %s\n", MY_CONFIG, usb_strerror());
+        usb_close(dev);
+        return 0;
+    }
+    else
+    {
+        printf("success: set configuration #%d\n", MY_CONFIG);
+    }
+#endif
+
+#if 1//def TEST_CLAIM_INTERFACE
+    if (usb_claim_interface(dev, MY_INTF) < 0)
+    {
+        printf("error claiming interface #%d:\n%s\n", MY_INTF, usb_strerror());
+        usb_close(dev);
+        return 0;
+    }
+    else
+    {
+        printf("success: claim_interface #%d\n", MY_INTF);
+    }
+
+#else
+//    i = usb_control_msg(dev, 0x01, 0x0b, 0, 0, tmp, sizeof(tmp), 5000);
+//    printf(" return %d bytes\n", i);
+#endif
+
+    //TOMMY: IMPORTANT FOR NF BOOTROM
+    //AFTER DO RESET, NEED WRITE SOME DATA, OR THE READ AFTER REAL WRITE WILL TIME OUT.
+    //DON'T KNOW REASON, MAYBE STILL THE IP CORE PROBLEM.
+    ret = usb_bulk_write(dev, EP_OUT, "", 0, 5000);
+    printf("usb write, ret %d\n", ret);
+
+    //file size is 25432.
+    ret = usb_bulk_write(dev, EP_OUT, "download:00006358", 17, 5000);
+    ret = usb_bulk_read(dev, EP_IN, tmp, sizeof(tmp), 5000);
+    if (ret<=0)
+        return 1;
+    printf("\nIN:%.*s\n", ret, tmp);
+
+
+// Open file
+    strcpy(filename, "x-load.img");
+    if ((fp = fopen(filename, "rb")) == NULL)
+    {
+        printf("can 't open %s\n", filename);
+        return 1;
+    }
+
+// Get file size
+    fseek(fp, 0, SEEK_END);
+    fileSize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    printf("open file OK, size is %d\n", fileSize);
+
+    while(i=fread(tmp, 1, 64, fp))
+    {
+        ret = usb_bulk_write(dev, EP_OUT, tmp, i, 5000);
+        printf(".");
+    }
+    ret = usb_bulk_read(dev, EP_IN, tmp, sizeof(tmp), 5000);
+    printf("\nIN:%.*s\n", ret, tmp);
+
+    ret = usb_bulk_write(dev, EP_OUT, "boot", 4, 5000);
+    ret = usb_bulk_read(dev, EP_IN, tmp, sizeof(tmp), 5000);
+    printf("\nIN:%.*s\n", ret, tmp);
+
+    fclose(fp);
+
+}
+
+static int test_test()
+{
+    char tmp[BUF_SIZE] = {'T','E','S','T',' ','D','A','T','A',};
+    int ret;
+
+    if (usb_claim_interface(dev, MY_INTF) < 0)
+    {
+        printf("error claiming interface #%d:\n%s\n", MY_INTF, usb_strerror());
+        usb_close(dev);
+        return 0;
+    }
+    else
+    {
+        printf("success: claim_interface #%d\n", MY_INTF);
+    }
+
+    ret = usb_bulk_write(dev, EP_OUT, tmp, sizeof(tmp), 5000);
+    if (ret < 0)
+    {
+        printf("error writing:\n%s\n", usb_strerror());
+    }
+    else
+    {
+        printf("success: bulk write %d bytes\n", ret);
+    }
+}
+
+
+int main(int argc, char *argv[])
+{
+    int ret;
+    int i, j;
+
+    if (argc > 1 && !strcmp(argv[1], "-v"))
+        verbose = 1;
+
+    usb_init();
+    usb_set_debug(255);
+
+    printf("usb_init done!\n");
+
+    usb_find_busses();
+    usb_find_devices();
+
+    printf("usb_find busses/devices done!\n");
+
+    i = 0;
+    for (bus = usb_get_busses(); bus; bus = bus->next)
+    {
+        printf(" No. %d\n", i++);
+
+        if (bus->root_dev && !verbose)
+            print_device(bus->root_dev, 0);
+        else
+        {
+            struct usb_device *dev;
+
+            for (dev = bus->devices; dev; dev = dev->next)
+            {
+                print_device(dev, 0);
+            }
+        }
+    }
+
+    test_open();
+
+//    test_reset();
+//    sleep(5);
+//    usb_reset_ex(dev, USB_RESET_TYPE_FULL_RESET);
+//    sleep(5);
+
+//    test_close();
+
+//    
+//    test_open();
+    
+
+//    test_test();
+    test_fastboot_boot(); 
+//    test_getstring();
+
+    test_close();
 
     return 0;
+
 }
 
