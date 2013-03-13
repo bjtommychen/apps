@@ -25,7 +25,7 @@ Notes:
 
 
 Revision History:
- 
+
         11/17/97: created
 
 --*/
@@ -218,12 +218,13 @@ OpenOneDevice(IN HDEVINFO HardwareDeviceInfo, IN PSP_DEVICE_INTERFACE_DATA Devic
     strcpy(devName, functionClassDeviceData->DevicePath);
 
 #ifdef DEBUG
-    printf("\nAttempting to open... \n%s\n", functionClassDeviceData->DevicePath);
+    printf("\nDevicePath... \n%s\n", functionClassDeviceData->DevicePath);
 #endif
 
     // search 'usb', if not found, return now. used to skip ide....
-    if (strstr(devName, devname_string) == 0)
-        return hOut;
+    if (strlen(devname_string) != 0)
+        if (strstr(devName, devname_string) == 0)
+            return hOut;
 
     hOut = CreateFile(devName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, // no SECURITY_ATTRIBUTES structure
                       OPEN_EXISTING, // No special create flags
@@ -236,7 +237,7 @@ OpenOneDevice(IN HDEVINFO HardwareDeviceInfo, IN PSP_DEVICE_INTERFACE_DATA Devic
     }
     else
     {
-        printf("OpenOneDevice():Device handle is %XH\n", hOut);
+        printf("OpenOneDevice():Device handle is 0x%XH\n", hOut);
 
     }
 
@@ -327,7 +328,7 @@ HANDLE OpenUsbDevice(LPGUID pGuid, char *outNameBuf)
             // the routine can be called repeatedly to get information about several interfaces
             // exposed by one or more devices.
 #ifdef DEBUG
-            printf("\nOpen device No.%d -------- ", i);
+            printf("\n-------- No.%d -------- ", i);
 #endif
 
             if (SetupDiEnumDeviceInterfaces(hardwareDeviceInfo, 0, // We don't care about specific PDOs
@@ -424,11 +425,11 @@ HANDLE Open_MyZdev()
 #endif
     if (hDEV == INVALID_HANDLE_VALUE)
     {
-        printf("Failed to found AndroidBootLoader device !\n");
+        printf("Failed to found usb device !\n");
     }
     else
     {
-        printf("Found AndroidBootLoader device !\n");
+        printf("Found usb device !\n");
     }
 
     return hDEV;
@@ -456,7 +457,6 @@ void usage()
 
     if (i)
     {
-        printf("\n*********** USB Reset v1.0 **********\n");
         printf("Usage for Reset Android Boot Loader:\n");
         printf("-list\n\tList all the devices until find the matched one.\n");
         printf("-reset devicestring\n\tSend ResetPort cmd to matched device.\n");
@@ -532,15 +532,15 @@ void process_listdev(int argc, char *argv[])
 {
     char DeviceName[256] = "";
 
-    HANDLE hDEV = OpenUsbDevice((LPGUID) & GUID_CLASS_I82930_BULK,
+    HANDLE hDEV = OpenUsbDevice((LPGUID) &ANDROID_USB_CLASS_ID,
                                 DeviceName);
     if (hDEV == INVALID_HANDLE_VALUE)
     {
-        printf("Failed to found AndroidBootLoader device !\n");
+        printf("Failed to found usb device !\n");
     }
     else
     {
-        printf("Found AndroidBootLoader device !\n");
+        printf("Found usb device !\n");
     }
 }
 
@@ -559,11 +559,11 @@ void process_resetdevice(int argc, char *argv[])
                          DeviceName);
     if (hDEV == INVALID_HANDLE_VALUE)
     {
-        printf("Failed to found AndroidBootLoader device !\n");
+        printf("Failed to found usb device !\n");
     }
     else
     {
-        printf("Found AndroidBootLoader device !\n");
+        printf("Found usb device !\n");
     }
     printf(" Ready to reset it !\n");
     Send_USB_Cmd(hDEV, 0);
@@ -587,6 +587,17 @@ Return Value:
     Zero
 
 --*/
+
+#define VERSION "1.01"
+#define AUTHOR "Tommy"
+
+static void show_banner(int argc, char **argv)
+{
+    printf("USButility Version %s by %s\t\t", VERSION, AUTHOR);
+    printf("%sbuilt on %s %s \n", " ", __DATE__, __TIME__);
+}
+
+
 int _cdecl main(int argc, char *argv[])
 {
     ULONG i, j;
@@ -596,6 +607,8 @@ int _cdecl main(int argc, char *argv[])
     ZeroMemory(USBbuffer, USBBUF_SIZE);
     //parse(argc, argv);
 
+    show_banner(argc, argv);
+
     if (argc < 2)               // give usage if invoked with no parms
     {
         usage();
@@ -603,7 +616,6 @@ int _cdecl main(int argc, char *argv[])
     }
 
     devname_string[0] = 0;
-    strcpy(devname_string, DEVNAME_MATCH);
     printf("devname_string is %s.\n", devname_string);
 
     if (argv[1][0] == '-' || argv[1][0] == '/')
@@ -614,6 +626,7 @@ int _cdecl main(int argc, char *argv[])
         }
         if (strstr(argv[1], "reset"))
         {
+            strcpy(devname_string, DEVNAME_MATCH);
             process_resetdevice(argc, argv);
         }
 
