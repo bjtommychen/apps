@@ -51,14 +51,13 @@ static int t_get_mad(int idx, int* m, int* e) {
 
 	requantized = (int) (((int64_t) power->mantissa * power2->mantissa) >> 28);
 	//fix the requantized
-//    requantized += 9500 * (value & ((1 << (i - RQ_BITDEPTH)) - 1));
+	requantized += 9500 * (value & ((1 << (i - RQ_BITDEPTH)) - 1));
 //    requantized += 10904 * (value & ((1 << (i - RQ_BITDEPTH)) - 1));
 
 	*m = requantized;
 	*e = exp_int;
 	return (idx & ((1 << (i - RQ_BITDEPTH)) - 1));
 }
-
 
 static int t_get_mad_mod1(int idx, int* m, int* e) {
 	int value2, value = idx;
@@ -82,39 +81,49 @@ static int t_get_mad_mod1(int idx, int* m, int* e) {
 
 	power3 = &rq_table[(int) (value >> (i - RQ_BITDEPTH)) + 1];
 
-	if(power->exponent == power3->exponent)
-	{
+	if (power->exponent == power3->exponent) {
 
 	}
 
-/*
- *  2049 - 17340
- 2896 - 19463
- 2898 - 9734
- 5795 - 12261
- 5797 - 6132
- */
+	/*
+	 *  2049 - 17340
+	 2896 - 19463
+	 2898 - 9734
+	 5795 - 12261
+	 5797 - 6132
+	 */
 
-//	if (value > 5797)
-//		magic  = 6160;
-//	else if (value > 2898)
-//		magic = 10261;
-//	else if (value > 2049)
-//		magic = 18000;
+	if (value > 5797)
+		magic = 6160;
+	else if (value > 2898)
+		magic = 10261;
+	else if (value > 2048)
+		magic = 18000;
 
 	requantized = (int) (((int64_t) power->mantissa * power2->mantissa) >> 28);
 	//fix the requantized
-    requantized += magic * (value & ((1 << (i - RQ_BITDEPTH)) - 1));
+	requantized += magic * (value & ((1 << (i - RQ_BITDEPTH)) - 1));
 
 	*m = requantized;
 	*e = exp_int;
 	return (idx & ((1 << (i - RQ_BITDEPTH)) - 1));
 
-/*
-Average percent diff is 0.004710%
-Max percent diff is 0.029420%
+	/*
+	 *
+	 mad original is
+	 Average percent diff is 0.009349%
+	 Max percent diff is 0.037882%
+	 2 magic
+	 Average percent diff is 0.004710%
+	 Max percent diff is 0.029420%
+	 3 magic
+	 Average percent diff is 0.003782%
+	 Max percent diff is 0.029420%
+	 all 4 magic
+	 Average percent diff is 0.002085%
+	 Max percent diff is 0.015487%
 
- */
+	 */
 }
 
 void test1() {
@@ -177,7 +186,9 @@ void test_mad_way() {
 			diff_per_total / (8192 - TEST_START_INDEX));
 	printf("Max percent diff is %f%%\n", diff_max);
 	/*
-	 * Average percent diff is 0.009349%
+	 *
+	 mad original is
+	 Average percent diff is 0.009349%
 	 Max percent diff is 0.037882%
 	 *
 	 */
@@ -212,9 +223,7 @@ void test_mad_get9500() {
 					diff_max = diff_per;
 				diff_per_total += diff_per;
 				count++;
-			}
-			else
-			{
+			} else {
 				diff_per = 0;
 			}
 		} else
@@ -224,24 +233,23 @@ void test_mad_get9500() {
 		printf("\n");
 	}
 	printf("Summary:\n");
-	printf("Average percent diff is %f%%\n",
-			diff_per_total / count);
+	printf("Average percent diff is %f%%\n", diff_per_total / count);
 	printf("Max percent diff is %f%%\n", diff_max);
 
 	/*
 	 * Average percent diff is 9904.201172%
-Max percent diff is 19463.000000%
+	 Max percent diff is 19463.000000%
 
- 2049 - 17340
- 2896 - 19463
- 2898 - 9734
- 5795 - 12261
- 5797 - 6132
+	 2049 - 17340
+	 2896 - 19463
+	 2898 - 9734
+	 5795 - 12261
+	 5797 - 6132
 
 
-if RQ_BITDEPTH==10
-Average percent diff is 10127.095881%
-Max percent diff is 32734.000000%
+	 if RQ_BITDEPTH==10
+	 Average percent diff is 10127.095881%
+	 Max percent diff is 32734.000000%
 
 	 */
 
