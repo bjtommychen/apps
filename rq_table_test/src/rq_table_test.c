@@ -15,12 +15,13 @@
 typedef signed int mp3d_fixed_t;
 #define RQ_BITDEPTH 	10   //11 is original one. table is 0-8191.
 struct fixedfloat {
-//	unsigned long mantissa :27;
-//	unsigned short exponent :5;
 	unsigned int mantissa;
 	unsigned int exponent;
 
-} rq_table[] = { //size 8207 or small
+};
+
+struct fixedfloat rq_table[] = {
+//size 8207 or small
 #include "rq_table_all.dat"
 		};
 
@@ -52,7 +53,6 @@ static int t_get_mad(int idx, int* m, int* e) {
 	requantized = (int) (((int64_t) power->mantissa * power2->mantissa) >> 28);
 	//fix the requantized
 	requantized += 9500 * (value & ((1 << (i - RQ_BITDEPTH)) - 1));
-//    requantized += 10904 * (value & ((1 << (i - RQ_BITDEPTH)) - 1));
 
 	*m = requantized;
 	*e = exp_int;
@@ -173,10 +173,6 @@ static int t_get_mad_mod2(int idx, int* m, int* e) {
 		value2 = value2 >> 1;
 	}
 
-//	power = &rq_table[(int) (value >> (i - RQ_BITDEPTH))];
-//	power2 = &rq_table[1 << (i - RQ_BITDEPTH)];
-//	exp_int += power->exponent;
-//	exp_int += power2->exponent;
 	t_get_1k_2k((int) (value >> (i - 11)), &power.mantissa, &power.exponent);
 	power2 = rq_table[1 << (i - 11)];
 	exp_int += power.exponent;
@@ -349,9 +345,9 @@ int main(void) {
 	int i;
 	puts("!!!Hello taaa World!!!"); /* prints !!!Hello World!!! */
 
-	for (i = (1 << 10); i < 8192; i++) {
+//	for (i = (1 << 10); i < 8192; i++) {
 //		printf("index %04d, mantissa:0x%x, exponent:%d\n", i, rq_table[i].mantissa, rq_table[i].exponent);
-	}
+//	}
 
 	test_mad_way();
 //	test_mad_get9500();
