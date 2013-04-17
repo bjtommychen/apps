@@ -13,7 +13,7 @@
 #include <math.h>
 
 typedef signed int mp3d_fixed_t;
-#define RQ_BITDEPTH 	9   //11 is original one. table is 0-8191.
+#define RQ_BITDEPTH 		8	//9   //11 is original one. table is 0-8191.
 struct fixedfloat {
 	unsigned int mantissa;
 	unsigned int exponent;
@@ -295,7 +295,7 @@ static int t_get_mad_mod3(int idx, int* m, int* e) {
 	 */
 }
 
-#define TEST_BITDEPTH		(9)		//10 testOK.
+#define TEST_BITDEPTH		(RQ_BITDEPTH)		//10 testOK.
 static inline int t_get_1k(int idx, int* m, int* e) {
 	unsigned int m0, e0;
 
@@ -354,7 +354,21 @@ static int t_get_mad_mod4(int idx, int* m, int* e) {
 	exp_int += power2.exponent;
 
 	requantized = (int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+//	printf(" result is %x. %d\n", requantized, exp_int);
 
+#if 1	//Add below to make the 'requantized' Q27, same as the ref table.
+	value2 = requantized >> 16;
+	i = 0;
+	while (value2) {
+		i++;
+		value2 = value2 >> 1;
+	}
+
+//    printf("i is %d.", i);
+	requantized <<= ((27 - 16) - i);
+	exp_int -= ((27 - 16) - i);
+//    printf("exp_int is %d.", exp_int);
+#endif
 	*m = requantized;
 	*e = exp_int;
 	return (idx & ((1 << (i - RQ_BITDEPTH)) - 1));
@@ -369,6 +383,9 @@ static int t_get_mad_mod4(int idx, int* m, int* e) {
 	 RQ_BITDEPTH == 9
 	 Average percent diff is 0.000026%
 	 Max percent diff is 0.000084%
+	 RQ_BITDEPTH == 8
+	 Average percent diff is 0.000109%
+	 Max percent diff is 0.000335%
 	 *
 	 */
 }
@@ -416,6 +433,16 @@ void test_mad_way() {
 //		t_get_mad_mod2(i, &m2, &e2);
 //		t_get_mad_mod3(i, &m2, &e2);
 		t_get_mad_mod4(i, &m2, &e2);
+
+		if (e2 < e1) {
+			// Make e2 == e1, for easy compare.
+//			printf("m2:%x, e2:%d\n", m2, e2);
+//			printf("m1:%x, e1:%d\n", m2, e2);
+			m2 >>= (e1 - e2);
+			e2 = e1;
+//			printf("m2:%x, e2:%d\n\n", m2, e2);
+		}
+
 		if (e2 >= e1) {
 			diff = (m2 << (e2 - e1)) - m1;
 			diff_abs = abs(diff);
@@ -423,8 +450,10 @@ void test_mad_way() {
 			if (diff_per > diff_max)
 				diff_max = diff_per;
 			diff_per_total += diff_per;
-		} else
+		} else {
+			printf("Error: need %d >= %d failed.\n", e2, e1);
 			exit(1);
+		}
 		printf("\tMad is 0x%08x, %d. diff 0x%08x 0x%08x, %f%%   ", m2, e2, diff,
 				diff_abs, diff_per);
 		printf("\n");
@@ -522,7 +551,7 @@ void test_mad_get9500() {
  */
 int main(void) {
 	int i;
-	puts("!!!Hello taaa World!!!"); /* prints !!!Hello World!!! */
+	puts("!!!Hello the World!!!"); /* prints !!!Hello World!!! */
 
 //	for (i = (1 << 10); i < 8192; i++) {
 //		printf("index %04d, mantissa:0x%x, exponent:%d\n", i, rq_table[i].mantissa, rq_table[i].exponent);
