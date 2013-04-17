@@ -13,14 +13,14 @@
 #include <math.h>
 
 typedef signed int mp3d_fixed_t;
-#define RQ_BITDEPTH 	11   //11 is original one. table is 0-8191.
+#define RQ_BITDEPTH 	10   //11 is original one. table is 0-8191.
 struct fixedfloat {
 //	unsigned long mantissa :27;
 //	unsigned short exponent :5;
 	unsigned int mantissa;
 	unsigned int exponent;
 
-}const rq_table[] = { //size 8207 or small
+} rq_table[] = { //size 8207 or small
 #include "rq_table_all.dat"
 		};
 
@@ -126,6 +126,80 @@ static int t_get_mad_mod1(int idx, int* m, int* e) {
 	 */
 }
 
+// Only half table when 1k-2k.
+static int t_get_1k_2k(int idx, int* m, int* e) {
+
+	unsigned int m0, e0;
+	unsigned int m1, e1;
+
+	m0 = rq_table[idx & 0xfffe].mantissa;
+	e0 = rq_table[idx & 0xfffe].exponent;
+	m1 = rq_table[(idx & 0xfffe) + 2].mantissa;
+	e1 = rq_table[(idx & 0xfffe) + 2].exponent;
+
+	if (idx & 1) {
+		if (e0 == e1) {
+			*m = (m0 + m1) / 2;
+			*e = e0;
+		} else {
+			printf(" e0 diff e1 \n");
+			printf(" %x %x %x %x ", m0, e0, m1, e1);
+			*m = ((m0 >> (e1 - e0)) + m1) / 2;
+			*e = e1;
+		}
+	} else {
+		*m = m0;
+		*e = e0;
+	}
+	return 0;
+}
+
+#define RQ_BITDEPTH_TEST	11
+static int t_get_mad_mod2(int idx, int* m, int* e) {
+	int value2, value = idx;
+	int i;
+	struct fixedfloat power, power2;
+	int exp_int = 0;
+	int requantized;
+
+	if (value > 1024 && value < 2048) {
+		return t_get_1k_2k(idx, m, e);
+	}
+
+	value2 = value;
+	i = 0;
+	while (value2) {
+		i++;
+		value2 = value2 >> 1;
+	}
+
+//	power = &rq_table[(int) (value >> (i - RQ_BITDEPTH))];
+//	power2 = &rq_table[1 << (i - RQ_BITDEPTH)];
+//	exp_int += power->exponent;
+//	exp_int += power2->exponent;
+	t_get_1k_2k((int) (value >> (i - 11)), &power.mantissa, &power.exponent);
+	power2 = rq_table[1 << (i - 11)];
+	exp_int += power.exponent;
+	exp_int += power2.exponent;
+
+	requantized = (int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+	//fix the requantized
+	requantized += 9500 * (value & ((1 << (i - 11)) - 1));
+
+	end: *m = requantized;
+	*e = exp_int;
+	return (idx & ((1 << (i - RQ_BITDEPTH)) - 1));
+
+	/*
+	 *
+	 Average percent diff is 0.008014%
+	 Max percent diff is 0.037893%
+
+	 *
+	 */
+
+}
+
 void test1() {
 	int i;
 	int diff_m, diff_exp, diff;
@@ -165,7 +239,8 @@ void test_mad_way() {
 		t_get_table(i, &m1, &e1);
 		printf("\tTable is 0x%08x, %d.", m1, e1);
 //		t_get_mad(i, &m2, &e2);
-		t_get_mad_mod1(i, &m2, &e2);
+//		t_get_mad_mod1(i, &m2, &e2);
+		t_get_mad_mod2(i, &m2, &e2);
 		if (e2 >= e1) {
 			diff = (m2 << (e2 - e1)) - m1;
 			diff_abs = abs(diff);
@@ -240,6 +315,18 @@ void test_mad_get9500() {
 	 * Average percent diff is 9904.201172%
 	 Max percent diff is 19463.000000%
 
+	 RQ_BITDEPTH:10
+	 1024 - 18028
+	 1725 - 6873
+	 3447 - 11121
+	 3449 - 814
+	 4095 - 1420
+	 4097 - 4039
+	 6895 - 3004
+	 6897 - 6251
+
+
+	 RQ_BITDEPTH:11
 	 2049 - 17340
 	 2896 - 19463
 	 2898 - 9734
