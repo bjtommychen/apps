@@ -13,7 +13,7 @@
 #include <math.h>
 
 typedef signed int mp3d_fixed_t;
-#define RQ_BITDEPTH 	10   //11 is original one. table is 0-8191.
+#define RQ_BITDEPTH 	9   //11 is original one. table is 0-8191.
 struct fixedfloat {
 	unsigned int mantissa;
 	unsigned int exponent;
@@ -127,10 +127,14 @@ static int t_get_mad_mod1(int idx, int* m, int* e) {
 }
 
 // Only half table when 1k-2k.
-static int t_get_1k_2k(int idx, int* m, int* e) {
+static inline int t_get_1k_2k(int idx, int* m, int* e) {
 
 	unsigned int m0, e0;
 	unsigned int m1, e1;
+
+	if (idx > 2048) {
+		exit(1);
+	}
 
 	m0 = rq_table[idx & 0xfffe].mantissa;
 	e0 = rq_table[idx & 0xfffe].exponent;
@@ -156,11 +160,86 @@ static int t_get_1k_2k(int idx, int* m, int* e) {
 
 #define RQ_BITDEPTH_TEST	11
 static int t_get_mad_mod2(int idx, int* m, int* e) {
-	int value2, value = idx;
+	unsigned int value2, value = idx;
 	int i;
-	struct fixedfloat power, power2;
-	int exp_int = 0;
-	int requantized;
+	struct fixedfloat power, power1, power2;
+	unsigned int exp_int = 0;
+	unsigned int requantized;
+
+	if (value > 1024 && value < 2048) {
+		return t_get_1k_2k(idx, m, e);
+	}
+
+	value2 = value;
+	i = 0;
+	while (value2) {
+		i++;
+		value2 = value2 >> 1;
+	}
+
+#if 0
+	t_get_1k_2k((int) (value >> (i - 11)), &power.mantissa, &power.exponent);
+	power2 = rq_table[1 << (i - 11)];
+	exp_int += power.exponent;
+	exp_int += power2.exponent;
+
+	requantized = (int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+	//fix the requantized
+	requantized += 9500 * (value & ((1 << (i - 11)) - 1));
+#else
+	t_get_1k_2k((int) (value >> (i - 11)), &power.mantissa, &power.exponent);
+	t_get_1k_2k((int) (value >> (i - 11)) + 1, &power1.mantissa,
+			&power1.exponent);
+
+	if (power.exponent == power1.exponent) {
+//		printf("before %x, %d, %d.\n", power.mantissa, (value & ((1 << (i - 11)) - 1)),  (i - 11));
+//		printf("before %x, %d, %d.\n", power1.mantissa, (value & ((1 << (i - 11)) - 1)),  (i - 11));
+//		printf("%x\n", (power1.mantissa - power.mantissa)>> (i - 11));
+//		power.mantissa = power.mantissa  + ((power1.mantissa - power.mantissa) /** (value & ((1 << (i - 11)) - 1))*/) >> (i - 11);
+		power.mantissa += (((power1.mantissa - power.mantissa)
+				* (value & ((1 << (i - 11)) - 1))) >> (i - 11));
+//		printf("after %x\n", power.mantissa);
+
+		power2 = rq_table[1 << (i - 11)];
+		exp_int += power.exponent;
+		exp_int += power2.exponent;
+
+		requantized =
+				(int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+	} else {
+		printf("\nfire \n");
+		power2 = rq_table[1 << (i - 11)];
+		exp_int += power.exponent;
+		exp_int += power2.exponent;
+
+		requantized =
+				(int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+		//fix the requantized
+		requantized += 9500 * (value & ((1 << (i - 11)) - 1));
+
+	}
+
+#endif
+
+	*m = requantized;
+	*e = exp_int;
+	return (idx & ((1 << (i - RQ_BITDEPTH)) - 1));
+
+	/*
+	 *
+	 Average percent diff is 0.008014%
+	 Max percent diff is 0.037893%
+
+	 *
+	 */
+}
+
+static int t_get_mad_mod3(int idx, int* m, int* e) {
+	unsigned int value2, value = idx;
+	int i;
+	struct fixedfloat power, power1, power2;
+	unsigned int exp_int = 0;
+	unsigned int requantized;
 
 	if (value > 1024 && value < 2048) {
 		return t_get_1k_2k(idx, m, e);
@@ -174,15 +253,34 @@ static int t_get_mad_mod2(int idx, int* m, int* e) {
 	}
 
 	t_get_1k_2k((int) (value >> (i - 11)), &power.mantissa, &power.exponent);
-	power2 = rq_table[1 << (i - 11)];
-	exp_int += power.exponent;
-	exp_int += power2.exponent;
+	t_get_1k_2k((int) (value >> (i - 11)) + 1, &power1.mantissa,
+			&power1.exponent);
 
-	requantized = (int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
-	//fix the requantized
-	requantized += 9500 * (value & ((1 << (i - 11)) - 1));
+	if (power.exponent == power1.exponent) {
+		power.mantissa += (((power1.mantissa - power.mantissa)
+				* (value & ((1 << (i - 11)) - 1))) >> (i - 11));
 
-	end: *m = requantized;
+		power2 = rq_table[1 << (i - 11)];
+		exp_int += power.exponent;
+		exp_int += power2.exponent;
+
+		requantized =
+				(int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+	} else {
+		printf("\nfire \n");
+		power1.mantissa <<= (power1.exponent - power.exponent);
+		power.mantissa += (((power1.mantissa - power.mantissa)
+				* (value & ((1 << (i - 11)) - 1))) >> (i - 11));
+
+		power2 = rq_table[1 << (i - 11)];
+		exp_int += power.exponent;
+		exp_int += power2.exponent;
+
+		requantized =
+				(int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+	}
+
+	*m = requantized;
 	*e = exp_int;
 	return (idx & ((1 << (i - RQ_BITDEPTH)) - 1));
 
@@ -191,9 +289,88 @@ static int t_get_mad_mod2(int idx, int* m, int* e) {
 	 Average percent diff is 0.008014%
 	 Max percent diff is 0.037893%
 
+	 Average percent diff is 0.000005%
+	 Max percent diff is 0.000021%
 	 *
 	 */
+}
 
+#define TEST_BITDEPTH		(9)		//10 testOK.
+static inline int t_get_1k(int idx, int* m, int* e) {
+	unsigned int m0, e0;
+
+	if (idx > (1 << TEST_BITDEPTH)) {
+		exit(1);
+	}
+
+//	printf("@%d, ", idx);
+	m0 = rq_table[idx].mantissa;
+	e0 = rq_table[idx].exponent;
+
+//	printf("%x. %d\n", m0, e0);
+
+	*m = m0;
+	*e = e0;
+	return 0;
+}
+
+static int t_get_mad_mod4(int idx, int* m, int* e) {
+	unsigned int value2, value = idx;
+	int i;
+	struct fixedfloat power, power1, power2;
+	unsigned int exp_int = 0;
+	unsigned int requantized;
+
+	value2 = value;
+	i = 0;
+	while (value2) {
+		i++;
+		value2 = value2 >> 1;
+	}
+
+	t_get_1k((int) (value >> (i - TEST_BITDEPTH)), &power.mantissa,
+			&power.exponent);
+	t_get_1k((int) (value >> (i - TEST_BITDEPTH)) + 1, &power1.mantissa,
+			&power1.exponent);
+
+//	printf("before %x, %d. %d, %d.\n", power.mantissa, power.mantissa,
+//			(value & ((1 << (i - TEST_BITDEPTH)) - 1)), (i - TEST_BITDEPTH));
+//	printf("before %x, %d. %d, %d.\n", power1.mantissa, power1.mantissa,
+//			(value & ((1 << (i - TEST_BITDEPTH)) - 1)), (i - TEST_BITDEPTH));
+
+	if (power.exponent != power1.exponent) {
+		power1.mantissa <<= (power1.exponent - power.exponent);
+	}
+//	printf("before %x, %d. %d, %d.\n", power1.mantissa, power1.mantissa,
+//			(value & ((1 << (i - TEST_BITDEPTH)) - 1)), (i - TEST_BITDEPTH));
+
+	power.mantissa +=
+			(((power1.mantissa - power.mantissa)
+					* (value & ((1 << (i - TEST_BITDEPTH)) - 1)))
+					>> (i - TEST_BITDEPTH));
+
+	power2 = rq_table[1 << (i - TEST_BITDEPTH)];
+	exp_int += power.exponent;
+	exp_int += power2.exponent;
+
+	requantized = (int) (((int64_t) power.mantissa * power2.mantissa) >> 28);
+
+	*m = requantized;
+	*e = exp_int;
+	return (idx & ((1 << (i - RQ_BITDEPTH)) - 1));
+
+	/*
+	 *
+	 Average percent diff is 0.008014%
+	 Max percent diff is 0.037893%
+	 RQ_BITDEPTH == 10
+	 Average percent diff is 0.000005%
+	 Max percent diff is 0.000021%
+	 RQ_BITDEPTH == 9
+	 Average percent diff is 0.000026%
+	 Max percent diff is 0.000084%
+	 *
+	 */
 }
 
 void test1() {
@@ -236,7 +413,9 @@ void test_mad_way() {
 		printf("\tTable is 0x%08x, %d.", m1, e1);
 //		t_get_mad(i, &m2, &e2);
 //		t_get_mad_mod1(i, &m2, &e2);
-		t_get_mad_mod2(i, &m2, &e2);
+//		t_get_mad_mod2(i, &m2, &e2);
+//		t_get_mad_mod3(i, &m2, &e2);
+		t_get_mad_mod4(i, &m2, &e2);
 		if (e2 >= e1) {
 			diff = (m2 << (e2 - e1)) - m1;
 			diff_abs = abs(diff);
