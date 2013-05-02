@@ -18,7 +18,7 @@ import sys
 __author__ = 'Android'
 
 class Options(object):
-    def __init__(self):
+  def __init__(self):
     return
   verbose = 0
   maxrepeat = 4
@@ -36,7 +36,7 @@ def Usage():
 
 def HandleFiles(src, dst):
   """Update dst if it is different from src."""
-  oldmode = -1 #@IndentOk
+  oldmode = -1
   count = 0
   print 'Copying from %s to %s' % (src, dst)
   f = open(src, "r")
@@ -45,7 +45,7 @@ def HandleFiles(src, dst):
 	line = f.readline()
 	if len(line) == 0: break;
 	
-	mode = 0 #@IndentOk
+	mode = 0
 	if (line.find('OUT') != -1):
 		mode = 1
 	elif (line.find('IN') != -1):
