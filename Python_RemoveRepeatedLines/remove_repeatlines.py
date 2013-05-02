@@ -2,20 +2,10 @@
 #
 # Copyright 2010-2012 Google Inc. All Rights Reserved.
 
-"""Renderscript Compiler Test.
-
-Runs subdirectories of tests for the Renderscript compiler.
-"""
-
-#import filecmp
-#import glob
 import os
-#import re
-#import shutil
-#import subprocess
 import sys
 
-__author__ = 'Android'
+__author__ = 'Tommy'
 
 class Options(object):
     def __init__(self):
@@ -78,10 +68,7 @@ def HandleFiles(src, dst):
   
 ##################################################################
 def main():
-    passed = 0
     failed = 0
-    files = []
-    failed_tests = []
     fout = 'out.txt'
     
     if len(sys.argv) < 2:
