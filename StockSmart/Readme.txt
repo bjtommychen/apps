@@ -1,3 +1,7 @@
+
+K-chart
+http://chartapi.finance.yahoo.com/instrument/1.0/600036.ss/chartdata;type=quote;range=1m
+
 0: "大秦铁路"，股票名字；
 1: "27.55"，今日开盘价；
 2: "27.25"，昨日收盘价；
