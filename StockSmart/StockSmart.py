@@ -6,6 +6,14 @@ import sys
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
+def test_google():
+    google = urllib2.urlopen('http://hq.sinajs.cn/?list=s_sh000001')  
+    print 'http header:\n', google.info()  
+    print 'http status:\n', google.getcode()  
+    print 'url:', google.geturl()  
+    for line in google: 
+        print line,  
+    google.close()  
 
 def get_stockindex(code):
         url = 'http://hq.sinajs.cn/?list=%s' % code
@@ -37,6 +45,8 @@ def get_all_price(code_list):
     for code in code_list:
         get_price(code)
 
+#test_google()
 get_stockindex('s_sh000001')
+
 code_list = ['sh600036', 'sh600030']
 get_all_price(code_list)
