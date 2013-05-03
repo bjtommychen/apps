@@ -1,6 +1,26 @@
 
+ref:
+http://docs.python.org/2/library/xml.etree.elementtree.html
+
 K-chart
 http://chartapi.finance.yahoo.com/instrument/1.0/600036.ss/chartdata;type=quote;range=1m
+
+<p ref="20130403">
+<v>12.7900</v>
+<v>12.9800</v>
+<v>12.5800</v>
+<v>12.6000</v>
+<v>63290800</v>
+</p>
+<p ref="20130404">
+<v>12.7900</v>
+<v>12.7900</v>
+<v>12.7900</v>
+<v>12.7900</v>
+<v>0</v>
+</p>
+
+
 
 0: "大秦铁路"，股票名字；
 1: "27.55"，今日开盘价；
