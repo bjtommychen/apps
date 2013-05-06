@@ -21,30 +21,28 @@ def test_google():
     google.close()  
 
 def get_stockindex(code):
-        url = 'http://hq.sinajs.cn/?list=%s' % code
-        req = urllib2.Request(url)
-        content = urllib2.urlopen(req).read()
-        strs = content.decode('gbk')
-        data = strs.split('"')[1].split(',')
-        name = "%s" % data[0]
-        price_current = "%-6s" % float(data[1])
-        change_percent = "%s" % float(data[3])
-        print 'name:%s, curr:%s, change:%s%%' %(name,price_current,change_percent)
+    url = 'http://hq.sinajs.cn/?list=%s' % code
+    req = urllib2.Request(url)
+    content = urllib2.urlopen(req).read()
+    strs = content.decode('gbk')
+    data = strs.split('"')[1].split(',')
+    name = "%s" % data[0]
+    price_current = "%-6s" % float(data[1])
+    change_percent = "%s" % float(data[3])
+    print 'name:%s, curr:%s, change:%s%%' %(name,price_current,change_percent)
         
 def get_price(code):
-        url = 'http://hq.sinajs.cn/?list=%s' % code
-        req = urllib2.Request(url)
+    url = 'http://hq.sinajs.cn/?list=%s' % code
+    req = urllib2.Request(url)
 #        req.set_proxy('proxy.XXX.com:911', 'http')
-        content = urllib2.urlopen(req).read()
-#        print 'content is %s' %content
-        strs = content.decode('gbk')
-#        print 'tmp is %s\n' %(str.split('"')[0])
-        data = strs.split('"')[1].split(',')
-        name = "%s" % data[0]
-        price_current = "%-5s" % float(data[3])
-        change_percent = ( float(data[3]) - float(data[2]) )*100 / float(data[2])
-        change_percent = "%s" % round (change_percent, 2)
-        print 'name:%s, curr:%s, change:%s%%' %(name,price_current,change_percent)
+    content = urllib2.urlopen(req).read()
+    strs = content.decode('gbk')
+    data = strs.split('"')[1].split(',')
+    name = "%s" % data[0]
+    price_current = "%-5s" % float(data[3])
+    change_percent = ( float(data[3]) - float(data[2]) )*100 / float(data[2])
+    change_percent = "%s" % round (change_percent, 2)
+    print 'name:%s, curr:%s, change:%s%%' %(name,price_current,change_percent)
 
 def get_all_price(code_list):
     for code in code_list:
@@ -61,7 +59,7 @@ def get_K_char(code, len):
     print root.tag, root.attrib
 #    intro = root.find('values-meta').text.encode('gb2312')  
 #    print intro
-    for i in range(5):
+    for i in range(0, 5, 1):
         print root[1][i].tag, root[1][i].attrib
             
     for child in root:
