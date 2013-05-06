@@ -2,6 +2,7 @@
 #Used to get stock info.
 
 import urllib2
+import urllib
 import sys
 try:
     import xml.etree.cElementTree as ET
@@ -10,6 +11,21 @@ except ImportError:
 
 
 print 'System Default Encoding:',sys.getdefaultencoding()
+
+percent_start = 10
+def callback(a, b, c):  
+    global percent_start
+    per = 100.0 * a * b / c  
+    if per > 100:  
+        per = 100 
+    if (per > percent_start) :
+        print '%.2f%%' % per,
+        percent_start += 10  
+
+def test_sina():  
+    url = 'http://www.sina.com.cn'  
+    local = 'sina.html'  
+    urllib.urlretrieve(url, local, callback)
 
 def test_google():
     google = urllib2.urlopen('http://hq.sinajs.cn/?list=s_sh000001')  
@@ -20,7 +36,10 @@ def test_google():
         print line,  
     google.close()  
 
+
 def get_stockindex(code):
+    if(len(code)) == 0:
+        return
     url = 'http://hq.sinajs.cn/?list=%s' % code
     req = urllib2.Request(url)
     content = urllib2.urlopen(req).read()
@@ -81,39 +100,11 @@ def get_K_char(code, len):
             print 'CLOSE!',
         print
 
-
-
-
-
-
-
-
-    
-#WEATHER_URL = 'http://xml.weather.yahoo.com/forecastrss?p=%s'
-#WEATHER_NS = 'http://xml.weather.yahoo.com/ns/rss/1.0'
-#
-#def weather_for_zip(zip_code):
-#    url = WEATHER_URL % zip_code
-#    rss = et.parse(urllib2.urlopen(url)).getroot()
-#    forecasts = []
-#    for element in rss.findall('channel/item/{%s}forecast' % WEATHER_NS):
-#        forecasts.append({
-#            'date': element.get('date'),
-#            'low': element.get('low'),
-#            'high': element.get('high'),
-#            'condition': element.get('text')
-#        })
-#    ycondition = rss.find('channel/item/{%s}condition' % WEATHER_NS)
-#    return {
-#        'current_condition': ycondition.get('text'),
-#        'current_temp': ycondition.get('temp'),
-#        'forecasts': forecasts,
-#        'title': rss.findtext('channel/title')
-#    }    
-    
     
 ################################################################################
-#test_google()
+test_google()
+test_sina()
+
 get_stockindex('s_sh000001')
 
 code_list = ['sh600036', 'sh600030']
