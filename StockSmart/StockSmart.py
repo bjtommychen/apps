@@ -52,24 +52,33 @@ def get_K_char(code, len):
     url = 'http://chartapi.finance.yahoo.com/instrument/1.0/%s.ss/chartdata;type=quote;range=%s' %(code,len)
     print url    
     data=urllib2.urlopen(url).read()
-    print data
+#    print data
 #    tree = ET.ElementTree(file='doc1.xml')
 #    root = tree.getroot()
     root = ET.fromstring(data)
     print root.tag, root.attrib
-#    intro = root.find('values-meta').text.encode('gb2312')  
-#    print intro
+
     for i in range(0, 5, 1):
         print root[1][i].tag, root[1][i].attrib
             
     for child in root:
         print child.tag, child.attrib
 
+    for child in root.findall('reference-meta'):
+        min_value = child.find('min').text
+        max_value = child.find('max').text
+        print min_value, max_value
+
     for daydata in root.iter('p'):
-        print daydata.attrib,
-        for i in range(5):
-            print root[1][i].attrib,
-            print daydata[i].text,
+        print 'Date', daydata.attrib.get('ref'),
+        if (float(daydata[4].text) != 0):
+            for i in range(5):
+                meta = root[1][i].attrib.get('id')
+                print meta,':',
+                price = float(daydata[i].text)
+                print "%.2f" %price,
+        else:
+            print 'CLOSE!',
         print
 
 
@@ -107,8 +116,8 @@ def get_K_char(code, len):
 #test_google()
 get_stockindex('s_sh000001')
 
-#code_list = ['sh600036', 'sh600030']
-#get_all_price(code_list)
+code_list = ['sh600036', 'sh600030']
+get_all_price(code_list)
 
 get_K_char('600036', '1m')
 
