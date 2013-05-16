@@ -1,33 +1,35 @@
 
 #Used to get stock info.
-
+import os
 import urllib2
 import urllib
 import sys
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 
 
-print 'System Default Encoding:',sys.getdefaultencoding()
-
-percent_start = 10
-def callback(a, b, c):  
+percent_start = 0
+def test_sina_callback(a, b, c):  
     global percent_start
     per = 100.0 * a * b / c  
     if per > 100:  
         per = 100 
-    if (per > percent_start) :
-        print '%.2f%%' % per,
+    if (per >= percent_start) :
+        print '%.2f%%,' % per,
         percent_start += 10  
 
 def test_sina():  
+    print '\n*** Test Sina ***'
     url = 'http://www.sina.com.cn'  
     local = 'sina.html'  
-    urllib.urlretrieve(url, local, callback)
+    urllib.urlretrieve(url, local, test_sina_callback)
+    print '\nSina home page html size', os.path.getsize(local), 'bytes!'
 
 def test_google():
+    print '\n*** Test Google ***'
     google = urllib2.urlopen('http://hq.sinajs.cn/?list=s_sh000001')  
     print 'http header:\n', google.info()  
     print 'http status:\n', google.getcode()  
@@ -64,10 +66,12 @@ def get_price(code):
     print 'name:%s, curr:%s, change:%s%%' %(name,price_current,change_percent)
 
 def get_all_price(code_list):
+    print '\n*** Test get_all_price ***'
     for code in code_list:
         get_price(code)
 
 def get_K_char(code, len):
+    print '\n*** Test get_K_char ***'
     url = 'http://chartapi.finance.yahoo.com/instrument/1.0/%s.ss/chartdata;type=quote;range=%s' %(code,len)
     print url    
     data=urllib2.urlopen(url).read()
@@ -95,20 +99,12 @@ def get_K_char(code, len):
                 meta = root[1][i].attrib.get('id')
                 print meta,':',
                 price = float(daydata[i].text)
-                print "%.2f" %price,
+                print "%.2f," %price,
         else:
             print 'CLOSE!',
         print
 
     
 ################################################################################
-test_google()
-test_sina()
 
-get_stockindex('s_sh000001')
-
-code_list = ['sh600036', 'sh600030']
-get_all_price(code_list)
-
-get_K_char('600036', '1m')
 
