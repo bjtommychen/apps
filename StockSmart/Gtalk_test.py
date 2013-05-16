@@ -5,6 +5,8 @@ import xmpp
 import time
 import sys
 
+running = True
+
 # 消息回调函数
 def messageCB(cnx, msg):
     # 显示消息发送者和内容
@@ -13,20 +15,12 @@ def messageCB(cnx, msg):
         print "Content: " + str(msg.getBody())
         # 将消息又返回给发送者
         cnx.send(xmpp.Message(str(msg.getFrom()), str(msg.getBody()), typ = 'chat'))
-
-
-#user = "tchen1973@gmail.com"
-#password = "Happyday310"
-#server = 'talk.google.com'
-#
-#jid = xmpp.JID(user)
-#connection = xmpp.Client(jid.getDomain())
-#connection.connect()
-#result = connection.auth(jid.getNode(), password,"TESTING")
-#print 'connect ok'
-
-
-
+        if (msg.getBody() == 'exit'):
+            global running
+            running = False
+#            sys.exit(0)
+        elif (msg.getBody() == 'help'):
+            cnx.send(xmpp.Message(str(msg.getFrom()), 'Help commands: exit, help.', typ = 'chat'))
 
 if __name__ == '__main__':
     # 给实例的gtalk帐号和密码
@@ -40,7 +34,7 @@ if __name__ == '__main__':
     cnx = xmpp.Client(server, debug=[])
     # 连接到google的服务器
     print 'connect...',
-    conres=cnx.connect(('talk.L.google.com',5223))
+    conres=cnx.connect(('talk.L.google.com',5222))
 #    , proxy={'host':'127.0.0.1','port':8087,})
     print 'done'
     print conres
@@ -68,12 +62,20 @@ if __name__ == '__main__':
     # 设置消息回调函数
     print 'registerHandler'
     cnx.RegisterHandler('message', messageCB)
+    print 'Enter main loop ................................'
     # 循环处理消息,如果网络断开则结束循环
     while True:
         if cnx.Process(1) == None:
             print 'Lost connection.'
             break
-    # 无用,方便windows命令窗口调试
-    while True:
+        if not running:
+            print 'Exit !!!!!!!!!!!!!!!!!!'
+            break;
         time.sleep(1)
+        print 'running:', running
+        
+    print 'Done!'
+    
+    
+    
         
