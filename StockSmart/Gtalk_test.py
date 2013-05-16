@@ -1,4 +1,4 @@
-'talk.google.com'#! /usr/bin/env python
+#! /usr/bin/env python
 # encoding=UTF-8
 
 import xmpp
@@ -8,10 +8,11 @@ import sys
 # 消息回调函数
 def messageCB(cnx, msg):
     # 显示消息发送者和内容
-    print "Sender: " + str(msg.getFrom())
-    print "Content: " + str(msg.getBody())
-    # 将消息又返回给发送者
-    cnx.send(xmpp.Message(str(msg.getFrom()), str(msg.getBody()), typ = 'chat'))
+    if msg.getBody():
+        print "Sender: " + str(msg.getFrom())
+        print "Content: " + str(msg.getBody())
+        # 将消息又返回给发送者
+        cnx.send(xmpp.Message(str(msg.getFrom()), str(msg.getBody()), typ = 'chat'))
 
 
 #user = "tchen1973@gmail.com"
@@ -39,8 +40,10 @@ if __name__ == '__main__':
     cnx = xmpp.Client(server, debug=[])
     # 连接到google的服务器
     print 'connect...',
-    conres = cnx.connect(server=('talk.google.com', 5223))
+    conres=cnx.connect(('talk.L.google.com',5223))
+#    , proxy={'host':'127.0.0.1','port':8087,})
     print 'done'
+    print conres
     
     if not conres:
         print "Unable to connect to server %s!" %server
@@ -49,8 +52,8 @@ if __name__ == '__main__':
         print "Warning: unable to estabilish secure connection - TLS failed!"
     
     # 用户身份认证
-    print 'auth...',
-    authres = cnx.auth(username, pwd)
+    print 'auth...', jid.getNode()
+    authres = cnx.auth(jid.getNode(), pwd)
     print 'done'
 
     if not authres:
