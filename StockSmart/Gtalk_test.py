@@ -1,8 +1,9 @@
-#! /usr/bin/env python
+'talk.google.com'#! /usr/bin/env python
 # encoding=UTF-8
 
 import xmpp
 import time
+import sys
 
 # 消息回调函数
 def messageCB(cnx, msg):
@@ -10,21 +11,54 @@ def messageCB(cnx, msg):
     print "Sender: " + str(msg.getFrom())
     print "Content: " + str(msg.getBody())
     # 将消息又返回给发送者
-    cnx.send(xmpp.Message(str(msg.getFrom()), str(msg.getBody())))
+    cnx.send(xmpp.Message(str(msg.getFrom()), str(msg.getBody()), typ = 'chat'))
+
+
+#user = "tchen1973@gmail.com"
+#password = "Happyday310"
+#server = 'talk.google.com'
+#
+#jid = xmpp.JID(user)
+#connection = xmpp.Client(jid.getDomain())
+#connection.connect()
+#result = connection.auth(jid.getNode(), password,"TESTING")
+#print 'connect ok'
+
+
+
 
 if __name__ == '__main__':
     # 给实例的gtalk帐号和密码
-    login = 'tchen1973@gmail.com'
+    username = 'tchen1973@gmail.com'
     pwd = 'Happyday310'
     # 创建client对象
-    cnx = xmpp.Client('gmail.com', debug=[])
+    gmail_account = username
+    jid=xmpp.JID(gmail_account)
+    server = jid.getDomain()
+    print jid.getDomain()
+    cnx = xmpp.Client(server, debug=[])
     # 连接到google的服务器
-    print 'connect',
-    cnx.connect(server=('talk.google.com', 443))
+    print 'connect...',
+    conres = cnx.connect(server=('talk.google.com', 5223))
     print 'done'
+    
+    if not conres:
+        print "Unable to connect to server %s!" %server
+        sys.exit(1)
+    if conres<>'tls':
+        print "Warning: unable to estabilish secure connection - TLS failed!"
+    
     # 用户身份认证
-    print 'auth'
-    cnx.auth(login, pwd, 'UDPonNAT')
+    print 'auth...',
+    authres = cnx.auth(username, pwd)
+    print 'done'
+
+    if not authres:
+        print "Unable to authorize on %s - Plsese check your name/password."%server
+        sys.exit(1)
+    if authres<>"sasl":
+        print "Warning: unable to perform SASL auth os %s. Old authentication method used!"%server    
+    
     # 告诉gtalk服务器用户已经上线
     print 'sendInitPresence'
     cnx.sendInitPresence()
