@@ -14,17 +14,29 @@ def test_StockSmart():
     get_all_price(code_list)
     get_K_char('600036', '1m')
 
-
-if  __name__ == '__main__':
-    print 'This program is being run by itself'
-#    test_StockSmart()
+def stock_daemon():
+    price_old = 0.0
 
     text = ''
-    for code in code_list:
-        name, price_current, change_percent = get_price(code)
-        text += '%s: %s, %s%%' %(name,price_current,change_percent)
-        text += '\n'
-#        text += name + price_current + change_percent
-#    print text
-    Gtalk_send(text)
-    time.sleep(20)
+    while True:
+        index = 0
+        diff = False
+        text = ''
+        text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n'
+        for code in code_list:
+            name, price_current, change_percent = get_price(code)
+            if index == 0:
+                diff = price_current != price_old
+                if diff:
+                    price_old = price_current
+            text += '%s: %s, %s%%' %(name,price_current,change_percent)
+            text += '\n'
+            index += 1    
+        if diff:
+            Gtalk_send(text)
+        else:
+            print 'same ',
+        time.sleep(60)
+        
+if  __name__ == '__main__':
+    stock_daemon()        
