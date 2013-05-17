@@ -32,11 +32,11 @@ def stock_daemon():
             text += '%s: %s, %s%%' %(name,price_current,change_percent)
             text += '\n'
             index += 1    
-        if diff:
+        if diff | True:
             Gtalk_send(text)
         else:
             print 'same ',
-        time.sleep(6)
+        time.sleep(15)
         
 if  __name__ == '__main__':
     stock_daemon()        
