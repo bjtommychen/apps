@@ -40,6 +40,18 @@ def messageCB(conn, msg):
             text += str(msg.getBody())
         conn.send(xmpp.Message(str(msg.getFrom()), text, typ = 'chat'))
 
+def presenceHandler(conn, presence):
+    if presence:
+        print "-"*100
+        print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
+        print "~"*100
+        if presence.getType()=='subscribe':
+            jid = presence.getFrom().getStripped()
+            """ Authorise JID 'jid'. Works only if these JID requested auth previously. """
+            conn.getRoster().Authorize(jid)
+            print 'Authorize'  + jid           
+#            self.authorize(jid)
+
 def Gtalk_enable_send(onoff):
     global enable_send
     enable_send = onoff
@@ -99,6 +111,7 @@ def Gtalk_init():
     # Register Callback
     log_d ('registerHandler')
     conn.RegisterHandler('message', messageCB)
+    conn.RegisterHandler('presence', presenceHandler)
     
 def Gtalk_run():
     thread.start_new_thread(gtalk_mainloop, ())
@@ -119,6 +132,7 @@ def gtalk_mainloop():
         print '$',
         time.sleep(1)
     log_i ('gtalk_mainloop Done!')
+    conn.disconnected()
 
 def Gtalk_exit():
     global running

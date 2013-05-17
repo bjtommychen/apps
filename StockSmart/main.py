@@ -36,7 +36,7 @@ def stock_daemon():
             Gtalk_send(text)
         else:
             print 'same ',
-        time.sleep(60)
+        time.sleep(6)
         
 if  __name__ == '__main__':
     stock_daemon()        
