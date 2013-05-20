@@ -24,7 +24,9 @@ def log_i(string):
         print string
         
 # Msg call back
-def messageCB(conn, msg):
+def messageCB(contex, msg):
+#     if contex.Process(1) == None:
+#         return
     if msg.getBody():
         log_d ("Sender: " + str(msg.getFrom()))
         log_d ("Content: " + str(msg.getBody()))
@@ -38,9 +40,9 @@ def messageCB(conn, msg):
             text = string_help
         else:
             text += str(msg.getBody())
-        conn.send(xmpp.Message(str(msg.getFrom()), text, typ = 'chat'))
+        contex.send(xmpp.Message(str(msg.getFrom()), text, typ = 'chat'))
 
-def presenceHandler(conn, presence):
+def presenceHandler(contex, presence):
     if presence:
         print "-"*100
         print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
@@ -48,7 +50,7 @@ def presenceHandler(conn, presence):
         if presence.getType()=='subscribe':
             jid = presence.getFrom().getStripped()
             """ Authorise JID 'jid'. Works only if these JID requested auth previously. """
-            conn.getRoster().Authorize(jid)
+            contex.getRoster().Authorize(jid)
             print 'Authorize'  + jid           
 #            self.authorize(jid)
 
@@ -63,10 +65,10 @@ def Gtalk_send(msg):
         if not conn:
             Gtalk_init()
             Gtalk_run()
-            time.sleep(1)
+            time.sleep(2)
         log_d('send msg:' + msg)    
-        res = conn.send(xmpp.Message('chen.tao.tommy@gmail.com/Talk.v1040ADDDBD8', msg, typ = 'chat'))
-        log_d( 'send' + res)
+        res = conn.send(xmpp.Message('chen.tao.tommy@gmail.com', msg, typ = 'chat'))
+        log_d( 'send ' + res)
     else:
         log_d(msg)
 
@@ -112,9 +114,11 @@ def Gtalk_init():
     log_d ('registerHandler')
     conn.RegisterHandler('message', messageCB)
     conn.RegisterHandler('presence', presenceHandler)
+    time.sleep(2)
     
 def Gtalk_run():
     thread.start_new_thread(gtalk_mainloop, ())
+    time.sleep(1)
     Gtalk_send('Gtalk stock robot v1.0 ---> online!')
     Gtalk_send('Welcome Tommy')
     
@@ -122,8 +126,10 @@ def gtalk_mainloop():
     global conn    
     log_i ('Enter main loop ................................')
     while True:
+        global conn
         if conn.Process(1) == None:
             log_d ('Lost connection.')
+            conn = 0
             break
         if not running:
             log_d ('Exit !!!!!!!!!!!!!!!!!!')
@@ -132,7 +138,9 @@ def gtalk_mainloop():
         print '$',
         time.sleep(1)
     log_i ('gtalk_mainloop Done!')
-    conn.disconnected()
+    if conn:
+        conn.disconnected()
+        conn = 0
 
 def Gtalk_exit():
     global running
