@@ -15,6 +15,9 @@ def test_StockSmart():
     get_K_char('600036', '1m')
 
 def stock_daemon():
+    '''Get the price of stock list, then send it out through Gtalk.
+    
+    No arguments. '''
     price_old = 0.0
 
     text = ''
