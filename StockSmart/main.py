@@ -20,6 +20,7 @@ def stock_daemon():
     No arguments. '''
     price_old = 0.0
 
+    Gtalk_enable_send(True)
     text = ''
     while True:
         index = 0
@@ -35,7 +36,7 @@ def stock_daemon():
             text += '%s: %s, %s%%' %(name,price_current,change_percent)
             text += '\n'
             index += 1    
-        if diff | True:
+        if diff or True:
             Gtalk_send(text)
         else:
             print 'same ',

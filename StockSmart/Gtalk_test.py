@@ -31,7 +31,7 @@ def messageCB(contex, msg):
         log_d ("Sender: " + str(msg.getFrom()))
         log_d ("Content: " + str(msg.getBody()))
         text = ''
-        text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.gmtime()) + '\n'
+        text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n'
         if (msg.getBody() == 'exit'):
             global running
             running = False
