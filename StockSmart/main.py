@@ -1,5 +1,8 @@
 
 import time
+import sys
+import os
+import socket
 from StockSmart import *
 from Gtalk_test import *
 
@@ -34,45 +37,65 @@ def stock_daemon():
     
     Gtalk_enable_send(True)
     text = ''
-    while True:
-        index = 0
-        diff = False
-        
-        if market_open != check_market_open():
-            price_old = 0.
-            market_open = check_market_open()
-        text = ''
-        #get time
-        text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
-        if not market_open:
-            text += 'Close'
-        text += '\n'
-        #get price
-        for code in code_list:
-            name, price_current, change_percent = get_price(code)
-            if price_current == 0.:
-                print 'get price failed!'
-                break
-            if index == 0:
-                if price_old == 0.:
-                    price_old = price_current
-                    Gtalk_send("stock_daemon v1.0 Online.")
-                    diff = True
-                if price_current != price_old:
-                    diff_ppk = abs((price_current - price_old)*1000/price_old)
-                    print 'diff_ppk is', diff_ppk,
-                    diff = diff_ppk > 2
-                if diff:
-                    price_old = price_current
-            text += '%s: %s, %s%%' %(name,price_current,change_percent)
+    try:
+        while True:
+            index = 0
+            diff = False
+            
+            if market_open != check_market_open():
+                price_old = 0.
+                market_open = check_market_open()
+            text = ''
+            #get time
+            text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
+            if not market_open:
+                text += 'Close'
             text += '\n'
-            index += 1    
-        if diff:# or True:
-            Gtalk_send(text)
-        else:
-            print 'same ',
-        time.sleep(15)
+            #get price
+            for code in code_list:
+                name, price_current, change_percent = get_price(code)
+                if price_current == 0.:
+                    print 'get price failed!'
+                    break
+                if index == 0:
+                    if price_old == 0.:
+                        price_old = price_current
+                        Gtalk_send("stock_daemon v1.0 Online." + socket.gethostname())
+                        diff = True
+                    if price_current != price_old:
+                        diff_ppk = abs((price_current - price_old)*1000/price_old)
+                        print 'diff_ppk is', diff_ppk,
+                        diff = diff_ppk > 2
+                    if diff:
+                        price_old = price_current
+                text += '%s: %s, %s%%' %(name,price_current,change_percent)
+                text += '\n'
+                index += 1    
+            if diff:# or True:
+                Gtalk_send(text)
+            else:
+                print 'same ',
+            time.sleep(15)
+            if not Gtalk_isRunning():
+                Gtalk_send("Gtalk sleep, wakeup it!")
+    except KeyboardInterrupt:
+        print 'Exception!'
+    finally:
+        Gtalk_exit()
+        time.sleep(1)
+        
         
 if  __name__ == '__main__':
-    #test_StockSmart()
-    stock_daemon()        
+    if len(sys.argv)<2:
+        print 'No action specified.'
+        print '--1: test_StockSmart'
+        print '--2: stock_daemon'
+        sys.exit()
+            
+    if sys.argv[1].startswith('--'):
+        option=sys.argv[1][2:]            
+        # fetch sys.argv[1] but without the first two characters
+        if option=='1':
+            test_StockSmart()
+        elif option=='2':
+            stock_daemon()    

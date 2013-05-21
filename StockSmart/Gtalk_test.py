@@ -7,7 +7,7 @@ import sys
 import thread
 
 # Global
-running = True
+gtalk_running = True
 conn = 0
 enable_send = True
 
@@ -33,8 +33,8 @@ def messageCB(contex, msg):
         text = ''
         text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n'
         if (msg.getBody() == 'exit'):
-            global running
-            running = False
+            global gtalk_running
+            gtalk_running = False
             text += 'Bye!'
         elif (msg.getBody() == 'help'):
             text = string_help
@@ -122,28 +122,37 @@ def Gtalk_run():
     Gtalk_send('Welcome Tommy:)')
     
 def gtalk_mainloop():    
-    global conn    
-    log_i ('Enter main loop ................................')
-    while True:
-        global conn
+    global conn
+    global gtalk_running    
+    log_i ('Enter Gtalk main loop ................................')
+    while gtalk_running:
         if conn.Process(1) == None:
             log_d ('Lost connection.')
             conn = 0
             break
-        if not running:
-            log_d ('Exit !!!!!!!!!!!!!!!!!!')
+        if not gtalk_running:
+            log_d ('Exit Gtalk main loop !!!!!!!!!!!!!!!!!!')
             break;
-#        log_d ('running:' + str(running))
+#        log_d ('gtalk_running:' + str(gtalk_running))
         print '$',
         time.sleep(1)
     log_i ('gtalk_mainloop Done!')
+    gtalk_running = False
     if conn:
-        conn.disconnected()
+        conn.disconnect()
         conn = 0
 
 def Gtalk_exit():
-    global running
-    running = False
+    global gtalk_running
+    global conn
+    if conn:
+        conn.disconnect()
+        conn = 0
+    gtalk_running = False
+    
+def Gtalk_isRunning():
+    global gtalk_running
+    return gtalk_running    
     
 if __name__ == '__main__':    
     print "Main"
