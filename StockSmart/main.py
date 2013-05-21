@@ -8,7 +8,13 @@ from Gtalk_test import *
 
 code_list = ['sh600036', 'sh601328']
 
+#windows: GBK
+#ubuntu: ascii
 print 'System Default Encoding:',sys.getdefaultencoding()
+
+#add this to fix crash when Chinsese input under Ubuntu
+reload(sys) 
+sys.setdefaultencoding('utf8')
 
 def test_StockSmart():
     test_google()

@@ -44,9 +44,9 @@ def messageCB(contex, msg):
 #            text += str(msg.getBody())
 
         if cmd:
-            contex.send(xmpp.Message(str(msg.getFrom()), text, typ = 'chat'))
+            contex.send(xmpp.Message(msg.getFrom(), text, typ = 'chat'))
         else:
-            contex.send(xmpp.Message(str(msg.getFrom()), (msg.getBody()), typ = 'chat'))
+            contex.send(xmpp.Message(msg.getFrom(), (msg.getBody()), typ = 'chat'))
 
 def presenceHandler(contex, presence):
     if presence:
