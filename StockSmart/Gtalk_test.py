@@ -114,12 +114,11 @@ def Gtalk_init():
     log_d ('registerHandler')
     conn.RegisterHandler('message', messageCB)
     conn.RegisterHandler('presence', presenceHandler)
-    time.sleep(2)
     
 def Gtalk_run():
     thread.start_new_thread(gtalk_mainloop, ())
     time.sleep(1)
-    Gtalk_send('Gtalk stock robot v1.0 ---> online!')
+    Gtalk_send('Gtalk robot v1.0 ---> online!')
     Gtalk_send('Welcome Tommy')
     
 def gtalk_mainloop():    
