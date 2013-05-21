@@ -59,11 +59,12 @@ def get_price(code):
     content = urllib2.urlopen(req).read()
     strs = content.decode('gbk')
     data = strs.split('"')[1].split(',')
+#    print data
     name = "%s" % data[0]
     price_current = "%-5s" % float(data[3])
     change_percent = ( float(data[3]) - float(data[2]) )*100 / float(data[2])
     change_percent = "%s" % round (change_percent, 2)
-    return (name, price_current,change_percent)
+    return (name, float(price_current),float(change_percent))
 
 def get_all_price(code_list):
     print '\n*** Test get_all_price ***'
