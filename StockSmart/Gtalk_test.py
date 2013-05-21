@@ -25,22 +25,28 @@ def log_i(string):
         
 # Msg call back
 def messageCB(contex, msg):
-#     if contex.Process(1) == None:
-#         return
     if msg.getBody():
+        #msgbody = msg.getBody() #.decode('gbk'))
         log_d ("Sender: " + str(msg.getFrom()))
         log_d ("Content: " + str(msg.getBody()))
         text = ''
+        cmd = False
         text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n'
         if (msg.getBody() == 'exit'):
             global gtalk_running
             gtalk_running = False
             text += 'Bye!'
+            cmd = True
         elif (msg.getBody() == 'help'):
             text = string_help
+            cmd = True
+#        else:
+#            text += str(msg.getBody())
+
+        if cmd:
+            contex.send(xmpp.Message(str(msg.getFrom()), text, typ = 'chat'))
         else:
-            text += str(msg.getBody())
-        contex.send(xmpp.Message(str(msg.getFrom()), text, typ = 'chat'))
+            contex.send(xmpp.Message(str(msg.getFrom()), (msg.getBody()), typ = 'chat'))
 
 def presenceHandler(contex, presence):
     if presence:
@@ -74,6 +80,8 @@ def Gtalk_send(msg):
 
 def Gtalk_init():
     global conn
+    global gtalk_running
+    gtalk_running = True
     username = 'tchen1973@gmail.com'
     pwd = 'Happyday310'
 
