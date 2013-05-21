@@ -119,7 +119,7 @@ def Gtalk_run():
     thread.start_new_thread(gtalk_mainloop, ())
     time.sleep(1)
     Gtalk_send('Gtalk robot v1.0 ---> online!')
-    Gtalk_send('Welcome Tommy')
+    Gtalk_send('Welcome Tommy:)')
     
 def gtalk_mainloop():    
     global conn    

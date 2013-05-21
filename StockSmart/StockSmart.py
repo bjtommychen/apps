@@ -54,17 +54,22 @@ def get_stockindex(code):
         
 def get_price(code):
     url = 'http://hq.sinajs.cn/?list=%s' % code
-    req = urllib2.Request(url)
-#        req.set_proxy('proxy.XXX.com:911', 'http')
-    content = urllib2.urlopen(req).read()
-    strs = content.decode('gbk')
-    data = strs.split('"')[1].split(',')
-#    print data
-    name = "%s" % data[0]
-    price_current = "%-5s" % float(data[3])
-    change_percent = ( float(data[3]) - float(data[2]) )*100 / float(data[2])
-    change_percent = "%s" % round (change_percent, 2)
-    return (name, float(price_current),float(change_percent))
+    try:
+        req = urllib2.Request(url)
+    #        req.set_proxy('proxy.XXX.com:911', 'http')
+        content = urllib2.urlopen(req).read()
+    except Exception, e:
+        return ('', 0., 0.)
+    else:
+        strs = content.decode('gbk')
+        data = strs.split('"')[1].split(',')
+    #    print data
+        name = "%s" % data[0]
+        price_current = "%-5s" % float(data[3])
+        change_percent = ( float(data[3]) - float(data[2]) )*100 / float(data[2])
+        change_percent = "%s" % round (change_percent, 2)
+        return (name, float(price_current),float(change_percent))
+
 
 def get_all_price(code_list):
     print '\n*** Test get_all_price ***'

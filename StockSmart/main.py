@@ -21,7 +21,7 @@ def check_market_open():
         checkopen = True
     elif text >= '13:00' and text <= '15:00':
         checkopen = True
-    print text, checkopen
+    print text, checkopen,
     return checkopen
 
 def stock_daemon():
@@ -50,6 +50,9 @@ def stock_daemon():
         #get price
         for code in code_list:
             name, price_current, change_percent = get_price(code)
+            if price_current == 0.:
+                print 'get price failed!'
+                break
             if index == 0:
                 if price_old == 0.:
                     price_old = price_current
@@ -57,7 +60,7 @@ def stock_daemon():
                     diff = True
                 if price_current != price_old:
                     diff_ppk = abs((price_current - price_old)*1000/price_old)
-                    print 'diff_ppk is', diff_ppk
+                    print 'diff_ppk is', diff_ppk,
                     diff = diff_ppk > 2
                 if diff:
                     price_old = price_current
