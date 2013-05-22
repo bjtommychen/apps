@@ -5,6 +5,7 @@ import os
 import socket
 from StockSmart import *
 from Gtalk_test import *
+from test.test_coercion import format_float
 
 code_list = ['sh600036', 'sh601328']
 
@@ -106,13 +107,38 @@ def stock_daemon():
     finally:
         Gtalk_exit()
         time.sleep(1)
+     
+def get_percent(value, base):
+    percent = (value - base) *100 / base
+    return '%.4f' % percent 
+    
         
+def get_price_map():
+    k_list = get_K_array('600036', '6m')        
+    print k_list
+    print len(k_list)
+    print len(k_list[1])
+    
+    idx_date = 1;
+    idx_close = 3;
+    idx_high = 5;
+    idx_low = 7;
+    idx_open = 9;
+    idx_volume = 11;
+    for i in range(1, len(k_list)):
+        string = k_list[i][idx_date] + ', '
+        string += get_percent( k_list[i][idx_open], k_list[i-1][idx_close]) + ', '
+        string += get_percent(k_list[i][idx_high],k_list[i][idx_open]) + ', '
+        string += get_percent(k_list[i][idx_low],k_list[i][idx_open])
+        print string
         
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
     if len(sys.argv)<2:
         print 'No action specified.'
         print '--1: test_StockSmart'
         print '--2: stock_daemon'
+        print '--3: get_price_map'
         sys.exit()
             
     if sys.argv[1].startswith('--'):
@@ -122,3 +148,5 @@ if  __name__ == '__main__':
             test_StockSmart()
         elif option=='2':
             stock_daemon()    
+        elif option=='3':
+            get_price_map()
