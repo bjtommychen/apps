@@ -3,6 +3,7 @@ import time
 import sys
 import os
 import socket
+import math
 from StockSmart import *
 from Gtalk_test import *
 from test.test_coercion import format_float
@@ -110,11 +111,24 @@ def stock_daemon():
      
 def get_percent(value, base):
     percent = (value - base) *100 / base
-    return '%.4f' % percent 
-    
+    return float('%.1f' % percent) 
+
+def avg(sequence):
+        if len(sequence) < 1:
+            return None
+        else:
+            return sum(sequence) / len(sequence)     
+
+def FloatIsEqual(f1, f2):
+    if (math.fabs(f1-f2)<1e-6): 
+        return True
+    else:
+        return False
         
 def get_price_map():
-    k_list = get_K_array('600036', '6m')        
+    code = '600036'
+    mlen = '6m'
+    k_list = get_K_array(code, mlen)        
     print k_list
     print len(k_list)
     print len(k_list[1])
@@ -125,12 +139,31 @@ def get_price_map():
     idx_low = 7;
     idx_open = 9;
     idx_volume = 11;
+    
+    f = open(code + '_' + mlen + '.txt', 'w')
+    
     for i in range(1, len(k_list)):
         string = k_list[i][idx_date] + ', '
-        string += get_percent( k_list[i][idx_open], k_list[i-1][idx_close]) + ', '
-        string += get_percent(k_list[i][idx_high],k_list[i][idx_open]) + ', '
-        string += get_percent(k_list[i][idx_low],k_list[i][idx_open])
+        string += str(get_percent( k_list[i][idx_open], k_list[i-1][idx_close])) + ', '
+        string += str(get_percent(k_list[i][idx_high],k_list[i][idx_open])) + ', '
+        string += str(get_percent(k_list[i][idx_low],k_list[i][idx_open]))
         print string
+        f.write(string+'\n')
+    
+    for jj in range(-30, 30, 1):
+        j = jj/10.
+        list = []
+#         print 'checking', j
+        for i in range(1, len(k_list)):
+            val = (get_percent( k_list[i][idx_open], k_list[i-1][idx_close]))
+#             print  val, j
+            if (FloatIsEqual(val , j)):
+                list.append((get_percent(k_list[i][idx_high],k_list[i][idx_open])))
+#                 print 'match'
+        if len(list):
+            print 'checking', j, 'count', len(list), 'max', max(list), 'min', min(list), 'avg', avg(list)
+        
+    f.close()
         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -150,3 +183,4 @@ if  __name__ == '__main__':
             stock_daemon()    
         elif option=='3':
             get_price_map()
+    print 'main done!'
