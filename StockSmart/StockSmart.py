@@ -88,6 +88,7 @@ def get_K_char(code, len):
     root = ET.fromstring(data)
     print root.tag, root.attrib
 
+    # print out    
     for i in range(0, 5, 1):
         print root[1][i].tag, root[1][i].attrib
             
@@ -110,6 +111,30 @@ def get_K_char(code, len):
         else:
             print 'CLOSE!',
         print
+
+def get_K_array(code, len):
+    print '\n*** Test get_K_char ***'
+    url = 'http://chartapi.finance.yahoo.com/instrument/1.0/%s.ss/chartdata;type=quote;range=%s' %(code,len)
+    print url    
+    data=urllib2.urlopen(url).read()
+    root = ET.fromstring(data)
+
+    #get in listarray
+    lists=[]
+#    myList = [([0] * 3) for i in range(4)]
+
+    for daydata in root.iter('p'):
+        list = []
+        list.append('Date')
+        list.append(daydata.attrib.get('ref'))
+        if (float(daydata[4].text) != 0):
+            for i in range(5):
+                meta = root[1][i].attrib.get('id')
+                price = float(daydata[i].text)
+                list.append(meta)
+                list.append(price)
+            lists.append(list)
+    return lists
 
     
 ################################################################################
