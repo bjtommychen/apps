@@ -5,14 +5,21 @@ import xmpp
 import time
 import sys
 import thread
+import datetime
 
 # Global
 gtalk_running = True
 conn = 0
 enable_send = True
+gtalk_inited = False
+start = time.time()
 
 # Strings
-string_help = 'Help commands:\n Supported commands: exit, help.\n'
+string_help = 'Help commands:\n Supported commands: on, off, info, uptime, exit, help.\n'
+string_on = 'Gtalk send msg : turn On!'
+string_off = 'Gtalk send msg : turn Off!'
+string_uptime = 'Gtalk uptime:'
+string_info = 'Gtalk info:'
 
 # Debug
 def log_d(string):
@@ -40,9 +47,21 @@ def messageCB(contex, msg):
         elif (msg.getBody() == 'help'):
             text = string_help
             cmd = True
-#        else:
-#            text += str(msg.getBody())
-
+        elif (msg.getBody() == 'on'):
+            Gtalk_enable_send(True)
+            text =  string_on
+            cmd = True
+        elif (msg.getBody() == 'off'):
+            Gtalk_enable_send(False)
+            text =  string_off
+            cmd = True
+        elif (msg.getBody() == 'uptime'):
+            text =  string_uptime, str(datetime.timedelta(seconds=int((time.time() - start))))
+            cmd = True
+        elif (msg.getBody() == 'info'):
+            text =  string_info, 'send msg:', enable_send 
+            cmd = True
+            
         if cmd:
             contex.send(xmpp.Message(msg.getFrom(), text, typ = 'chat'))
         else:
@@ -79,6 +98,9 @@ def Gtalk_send(msg):
         log_d(msg)
 
 def Gtalk_init():
+#    if not gtalk_inited:
+#        gtalk_inited = True
+    
     global conn
     global gtalk_running
     gtalk_running = True
