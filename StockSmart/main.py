@@ -59,7 +59,7 @@ def stock_daemon():
             text += '\n'
             #get price
             for code in code_list:
-                name, price_current, change_percent = get_price(code)
+                name, price_current, price_diff, change_percent = get_price(code)
                 if price_current == 0.:
                     print 'get price failed!'
                     break
@@ -74,7 +74,7 @@ def stock_daemon():
                         diff = diff_ppk > 2
                     if diff:
                         price_old = price_current
-                text += '%s: %s, %s%%' %(name,price_current,change_percent)
+                text += '%s: %s, %s, %s%%' %(name,price_current, price_diff, change_percent)
                 text += '\n'
                 index += 1    
             if diff:# or True:
