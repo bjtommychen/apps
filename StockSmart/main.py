@@ -16,6 +16,23 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 reload(sys) 
 sys.setdefaultencoding('utf8')
 
+
+def autoreload():
+    mod_names = ['Gtalk_test', 'StockSmart']
+    for mod_name in mod_names:
+        try:
+            module = sys.modules[mod_name]
+        except:
+            continue
+        mtime = os.path.getmtime(module.__file__)
+        try:
+            if mtime > module.loadtime:
+                reload(module)
+        except:
+            pass
+        module.loadtime = mtime
+
+
 def test_StockSmart():
     test_google()
     test_sina()
