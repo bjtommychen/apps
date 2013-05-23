@@ -117,7 +117,7 @@ def avg(sequence):
         if len(sequence) < 1:
             return None
         else:
-            return sum(sequence) / len(sequence)     
+            return round(sum(sequence) / len(sequence), 3)     
 
 def FloatIsEqual(f1, f2):
     if (math.fabs(f1-f2)<1e-6): 
@@ -127,7 +127,7 @@ def FloatIsEqual(f1, f2):
         
 def get_price_map():
     code = '600036'
-    mlen = '6m'
+    mlen = '36m'
     k_list = get_K_array(code, mlen)        
     print k_list
     print len(k_list)
@@ -147,8 +147,8 @@ def get_price_map():
         string += str(get_percent( k_list[i][idx_open], k_list[i-1][idx_close])) + ', '
         string += str(get_percent(k_list[i][idx_high],k_list[i][idx_open])) + ', '
         string += str(get_percent(k_list[i][idx_low],k_list[i][idx_open]))
-        print string
-        f.write(string+'\n')
+#        print string
+#        f.write(string+'\n')
     
     for jj in range(-30, 30, 1):
         j = jj/10.
@@ -164,6 +164,8 @@ def get_price_map():
             print 'checking', j, 'count', len(list), 'max', max(list), 'min', min(list), 'avg', avg(list)
         
     f.close()
+        
+        
         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
