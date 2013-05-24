@@ -6,7 +6,6 @@ import socket
 import math
 from StockSmart import *
 from Gtalk_test import *
-from test.test_coercion import format_float
 
 code_list = ['sh600036', 'sh601328']
 
@@ -61,6 +60,7 @@ def stock_daemon():
     market_open = False
     
     Gtalk_enable_send(True)
+    Gtalk_send("stock_daemon v1.0 Online." + socket.gethostname())
     text = ''
     try:
         while True:
@@ -85,7 +85,6 @@ def stock_daemon():
                 if index == 0:
                     if price_old == 0.:
                         price_old = price_current
-                        Gtalk_send("stock_daemon v1.0 Online." + socket.gethostname())
                         diff = True
                     if price_current != price_old:
                         diff_ppk = abs((price_current - price_old)*1000/price_old)
