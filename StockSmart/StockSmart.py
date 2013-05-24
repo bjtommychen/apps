@@ -59,7 +59,7 @@ def get_price(code):
     #        req.set_proxy('proxy.XXX.com:911', 'http')
         content = urllib2.urlopen(req).read()
     except Exception, e:
-        return ('', 0., 0.)
+        return ('', 0., 0, 0.)
     else:
         strs = content.decode('gbk')
         data = strs.split('"')[1].split(',')
