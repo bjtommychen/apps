@@ -4,6 +4,8 @@ import sys
 import os
 import socket
 import math
+import csv
+
 from StockSmart import *
 from Gtalk_test import *
 
@@ -112,6 +114,11 @@ def get_percent(value, base):
     percent = (value - base) *100 / base
     return float('%.1f' % percent) 
 
+def get_percent_str(value, base):
+    percent = (float(value) - float(base)) *100. / float(base)
+    return float('%.1f' % percent) 
+
+
 def avg(sequence):
         if len(sequence) < 1:
             return None
@@ -164,7 +171,61 @@ def get_price_map():
         
     f.close()
         
+def get_price_map_csv():
+    k_list = []
+    reader = csv.reader(file('table_600036.csv','rb'))
+    i = 0
+    for row in reader:
+        if i == 0:
+            i += 1
+            k_list.append(row)
+        elif (float(row[5]) != 0):
+            k_list.append(row)
+
+    print len(k_list)
+    print len(k_list[1])
+    
+    idx_date = 0;
+    idx_close = 4;
+    idx_high = 2;
+    idx_low = 3;
+    idx_open = 1;
+    idx_volume = 5;
+    
+    f = open('tempout.txt', 'w')
+    
+    for i in range(2, len(k_list)-1):
+        string = k_list[i][idx_date] + ', '
+        string += str(get_percent_str(k_list[i][idx_open], k_list[i+1][idx_close])) + ', '
+        string += str(get_percent_str(k_list[i][idx_high],k_list[i][idx_open])) + ', '
+        string += str(get_percent_str(k_list[i][idx_low],k_list[i][idx_open]))
+#         print string
+#         f.write(string+'\n')
+    
+    print 'checking', 'count',  'max', 'min', 'avg'
+    fcsv = open('table_out1.csv', 'wb')
+    csvWriter = csv.writer(fcsv) 
+    for jj in range(-30, 30, 1):
+        j = jj/10.
+        list = []
+
+        print 'checking', j
+        for i in range(2, len(k_list)-1):
+            val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))
+#             print  val, j
+            if (FloatIsEqual(val , j)):
+                print 'match', k_list[i]
+                print get_percent_str(k_list[i][idx_high],k_list[i][idx_open])
+                list.append((get_percent_str(k_list[i][idx_high],k_list[i][idx_open])))
+        f.write(str(list)+'\n')
+        if len(list):
+            line = j, len(list),  max(list), min(list), avg(list)
+            print  line
+            csvWriter.writerow(line)
         
+    f.close()
+    fcsv.close()
+     
         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -173,6 +234,7 @@ if  __name__ == '__main__':
         print '--1: test_StockSmart'
         print '--2: stock_daemon'
         print '--3: get_price_map'
+        print '--4: get_price_map from .csv'
         sys.exit()
             
     if sys.argv[1].startswith('--'):
@@ -184,4 +246,6 @@ if  __name__ == '__main__':
             stock_daemon()    
         elif option=='3':
             get_price_map()
+        elif option=='4':
+            get_price_map_csv()
     print 'main done!'
