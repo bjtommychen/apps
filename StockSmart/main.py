@@ -202,25 +202,28 @@ def get_price_map_csv():
 #         print string
 #         f.write(string+'\n')
     
-    print 'checking', 'count',  'max', 'min', 'avg'
+    print 'checking', 'count',  'maxHigh', 'minHigh', 'avgHigh'
     fcsv = open('table_out1.csv', 'wb')
     csvWriter = csv.writer(fcsv) 
     for jj in range(-30, 30, 1):
         j = jj/10.
-        list = []
+        listHigh = []
+        listLow = []
 
         print 'checking', j
         for i in range(2, len(k_list)-1):
             val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))
 #             print  val, j
             if (FloatIsEqual(val , j)):
-                print 'match', k_list[i]
-                print get_percent_str(k_list[i][idx_high],k_list[i][idx_open])
-                list.append((get_percent_str(k_list[i][idx_high],k_list[i][idx_open])))
-        f.write(str(list)+'\n')
-        if len(list):
-            line = j, len(list),  max(list), min(list), avg(list)
-            print  line
+#                print 'match', k_list[i]
+#                print get_percent_str(k_list[i][idx_high],k_list[i][idx_open])
+                listHigh.append((get_percent_str(k_list[i][idx_high],k_list[i][idx_open])))
+                listLow.append((get_percent_str(k_list[i][idx_low],k_list[i][idx_open])))
+#        f.write(str(list)+'\n')
+        if len(listHigh) or len(listLow):
+            line = j, len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
+            line += len(listLow),  max(listLow), min(listLow), avg(listLow)
+#            print  line
             csvWriter.writerow(line)
         
     f.close()
