@@ -88,7 +88,8 @@ def Gtalk_send(msg):
     if enable_send:
         global conn
         if not conn:
-            Gtalk_init()
+            while (Gtalk_init() != 0):
+                log_d('Gtalk_init failed. retry!')
             Gtalk_run()
             time.sleep(2)
         log_d('send msg:' + msg)    
@@ -122,7 +123,7 @@ def Gtalk_init():
     
     if not conres:
         log_d ("Unable to connect to server %s!" %server)
-        sys.exit(1)
+        return 1
     if conres<>'tls':
         log_d ("Warning: unable to estabilish secure connection - TLS failed!")
     
@@ -133,7 +134,7 @@ def Gtalk_init():
 
     if not authres:
         log_d ("Unable to authorize on %s - Plsese check your name/password."%server)
-        sys.exit(1)
+        return 1
     if authres<>"sasl":
         log_d ("Warning: unable to perform SASL auth os %s. Old authentication method used!"%server)    
     
@@ -144,6 +145,7 @@ def Gtalk_init():
     log_d ('registerHandler')
     conn.RegisterHandler('message', messageCB)
     conn.RegisterHandler('presence', presenceHandler)
+    return 0
     
 def Gtalk_run():
     thread.start_new_thread(gtalk_mainloop, ())
@@ -158,6 +160,7 @@ def gtalk_mainloop():
     while gtalk_running:
         if conn.Process(1) == None:
             log_d ('Lost connection.')
+            conn.disconnect()
             conn = 0
             break
         if not gtalk_running:
