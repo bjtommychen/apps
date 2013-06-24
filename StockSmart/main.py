@@ -17,7 +17,7 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
-sys.setdefaultencoding('utf8')
+#sys.setdefaultencoding('utf8')
 
 
 def autoreload():
@@ -179,11 +179,11 @@ def get_price_map_csv():
         if i == 0:
             i += 1
             k_list.append(row)
-        elif (float(row[5]) != 0):
+        elif (float(row[5]) != 0): #check Volume==0 row.
             k_list.append(row)
 
-    print len(k_list)
-    print len(k_list[1])
+    print 'total item ', len(k_list)
+    print 'item per line', len(k_list[1])
     
     idx_date = 0;
     idx_close = 4;
@@ -204,7 +204,12 @@ def get_price_map_csv():
     
     print 'checking', 'count',  'maxHigh', 'minHigh', 'avgHigh'
     fcsv = open('table_out1.csv', 'wb')
-    csvWriter = csv.writer(fcsv) 
+    csvWriter = csv.writer(fcsv)
+
+    line = 'percent', 'len(listHigh)',  'max(listHigh)', 'min(listHigh)', 'avg(listHigh)'
+    line += '','len(listLow)',  'max(listLow)', 'min(listLow)', 'avg(listLow)'
+    csvWriter.writerow(line)
+     
     for jj in range(-30, 30, 1):
         j = jj/10.
         listHigh = []
@@ -214,21 +219,77 @@ def get_price_map_csv():
         for i in range(2, len(k_list)-1):
             val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))
 #             print  val, j
-            if (FloatIsEqual(val , j)):
+
+            if (float('%.1f' % val) == j ):
 #                print 'match', k_list[i]
 #                print get_percent_str(k_list[i][idx_high],k_list[i][idx_open])
                 listHigh.append((get_percent_str(k_list[i][idx_high],k_list[i][idx_open])))
                 listLow.append((get_percent_str(k_list[i][idx_low],k_list[i][idx_open])))
 #        f.write(str(list)+'\n')
         if len(listHigh) or len(listLow):
-            line = j, len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
-            line += len(listLow),  max(listLow), min(listLow), avg(listLow)
-#            print  line
+            line = float('%.2f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
+            line += '', len(listLow),  max(listLow), min(listLow), avg(listLow)
+            print  line
             csvWriter.writerow(line)
         
     f.close()
     fcsv.close()
      
+
+def get_gc001_csv():
+    k_list = []
+    reader = csv.reader(file('table_gc001_6m.csv','rb'))
+    i = 0
+    for row in reader:
+        if i == 0:
+            i += 1
+        elif (row[5] and float(row[5]) != 0): #check Volume==0 row.
+            k_list.append(row)
+        i=i+1
+
+    print 'total item ', len(k_list)
+    print 'item per line', len(k_list[1])
+    
+    idx_date = 0;
+    idx_close = 4;
+    idx_high = 2;
+    idx_low = 3;
+    idx_open = 1;
+    idx_volume = 5;
+    
+    profile = []
+    for i in range(0, len(k_list)):
+        profile.append(float(k_list[i][idx_high]))
+
+    print 'checking high'
+    print 'days:', len(profile), 'avg:', avg(profile), 'high:', max(profile), 'low:', min(profile)
+    print 'Year profile % is', avg(profile)*len(profile)/(365/2)
+
+
+    profile = []
+    for i in range(0, len(k_list)):
+        profile.append(float(k_list[i][idx_low]))
+
+    print 'checking low'
+    print 'days:', len(profile), 'avg:', avg(profile), 'high:', max(profile), 'low:', min(profile)
+    print 'Year profile % is', avg(profile)*len(profile)/(365/2)
+
+def get_stock_list():
+    fcsv = open('table_out1.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    
+    for code in range(600000, 604100):
+        if (code%100 == 0):
+            print code
+        codestr = ''
+        codestr = 'sh' + str(code)
+        print codestr
+        name, price_current, price_diff, change_percent = get_price(codestr)
+        if (name):
+#            print code, name
+            line = code, name
+            csvWriter.writerow(line)
+    fcsv.close()
         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -251,4 +312,6 @@ if  __name__ == '__main__':
             get_price_map()
         elif option=='4':
             get_price_map_csv()
+        elif option=='5':
+            get_stock_list()()
     print 'main done!'
