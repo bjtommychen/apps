@@ -179,8 +179,12 @@ def Gtalk_exit():
     global gtalk_running
     global conn
     if conn:
-        conn.disconnect()
-        conn = 0
+        try:
+            conn.disconnect()
+        except:
+            print 'Gtalk_exit Exception!'
+        finally:
+            conn = 0
     gtalk_running = False
     
 def Gtalk_isRunning():
