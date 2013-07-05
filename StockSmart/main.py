@@ -290,7 +290,28 @@ def get_stock_list():
             line = code, name
             csvWriter.writerow(line)
     fcsv.close()
+
+def get_stock_history_csv(code, name):  
+    url = 'http://table.finance.yahoo.com/table.csv?s=' + str(code) +'.ss'
+    local = 'data/'+str(code)+'.csv'
+    if os.path.exists(local):
+        print local, 'exist! skip!'
+    else:  
+        print 'get csv for', name, ', url:', url
+        socket.setdefaulttimeout(2)  
+        urllib.urlretrieve(url, local, 0)
+        print 'got csv file, size:', os.path.getsize(local), 'bytes!'
         
+
+def get_all_history():
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))    
+    for row in reader:
+#        print 'code:', row[0], 'name:', row[1]
+        try:
+            get_stock_history_csv(row[0], row[1])
+        except:
+            print 'error'
+                
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
     if len(sys.argv)<2:
@@ -314,4 +335,6 @@ if  __name__ == '__main__':
             get_price_map_csv()
         elif option=='5':
             get_stock_list()()
+        elif option=='6':
+            get_all_history()
     print 'main done!'
