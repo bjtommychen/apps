@@ -311,6 +311,99 @@ def get_all_history():
             get_stock_history_csv(row[0], row[1])
         except:
             print 'error'
+
+def write_price_map_csv(code, name, history_csv, out_csv):
+    k_list = []
+    reader = csv.reader(file(history_csv,'rb'))
+    i = 0
+    for row in reader:
+        if i == 0:
+            i += 1
+            k_list.append(row)
+        elif (float(row[5]) != 0): #check Volume==0 row.
+            k_list.append(row)
+
+    print name, code, 'Total item:', len(k_list),'item per line:', len(k_list[1])
+    
+    idx_date = 0;
+    idx_close = 4;
+    idx_high = 2;
+    idx_low = 3;
+    idx_open = 1;
+    idx_volume = 5;
+    
+#    print 'checking', 'count',  'maxHigh', 'minHigh', 'avgHigh'
+    fcsv = open(out_csv, 'wb')
+    csvWriter = csv.writer(fcsv)
+
+    line = 'percent', 'len(listHigh)',  'max(listHigh)', 'min(listHigh)', 'avg(listHigh)'
+    line += '','len(listLow)',  'max(listLow)', 'min(listLow)', 'avg(listLow)'
+    csvWriter.writerow(line)
+     
+    for jj in range(-50, 50, 1):
+        j = jj/10.
+        listHigh = []
+        listLow = []
+
+#        print 'checking', j
+        for i in range(2, len(k_list)-1):
+            val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))   #last close
+
+            if (float('%.1f' % val) == j ):
+                listHigh.append((get_percent_str(k_list[i][idx_high],k_list[i+1][idx_close])))
+                listLow.append((get_percent_str(k_list[i][idx_low],k_list[i+1][idx_close])))
+        if len(listHigh) or len(listLow):
+            line = float('%.1f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
+            line += '', len(listLow),  max(listLow), min(listLow), avg(listLow)
+#            print  line
+            csvWriter.writerow(line)
+    fcsv.close()
+
+def get_all_mapfile():
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    for row in reader:
+        try:
+            code = row[0]
+            name = row[1]
+            history_csv = 'data/'+str(code)+'.csv'
+            out_csv = 'data/'+str(code)+'_map.csv'
+            if os.path.exists(history_csv):
+                write_price_map_csv(code, name, history_csv, out_csv)
+        except:
+            print 'error'
+
+def get_rt_price(code):
+    url = 'http://hq.sinajs.cn/?list=%s' % code
+    try:
+        req = urllib2.Request(url)
+        content = urllib2.urlopen(req).read()
+    except Exception, e:
+        return ('', 0., 0, 0.)
+    else:
+        strs = content.decode('gbk')
+        data = strs.split('"')[1].split(',')
+#        print data
+        name = "%s" % data[0]
+        if (name):
+            return (name, "%-5s" % float(data[1]), "%-5s" % float(data[2]), "%-5s" % float(data[3]), 
+                    "%-5s" % float(data[4]), "%-5s" % float(data[5]))
+        else:
+            return ('', 0, 0, 0, 0, 0)
+
+def check_all_open():
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    for row in reader:
+        try:
+            code = row[0]
+            name = row[1]
+            map_csv = 'data/'+str(code)+'_map.csv'
+            if os.path.exists(map_csv):
+                name, open, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
+                print name, open, lastclose, curr, todayhigh, todaylow
+        except:
+            print 'error'    
+
+    
                 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -336,5 +429,5 @@ if  __name__ == '__main__':
         elif option=='5':
             get_stock_list()()
         elif option=='6':
-            get_all_history()
+            check_all_open()
     print 'main done!'
