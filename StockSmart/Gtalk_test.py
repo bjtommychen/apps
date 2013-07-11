@@ -23,11 +23,11 @@ string_info = 'Gtalk info:'
 
 # Debug
 def log_d(string):
-    if True:
+    if False:
         print string
 
 def log_i(string):
-    if True:
+    if False:
         print string
         
 # Msg call back
@@ -167,7 +167,7 @@ def gtalk_mainloop():
             log_d ('Exit Gtalk main loop !!!!!!!!!!!!!!!!!!')
             break;
 #        log_d ('gtalk_running:' + str(gtalk_running))
-        print '$',
+#        print '$',
         time.sleep(1)
     log_i ('gtalk_mainloop Done!')
     gtalk_running = False
