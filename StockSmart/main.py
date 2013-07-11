@@ -110,6 +110,7 @@ def stock_daemon():
         Gtalk_exit()
         time.sleep(1)
      
+#########################################################################
 def get_percent(value, base):
     percent = (value - base) *100 / base
     return float('%.1f' % percent) 
@@ -291,6 +292,7 @@ def get_stock_list():
             csvWriter.writerow(line)
     fcsv.close()
 
+#########################################################################
 def get_stock_history_csv(code, name):  
     url = 'http://table.finance.yahoo.com/table.csv?s=' + str(code) +'.ss'
     local = 'data/'+str(code)+'.csv'
@@ -312,6 +314,7 @@ def get_all_history():
         except:
             print 'error'
 
+#########################################################################
 def write_price_map_csv(code, name, history_csv, out_csv):
     k_list = []
     reader = csv.reader(file(history_csv,'rb'))
@@ -372,6 +375,7 @@ def get_all_mapfile():
         except:
             print 'error'
 
+#########################################################################
 def get_rt_price(code):
     url = 'http://hq.sinajs.cn/?list=%s' % code
     try:
@@ -390,19 +394,53 @@ def get_rt_price(code):
         else:
             return ('', 0, 0, 0, 0, 0)
 
+def check_history_open_data(map_csv, open, lastclose):
+    if os.path.exists(map_csv):
+        reader = csv.reader(file(map_csv,'rb'))
+        val = get_percent_str(open, lastclose)
+        print 'val', val
+#        print type(val)
+        i = 0
+        for row in reader:
+            if i == 0:
+                i = 1
+                continue
+            v = float(row[0])
+#            print type(v), v
+            if (val == v):
+                print row[0], 'avgHigh', row[4], 'avgLow', row[9]
+                return  (val, float(row[4]), float(row[9]))
+                break
+#                print 'avgHigh', row[4], 'avgLow', row[9], '<======================'
+#            print row[0], 'avgHigh', row[4], 'avgLow', row[9]
+        return  (0, 0, 0)
+    
 def check_all_open():
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    i = 0
+    listHigh = []
+    listName = []
     for row in reader:
+#        if (i > 2):
+#            break;
+#        i = i+1;
         try:
             code = row[0]
             name = row[1]
             map_csv = 'data/'+str(code)+'_map.csv'
             if os.path.exists(map_csv):
                 name, open, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
-                print name, open, lastclose, curr, todayhigh, todaylow
+                if (float(open)):
+                    print name, code, open, lastclose, curr, todayhigh, todaylow
+                    chg, avgH, avgL = check_history_open_data(map_csv, open, lastclose)
+                    if (avgH):
+                        listHigh.append((avgH - chg))
+                        listName.append(code)
+                        print 'possible profit', (avgH - chg)
         except:
-            print 'error'    
-
+            print 'error'
+    print len(listHigh), max(listHigh)
+    print 'index is', listHigh.index(max(listHigh)), 'so it is', listName[listHigh.index(max(listHigh))]
     
                 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
