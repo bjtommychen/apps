@@ -418,12 +418,13 @@ def check_history_open_data(map_csv, open, lastclose):
     
 def check_all_open():
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
-    i = 0
-    listHigh = []
-    listName = []
-    list = []
-    
+    fcsv = open('check_all_open.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    line = 'code', 'name', 'guess','open%', 'avgH', 'todayH', 'todayH%','count'
+    csvWriter.writerow(line)
     print 'check_all_open, wait...'
+    i = 0
+    list = []
     for row in reader:
 #        if (i > 10):
 #            break;
@@ -435,26 +436,26 @@ def check_all_open():
             name = row[1]
             map_csv = 'data/'+str(code)+'_map.csv'
             if os.path.exists(map_csv):
-                name, open, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
-                if (float(open)):
+                name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
+                if (float(openprice)):
 #                    print name, code, open, lastclose, curr, todayhigh, todaylow
-                    chg, avgH, avgL, count = check_history_open_data(map_csv, open, lastclose)
+                    chg, avgH, avgL, count = check_history_open_data(map_csv, openprice, lastclose)
                     curr_chg = get_percent_str(curr, lastclose)
+                    line = (code, name,
+                            float('%.1f' % (avgH - chg)), 
+                            get_percent_str(openprice,lastclose), avgH, 
+                            float(todayhigh), get_percent_str(todayhigh,lastclose),
+                            count
+                            )
+                    csvWriter.writerow(line) 
                     if (avgH and count <= 10):
-                        line = (code, name,
-                                float('%.1f' % (avgH - chg)), 
-                                get_percent_str(open,lastclose), avgH, 
-                                float(todayhigh), get_percent_str(todayhigh,lastclose),
-                                count
-                                ) 
                         list.append(line)
-#                        print 'possible profit', (avgH - chg)
         except:
             print 'error'
             
+    fcsv.close()
     print "*** Result ***"
     print len(list), len(list[0])
-#    print 'index is', listHigh.index(max(listHigh)), 'so it is', listName[listHigh.index(max(listHigh))]
     list.sort(key=lambda data : data[2], reverse=True)
     print 'sorted.'
     i = 0
@@ -464,6 +465,52 @@ def check_all_open():
         i = i + 1
         print line[1], line[0], 'guess%', line[2], 'open%', line[3], 'avgH', line[4], \
                 'tHigh', line[5], 'RealHigh%', line[6] - line[3], 'count', line[7]
+               
+  
+def get_day_history_csv():
+    for i in range(2013, 2000, -1):
+        for j in range(1, 12+1):
+            for k in range (1, 31+1):
+                date_str = str(i)+'-'+str('%02d' % j)+'-'+str('%02d' % k)
+                print date_str
+                try:
+                    if (datetime.datetime(i,j,k).weekday() > 4):
+                        print 'skip weekend.'
+                        continue
+                except ValueError:
+                    print 'invalid date'
+                    continue
+                if os.path.exists('data/'+date_str+'.csv'):
+                    print 'already done.'
+                    continue
+                reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+                count = 0
+                for row_code in reader:
+                    code = row_code[0]
+                    name = row_code[1]
+                    data_csv = 'data/'+str(code)+'.csv'
+                    if os.path.exists(data_csv):
+                        reader_data = csv.reader(file(data_csv,'rb'))
+#                        print 'checking file', data_csv
+                        for row_data in reader_data:
+                            if (str(row_data[0]) == date_str and float(row_data[5]) != 0):
+                                if (count == 0):
+                                    fcsv = open('data/'+date_str+'.csv', 'wb')
+                                    csvWriter = csv.writer(fcsv)
+                                    line = 'Code' , 'Date' ,'Open','High','Low','Close','Volume','Adj Close'
+                                    csvWriter.writerow(line)                                
+                                row_data.insert(0, code)
+                                line = row_data
+                                csvWriter.writerow(line)
+                                count = count + 1
+                                break
+                print 'total items', count
+                if (count):
+                    fcsv.close()
+    print 'done!'               
+                        
+                        
+                        
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -490,4 +537,6 @@ if  __name__ == '__main__':
             get_stock_list()()
         elif option=='6':
             check_all_open()
+        elif option=='7':
+            get_day_history_csv()
     print 'main done!'
