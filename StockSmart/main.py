@@ -8,6 +8,7 @@ import csv
 
 from StockSmart import *
 from Gtalk_test import *
+from mail_process import *
 
 code_list = ['sh600036', 'sh601328']
 
@@ -18,7 +19,7 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
 sys.setdefaultencoding('utf8')
-
+#sys.setdefaultencoding('ascii')
 
 def autoreload():
     mod_names = ['Gtalk_test', 'StockSmart']
@@ -398,7 +399,7 @@ def check_history_open_data(map_csv, open, lastclose):
     if os.path.exists(map_csv):
         reader = csv.reader(file(map_csv,'rb'))
         val = get_percent_str(open, lastclose)
-        print 'val', val
+#        print 'val', val
 #        print type(val)
         i = 0
         for row in reader:
@@ -408,22 +409,27 @@ def check_history_open_data(map_csv, open, lastclose):
             v = float(row[0])
 #            print type(v), v
             if (val == v):
-                print row[0], 'avgHigh', row[4], 'avgLow', row[9]
-                return  (val, float(row[4]), float(row[9]))
+#                print row[0], 'avgHigh', row[4], 'avgLow', row[9]
+                return  (val, float(row[4]), float(row[9]), int(row[1]))
                 break
 #                print 'avgHigh', row[4], 'avgLow', row[9], '<======================'
 #            print row[0], 'avgHigh', row[4], 'avgLow', row[9]
-        return  (0, 0, 0)
+        return  (0, 0, 0, 0)
     
 def check_all_open():
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     i = 0
     listHigh = []
     listName = []
+    list = []
+    
+    print 'check_all_open, wait...'
     for row in reader:
-#        if (i > 2):
+#        if (i > 10):
 #            break;
-#        i = i+1;
+        i = i+1;
+        if (i%100 == 0):
+            print i
         try:
             code = row[0]
             name = row[1]
@@ -431,18 +437,34 @@ def check_all_open():
             if os.path.exists(map_csv):
                 name, open, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
                 if (float(open)):
-                    print name, code, open, lastclose, curr, todayhigh, todaylow
-                    chg, avgH, avgL = check_history_open_data(map_csv, open, lastclose)
-                    if (avgH):
-                        listHigh.append((avgH - chg))
-                        listName.append(code)
-                        print 'possible profit', (avgH - chg)
+#                    print name, code, open, lastclose, curr, todayhigh, todaylow
+                    chg, avgH, avgL, count = check_history_open_data(map_csv, open, lastclose)
+                    curr_chg = get_percent_str(curr, lastclose)
+                    if (avgH and count <= 10):
+                        line = (code, name,
+                                float('%.1f' % (avgH - chg)), 
+                                get_percent_str(open,lastclose), avgH, 
+                                float(todayhigh), get_percent_str(todayhigh,lastclose),
+                                count
+                                ) 
+                        list.append(line)
+#                        print 'possible profit', (avgH - chg)
         except:
             print 'error'
-    print len(listHigh), max(listHigh)
-    print 'index is', listHigh.index(max(listHigh)), 'so it is', listName[listHigh.index(max(listHigh))]
-    
-                
+            
+    print "*** Result ***"
+    print len(list), len(list[0])
+#    print 'index is', listHigh.index(max(listHigh)), 'so it is', listName[listHigh.index(max(listHigh))]
+    list.sort(key=lambda data : data[2], reverse=True)
+    print 'sorted.'
+    i = 0
+    for line in list:
+        if (i > 20):
+            break
+        i = i + 1
+        print line[1], line[0], 'guess%', line[2], 'open%', line[3], 'avgH', line[4], \
+                'tHigh', line[5], 'RealHigh%', line[6] - line[3], 'count', line[7]
+                        
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
     if len(sys.argv)<2:
