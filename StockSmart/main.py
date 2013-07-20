@@ -468,7 +468,7 @@ def check_all_open():
                
   
 def get_day_history_csv():
-    for i in range(2013, 2000, -1):
+    for i in range(2000, 2014, 1):
         for j in range(1, 12+1):
             for k in range (1, 31+1):
                 date_str = str(i)+'-'+str('%02d' % j)+'-'+str('%02d' % k)
@@ -485,24 +485,36 @@ def get_day_history_csv():
                     continue
                 reader = csv.reader(file('table_stocklist_sh.csv','rb'))
                 count = 0
+                index = 0
                 for row_code in reader:
                     code = row_code[0]
-                    name = row_code[1]
+#                    name = row_code[1]
                     data_csv = 'data/'+str(code)+'.csv'
+                    # when no found in 10 stock history. means this date may be big holiday
+                    # so, skip the rest stock.
+                    if (count == 0 and index > 10):
+                        print 'big holiday!'
+                        break
+                    else:
+                        index = index + 1
+                    
                     if os.path.exists(data_csv):
                         reader_data = csv.reader(file(data_csv,'rb'))
 #                        print 'checking file', data_csv
+                        
                         for row_data in reader_data:
-                            if (str(row_data[0]) == date_str and float(row_data[5]) != 0):
-                                if (count == 0):
-                                    fcsv = open('data/'+date_str+'.csv', 'wb')
-                                    csvWriter = csv.writer(fcsv)
-                                    line = 'Code' , 'Date' ,'Open','High','Low','Close','Volume','Adj Close'
-                                    csvWriter.writerow(line)                                
-                                row_data.insert(0, code)
-                                line = row_data
-                                csvWriter.writerow(line)
-                                count = count + 1
+                            try:
+                                if (row_data[0] and str(row_data[0]) == date_str and float(row_data[5]) != 0):
+                                    if (count == 0):
+                                        fcsv = open('data/'+date_str+'.csv', 'wb')
+                                        csvWriter = csv.writer(fcsv)
+                                        line = 'Code' , 'Date' ,'Open','High','Low','Close','Volume','Adj Close'
+                                        csvWriter.writerow(line)                                
+                                    row_data.insert(0, code)
+                                    csvWriter.writerow(row_data)
+                                    count = count + 1
+                                    break
+                            except IndexError:
                                 break
                 print 'total items', count
                 if (count):
