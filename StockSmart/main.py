@@ -54,6 +54,15 @@ def check_market_open():
 #    print text, checkopen,
     return checkopen
 
+def check_market_justopen():
+    checkopen = False
+    text = time.strftime("%H:%M", time.localtime())
+    if text == '09:30':
+        checkopen = True
+    elif text == '13:00':
+        checkopen = True
+    return checkopen
+
 def stock_daemon():
     '''Get the price of stock list, then send it out through Gtalk.
     
@@ -61,9 +70,9 @@ def stock_daemon():
     price_old = 0.0
     inited = False
     market_open = False
-    
+    need_checkall = True
     Gtalk_enable_send(True)
-    Gtalk_send("stock_daemon v1.0 Online." + socket.gethostname())
+    Gtalk_send("stock_daemon v2.0 Online." + socket.gethostname())
     text = ''
     try:
         while True:
@@ -73,11 +82,19 @@ def stock_daemon():
             if market_open != check_market_open():
                 price_old = 0.
                 market_open = check_market_open()
+                
+            if check_market_justopen() and need_checkall :
+                check_all_open()
+                send_mail("check_all_open result csv", "Hi!\nCheck this !!!", "check_all_open.csv")
+                need_checkall = False
+                Gtalk_send('Sent mail with check_all_open.csv, please check soon!')
+                
             text = ''
             #get time
             text += time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
             if not market_open:
                 text += 'Close'
+                need_checkall = True
             text += '\n'
             #get price
             for code in code_list:
@@ -105,6 +122,7 @@ def stock_daemon():
             time.sleep(15)
             if not Gtalk_isRunning():
                 Gtalk_send("Gtalk sleep, wakeup it!")
+            inited = True
     except KeyboardInterrupt:
         print 'Exception!'
     finally:
@@ -420,7 +438,7 @@ def check_all_open():
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     fcsv = open('check_all_open.csv', 'wb')
     csvWriter = csv.writer(fcsv)
-    line = 'code', 'name', 'guess','open%', 'avgH', 'todayH', 'todayH%','count'
+    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count', 'Curr%'    
     csvWriter.writerow(line)
     print 'check_all_open, wait...'
     i = 0
@@ -437,44 +455,70 @@ def check_all_open():
             map_csv = 'data/'+str(code)+'_map.csv'
             if os.path.exists(map_csv):
                 name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
-                if (float(openprice)):
+                if (float(openprice) and float(lastclose)):
 #                    print name, code, open, lastclose, curr, todayhigh, todaylow
                     chg, avgH, avgL, count = check_history_open_data(map_csv, openprice, lastclose)
                     curr_chg = get_percent_str(curr, lastclose)
-                    line = (code, name,
-                            float('%.1f' % (avgH - chg)), 
-                            get_percent_str(openprice,lastclose), avgH, 
-                            float(todayhigh), get_percent_str(todayhigh,lastclose),
-                            count
+                    realH_percent = float('%.1f' % (get_percent_str(todayhigh,lastclose) - chg))
+                    guess_percent = float('%.1f' % (avgH - chg))
+                    curr_percent =  float('%.1f' % (get_percent_str(curr,lastclose)))                    
+                    line = (code, (row[1]),
+                            guess_percent, chg,
+                            float('%.1f' % avgH), get_percent_str(todayhigh,lastclose),
+                            float('%.1f' % avgL), get_percent_str(todaylow, lastclose),
+                            realH_percent,
+                            count, 
+                            float('%.1f' % (curr_percent - chg))
                             )
-                    csvWriter.writerow(line) 
-                    if (avgH and count <= 10):
+                    if (avgH and count > 4):
                         list.append(line)
         except:
             print 'error'
             
-    fcsv.close()
     print "*** Result ***"
     print len(list), len(list[0])
     list.sort(key=lambda data : data[2], reverse=True)
     print 'sorted.'
     i = 0
+    print 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count', 'CurrHighProfit%'
     for line in list:
-        if (i > 20):
-            break
+        csvWriter.writerow(line)
+        if (i < 20):
+            print line
         i = i + 1
-        print line[1], line[0], 'guess%', line[2], 'open%', line[3], 'avgH', line[4], \
-                'tHigh', line[5], 'RealHigh%', line[6] - line[3], 'count', line[7]
-               
+#        print line[0], line[1], 'guess%', line[2], 'open%', line[3], 'avgH%', line[4], \
+#                'tHigh%', line[5], 'avgL%', line[6], 'tLow%', line[7], \
+#                'RealHigh%', line[8], 'count', line[9]
+    fcsv.close()
+              
+              
+def list_lastclose_add(list, code, lastclose):
+#    print code, lastclose, len(list)
+    for i in range(len(list)):
+        if (list[i][0] == code):
+            list[i] = [code, lastclose]
+#            print 'lastclose list change.', code
+            return
+    list.append([code, lastclose])
+#    print 'lastclose list append'
+
+        
+def list_lastclose_get_lastclose(list, code):
+    for i in range(len(list)):
+        if (list[i][0] == code):
+            return list[i][1]
+    return 0 
+                      
   
 def get_day_history_csv():
-    for i in range(2000, 2014, 1):
-        for j in range(1, 12+1):
-            for k in range (1, 31+1):
-                date_str = str(i)+'-'+str('%02d' % j)+'-'+str('%02d' % k)
+    bak_lastclose = []
+    for year in range(2000, 2014, 1):
+        for month in range(1, 12+1):
+            for day in range (1, 31+1):
+                date_str = str(year)+'-'+str('%02d' % month)+'-'+str('%02d' % day)
                 print date_str
                 try:
-                    if (datetime.datetime(i,j,k).weekday() > 4):
+                    if (datetime.datetime(year,month,day).weekday() > 4):
                         print 'skip weekend.'
                         continue
                 except ValueError:
@@ -488,7 +532,7 @@ def get_day_history_csv():
                 index = 0
                 for row_code in reader:
                     code = row_code[0]
-#                    name = row_code[1]
+                    name = row_code[1]
                     data_csv = 'data/'+str(code)+'.csv'
                     # when no found in 10 stock history. means this date may be big holiday
                     # so, skip the rest stock.
@@ -501,18 +545,22 @@ def get_day_history_csv():
                     if os.path.exists(data_csv):
                         reader_data = csv.reader(file(data_csv,'rb'))
 #                        print 'checking file', data_csv
-                        
                         for row_data in reader_data:
                             try:
                                 if (row_data[0] and str(row_data[0]) == date_str and float(row_data[5]) != 0):
+                                    closeprice = float(row_data[4])
                                     if (count == 0):
                                         fcsv = open('data/'+date_str+'.csv', 'wb')
                                         csvWriter = csv.writer(fcsv)
-                                        line = 'Code' , 'Date' ,'Open','High','Low','Close','Volume','Adj Close'
+                                        line = 'Code' , 'Name', 'Date' ,'Open','High','Low','Close','Volume','Adj Close', 'LastClose'
                                         csvWriter.writerow(line)                                
                                     row_data.insert(0, code)
+                                    row_data.insert(1, name)
+                                    row_data.append(list_lastclose_get_lastclose(bak_lastclose, code))
                                     csvWriter.writerow(row_data)
                                     count = count + 1
+                                    list_lastclose_add(bak_lastclose, code, closeprice)
+#                                    print len(bak_lastclose),  bak_lastclose
                                     break
                             except IndexError:
                                 break
@@ -521,8 +569,127 @@ def get_day_history_csv():
                     fcsv.close()
     print 'done!'               
                         
-                        
-                        
+  
+def get_guess_realH_count():
+    cnt1 = 0
+    list = []
+    fcsv = open('data/'+'realH_count_10y_all'+'.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    line = 'Code' , 'Name', 'Date' ,'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count'
+    csvWriter.writerow(line)         
+    for year in range(2000, 2014, 1):
+        for month in range(1, 12+1):
+            for day in range (1, 31+1):
+                list = []
+#                if cnt1 > 10:
+#                    break;
+                cnt1 = cnt1 + 1
+                date_str = str(year)+'-'+str('%02d' % month)+'-'+str('%02d' % day)
+                print date_str
+                try:
+                    if (datetime.datetime(year,month,day).weekday() > 4):
+                        print 'skip weekend.'
+                        continue
+                except ValueError:
+                    print 'invalid date'
+                    continue
+                date_csv = 'data/'+date_str+'.csv'
+                if not os.path.exists(date_csv):
+                    print 'no data file.'
+                    continue                        
+                reader = csv.reader(file(date_csv,'rb'))
+                reader.next()
+                count = 0
+                bFirst = True
+                for line in reader:
+                    if bFirst:
+                        bFirst = False
+                        continue
+                    if len(line) < 10:
+                        continue
+                    code = line[0]
+                    name = line[1]
+                    openprice = float(line[3])
+                    todayhigh = float(line[4])
+                    todaylow = float(line[5])
+#                    print code, openprice, todayhigh
+                    lastclose = float(line[9])
+#                    print code, openprice, todayhigh, lastclose
+                    map_csv = 'data/'+str(code)+'_map.csv'
+                    if os.path.exists(map_csv):
+                        if (openprice and lastclose):
+                            chg, avgH, avgL, count = check_history_open_data(map_csv, openprice, lastclose)
+                            realH_percent = get_percent_str(todayhigh,lastclose) - chg
+                            guess_percent = float('%.1f' % (avgH - chg)) 
+                            line = (code, name, date_str,
+                                    guess_percent, chg,
+                                    avgH, get_percent_str(todayhigh,lastclose),
+                                    avgL, get_percent_str(todaylow,lastclose), 
+                                    realH_percent, 
+                                    count
+                                    )
+                            if (avgH and count > 3 and guess_percent > 2.5 and realH_percent > 4.0):
+                                list.append(line)
+#                                print line, (todayhigh-openprice), lastclose
+                                
+                list.sort(key=lambda data : data[3], reverse=True)
+                print 'sorted....................', len(list)
+                i = 0
+                for line in list:
+                    if (i > 20):
+                        break
+                    i = i + 1
+                    csvWriter.writerow(line)
+#                    print line[1], line[0], 'guess%', line[2], 'open%', line[3], 'avgH', line[4], \
+#                            'tHigh', line[5], 'RealHigh%', line[6], 'count', line[7]
+                                            
+def analyze_realH_count():                    
+    reader = csv.reader(file('data/realH_count_10y_all.csv','rb'))
+    reader.next()
+    count = 0
+    list = []
+    for readline in reader:
+#        if (count > 15):
+#            break
+        count = count + 1
+        line = (float('%.1f' % float(readline[9])), float(readline[10]))
+        list.append(line)
+    print list
+    list1=[]
+    list2=[]
+    for realH,cnt in list:
+        list1.append(realH)
+        list2.append(cnt)
+    print 'cnt', max(list2), min(list2)
+    print 'realH', max(list1), min(list1)
+    checkv = min(list1)
+    while(1):
+#        print checkv
+        total = 0
+        templist = []
+        for realH,cnt in list:
+#            print 'checking', checkv, realH
+            if (str(realH) == str(checkv)):
+#                print 'Equal !!!'
+                total = total + 1
+                templist.append(cnt)
+        if (total):
+#            print templist
+            print 'Checking', checkv, 'total', total, 'avgCnt', avg(templist)
+
+        checkv = checkv + 0.1
+        if checkv > max(list1):
+            break
+            
+    print 'done!'
+        
+
+
+
+
+
+
+                    
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -551,4 +718,10 @@ if  __name__ == '__main__':
             check_all_open()
         elif option=='7':
             get_day_history_csv()
+        elif option=='8':
+            get_guess_realH_count()
+        elif option=='9':
+            analyze_realH_count()
+            
     print 'main done!'
+
