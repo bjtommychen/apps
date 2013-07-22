@@ -37,8 +37,8 @@ def send_mail(subject, content, filename = None):
     try:  
         message = MIMEMultipart()  
         message.attach(MIMEText(content, 'plain'))  
-        message.attach(MIMEText(html, 'html'))  
-        message.attach(MIMEText(html_sign, 'html'))  
+#        message.attach(MIMEText(html, 'html'))  
+#        message.attach(MIMEText(html_sign, 'html'))  
         message["Subject"] = subject  
         message["From"] = MAIL_FROM  
         message["To"] = ";".join(MAIL_LIST)
@@ -70,7 +70,7 @@ def send_mail(subject, content, filename = None):
  
 if __name__ == "__main__":  
 #   , r"G:\attachment.rar"): 
-    if send_mail("subject", "Hi!\nHow are you?\nHere is the link you wanted:\nhttp://www.python.org", "readme.txt"):
+    if send_mail("subject", "Hi!\nHow are you?\nHere is the link you wanted:\nhttp://www.python.org", "check_all_open.csv"):
         print "send mail OK."
     else:  
         print "send mail failed !"
