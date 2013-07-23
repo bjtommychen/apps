@@ -5,6 +5,7 @@ import os
 import socket
 import math
 import csv
+import shutil
 
 from StockSmart import *
 from Gtalk_test import *
@@ -63,6 +64,15 @@ def check_market_justopen():
         checkopen = True
     return checkopen
 
+def check_if_need_send_analysis_report():
+    checkopen = False
+    text = time.strftime("%H:%M", time.localtime())
+    if not check_market_open():
+        return False
+    if ':30' in text or ':00' in text:
+        checkopen = True
+    return checkopen
+
 def stock_daemon():
     '''Get the price of stock list, then send it out through Gtalk.
     
@@ -71,8 +81,10 @@ def stock_daemon():
     inited = False
     market_open = False
     need_checkall = True
+    DebugAll = False
     Gtalk_enable_send(True)
     Gtalk_send("stock_daemon v2.0 Online." + socket.gethostname())
+    Gtalk_send("send 'stock help' for helps.")
     text = ''
     try:
         while True:
@@ -83,11 +95,17 @@ def stock_daemon():
                 price_old = 0.
                 market_open = check_market_open()
                 
-            if check_market_justopen() and need_checkall :
-                check_all_open()
-                send_mail("check_all_open result csv", "Hi!\nCheck this !!!", "check_all_open.csv")
-                need_checkall = False
-                Gtalk_send('Sent mail with check_all_open.csv, please check soon!')
+            if check_if_need_send_analysis_report() or DebugAll:
+                if need_checkall or DebugAll:
+                    Gtalk_send('Preparing analysis reoprt...')
+                    check_all_open()
+                    shutil.copy2("check_all_open.csv", 'data/check_all_open_'+time.strftime("%Y%m%d_%H%M", time.localtime())+'.csv')
+                    send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y%m%d-%H%M", time.localtime()),
+                               'data/check_all_open_'+time.strftime("%Y%m%d_%H%M", time.localtime())+'.csv')
+                    need_checkall = False
+                    Gtalk_send('Sent mail with check_all_open.csv, please check soon!')
+            else:
+                need_checkall = True
                 
             text = ''
             #get time
@@ -115,11 +133,28 @@ def stock_daemon():
                 text += '%s: %s, %s, %s%%' %(name,price_current, price_diff, change_percent)
                 text += '\n'
                 index += 1    
-            if diff:# or True:
+            if diff or DebugAll:
                 Gtalk_send(text)
 #            else:
 #                print 'same ',
-            time.sleep(15)
+            sleep_seconds = 15
+            DebugAll = False
+            while(sleep_seconds):
+                sleep_seconds = sleep_seconds - 1
+                cmds = Gtalk_GetCustomCmd('stock')
+#                print 'Gtalk_GetCustomCmd return', cmds
+                if cmds and len(cmds.split(' ')) > 1:
+#                    print 'Get Custom Cmds:', cmds
+                    cust_cmds = cmds.split(' ')[1]
+                    print 'Stock Custom commands:', cust_cmds
+                    if (cust_cmds == 'help'):
+                        Gtalk_send('Stock helps:\nstock guess: get check_all_open.csv by mail.')
+                    elif (cust_cmds == 'guess'):
+                        DebugAll = True
+                    sleep_seconds = 0
+                time.sleep(1)
+#                print '.'
+                
             if not Gtalk_isRunning():
                 Gtalk_send("Gtalk sleep, wakeup it!")
             inited = True
@@ -438,7 +473,7 @@ def check_all_open():
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     fcsv = open('check_all_open.csv', 'wb')
     csvWriter = csv.writer(fcsv)
-    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count', 'Curr%'    
+    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%'    
     csvWriter.writerow(line)
     print 'check_all_open, wait...'
     i = 0
@@ -483,8 +518,8 @@ def check_all_open():
     print 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count', 'CurrHighProfit%'
     for line in list:
         csvWriter.writerow(line)
-        if (i < 20):
-            print line
+#        if (i < 20):
+#            print line
         i = i + 1
 #        print line[0], line[1], 'guess%', line[2], 'open%', line[3], 'avgH%', line[4], \
 #                'tHigh%', line[5], 'avgL%', line[6], 'tLow%', line[7], \
