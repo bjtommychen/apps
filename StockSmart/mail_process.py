@@ -12,7 +12,7 @@ MAIL_HOST = 'smtp.gmail.com'
 MAIL_PORT = 587 
 MAIL_USER = 'tchen1973@gmail.com' 
 MAIL_PASS = 'Happyday310'
-MAIL_FROM = 'TCHEN1973<tchen1973@gmail.com>'
+MAIL_FROM = 'TCHEN1973 ROBOT<tchen1973@gmail.com>'
 
 html = """\
 <html>
@@ -70,7 +70,9 @@ def send_mail(subject, content, filename = None):
  
 if __name__ == "__main__":  
 #   , r"G:\attachment.rar"): 
-    if send_mail("subject", "Hi!\nHow are you?\nHere is the link you wanted:\nhttp://www.python.org", "check_all_open.csv"):
+#    if send_mail("subject", "Hi!\nHow are you?\nHere is the link you wanted:\nhttp://www.python.org", "check_all_open.csv"):
+    if send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y%m%d-%H%M", time.localtime()),
+                   "check_all_open.csv"):  
         print "send mail OK."
     else:  
         print "send mail failed !"
