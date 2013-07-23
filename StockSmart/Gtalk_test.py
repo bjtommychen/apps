@@ -21,6 +21,8 @@ string_off = 'Gtalk send msg : turn Off!'
 string_uptime = 'Gtalk uptime:'
 string_info = 'Gtalk info:'
 
+custom_cmd = ''
+
 # Debug
 def log_d(string):
     if False:
@@ -66,12 +68,25 @@ def messageCB(contex, msg):
             contex.send(xmpp.Message(msg.getFrom(), text, typ = 'chat'))
         else:
             contex.send(xmpp.Message(msg.getFrom(), (msg.getBody()), typ = 'chat'))
+            global custom_cmd
+            custom_cmd = msg.getBody()
+#            print 'getBody', custom_cmd
+
+def Gtalk_GetCustomCmd(prefix):
+    global custom_cmd
+#    print 'Enter Gtalk_GetCustomCmd', prefix, custom_cmd
+    if prefix in custom_cmd:
+        ret = custom_cmd
+        custom_cmd = ''
+        return ret
+    else:
+        return ''
 
 def presenceHandler(contex, presence):
     if presence:
-        print "-"*100
-        print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
-        print "~"*100
+#        print "-"*100
+#        print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
+#        print "~"*100
         if presence.getType()=='subscribe':
             jid = presence.getFrom().getStripped()
             """ Authorise JID 'jid'. Works only if these JID requested auth previously. """
@@ -97,7 +112,7 @@ def Gtalk_send(msg):
         log_d( 'send ' + res)
     else:
         log_d(msg)
-
+        
 def Gtalk_init():
 #    if not gtalk_inited:
 #        gtalk_inited = True
@@ -145,6 +160,7 @@ def Gtalk_init():
     log_d ('registerHandler')
     conn.RegisterHandler('message', messageCB)
     conn.RegisterHandler('presence', presenceHandler)
+    print 'Gtalk_init done.'
     return 0
     
 def Gtalk_run():
