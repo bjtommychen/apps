@@ -6,6 +6,7 @@ import socket
 import math
 import csv
 import shutil
+import random
 
 from StockSmart import *
 from Gtalk_test import *
@@ -717,14 +718,224 @@ def analyze_realH_count():
             break
             
     print 'done!'
+    
+#name, openprice, lastclose, curr, todayhigh, todaylow    
+def get_history_price(date_csv, check_code):        
+    reader = csv.reader(file(date_csv,'rb'))
+    reader.next()
+    count = 0
+    for line in reader:
+        if len(line) < 10:
+            continue
+        if (check_code == line[0]):
+            code = line[0]
+            name = line[1]
+            openprice = float(line[3])
+            todayhigh = float(line[4])
+            todaylow = float(line[5])
+            todayclose = float(line[6])
+            lastclose = float(line[9])
+            return (name, "%-5s" % openprice, "%-5s" % lastclose, "%-5s" % todayclose, 
+                "%-5s" % todayhigh, "%-5s" % todaylow)
+#    print 'get_history_price failed.', check_code
+    return ('', 0, 0, 0, 0, 0)
+    
+    
+def check_all_open_from_history(date_str, date_csv):
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    fcsv = open('temp_'+date_str+'.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%','openprice', 'lastclose',date_csv    
+    csvWriter.writerow(line)
+    print 'check_all_open_from_history, wait...'
+    i = 0
+    list = []
+    for row in reader:
+#        if (i > 10):
+#            break;
+        i = i+1;
+        if (i%100 == 0):
+            print i,'...',
+        try:
+            code = row[0]
+            name = row[1]
+            map_csv = 'data/'+str(code)+'_map.csv'
+            if os.path.exists(map_csv) and os.path.exists(date_csv):
+                name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
+#                if (code == '600315'):
+#                    print name, openprice, lastclose, curr, todayhigh, todaylow 
+                if (float(openprice) and float(lastclose)):
+#                    print name, code, open, lastclose, curr, todayhigh, todaylow
+                    chg, avgH, avgL, count = check_history_open_data(map_csv, openprice, lastclose)
+#                    if (code == '600315'):
+#                        print chg, avgH, avgL, count                    
+                    curr_chg = get_percent_str(curr, lastclose)
+                    realH_percent = float('%.1f' % (get_percent_str(todayhigh,lastclose) - chg))
+                    guess_percent = float('%.1f' % (avgH - chg))
+                    curr_percent =  float('%.1f' % (get_percent_str(curr,lastclose)))                    
+                    line = (code, (row[1]),
+                            guess_percent, chg,
+                            float('%.1f' % avgH), get_percent_str(todayhigh,lastclose),
+                            float('%.1f' % avgL), get_percent_str(todaylow, lastclose),
+                            realH_percent,
+                            count, 
+                            float('%.1f' % (curr_percent - chg)),
+                            float(openprice),
+                            float(lastclose)
+                            )
+#                    if (code == '600315'):
+#                        print line
+                    if (avgH and count > 4):
+                        list.append(line)
+        except:
+            print 'error'
+            
+    print "*** Result ***",
+    print 'Items:', len(list), 'Field:', len(list[0])
+    list.sort(key=lambda data : data[2], reverse=True)
+#    print 'sorted.'
+    i = 0
+#    print 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count', 'CurrHighProfit%'
+    for line in list:
+        if (i < 20):
+            csvWriter.writerow(line)
+#            print line
+        i = i + 1
+    fcsv.close() 
+    return list       
         
+def do_trade_emulator():
+    global myhold
+    
+    cnt1 = 0
+    myhold_init(10*10000)
+    print myhold
+    for year in range(2013, 2014, 1):
+        for month in range(1, 12+1):
+            for day in range (1, 31+1):
+                list = []
+#                if cnt1 > 8:
+#                    break;
+                cnt1 = cnt1 + 1
+                date_str = str(year)+'-'+str('%02d' % month)+'-'+str('%02d' % day)
+                print date_str,
+                try:
+                    if (datetime.datetime(year,month,day).weekday() > 4):
+                        print 'skip weekend.'
+                        continue
+                except ValueError:
+                    print 'invalid date'
+                    continue
+                date_csv = 'data/'+date_str+'.csv'    
+                if not os.path.exists(date_csv):
+                    print 'no data file.'
+                    continue                        
+                today_list = check_all_open_from_history(date_str, date_csv)
+#                print today_list
+                myhold_to_sell = myhold[:]
+                if len(myhold_to_sell):
+#                    print 'need sell now!'
+                    for code,buyprice,amount in myhold_to_sell:
+#                        print 'try to sell', code
+                        name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
+                        if openprice:
+                            myhold_sell(code, float(openprice), float(amount))
+                            print '--------------- sell price chg%', get_percent_str(openprice, buyprice)
+#                        print myhold
+                         
+#                if len(myhold) == 0:
+                if True:
+#                    print 'need buy some.'
+                    buylists = choose_one2buy(today_list)
+                    for buylist in buylists:
+                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, openprice, lastclose = buylist 
+                        myhold_buy(buylist[0], openprice, int(10000/openprice))
+                myhold_listall()
+    myhold_listall()
+    print 'done!'
 
+mycash = 0
+myhold=[]
+def myhold_init(value):
+    global mycash
+    global myhold
+    mycash = value
+    myhold = []   
+    print 'init. mycash', value
 
+def myhold_get_cashsize():
+    global mycash
+    global myhold
+    print 'mycash', mycash
+    return mycash
 
+def myhold_listall():
+    global mycash
+    global myhold
+    market_value = 0    
+    print '*************** list ****************'
+    
+    for code,price,amount in myhold:
+        if (code and price and amount):
+            print 'list',code,price,amount
+            market_value = market_value + price*amount
+    print 'Cash:', int(mycash), ', Total:', int(mycash + market_value)
+    print '***************************************'
+        
+def myhold_buy(code, price, amount):
+    global mycash
+    global myhold
+    if ((price*amount)*1.002) < mycash:
+        line = (code, price, amount)
+        myhold.insert(0, line)
+        mycash = mycash - (price*amount)*(1. + 0.002)
+        print 'buy', line
+    else:
+        print 'buy,out of cash!'
 
+def myhold_sell(code, price, sell_amount):
+    global mycash
+    global myhold
+    for i in range(0,len(myhold)):
+        if myhold[i][0] == code:
+            code,buyprice,amount = myhold[i]
+            print 'sell', code, price, sell_amount
+            if sell_amount <= amount:
+                mycash = mycash + price*sell_amount*(1. - 0.002)
+                if  sell_amount < amount:
+                    line = (code, buyprice,  amount - sell_amount)
+                    del myhold[i]
+                    myhold.insert(0, line)                    
+                else:
+                    del myhold[i]
+                return
+    print 'sell failed.'  
 
-
-                    
+def do_test_myhold():
+    myhold_init(10*10000)
+    myhold_listall()
+    myhold_buy('11', 4.5, 1000)
+    myhold_listall()
+    myhold_buy('12', 5.5, 200)
+    myhold_listall()
+    myhold_sell('13', 1.1, 200)
+    myhold_listall()
+    myhold_sell('11', 4.8, 800)
+    myhold_listall()
+    myhold_sell('12', 5.6, 200)
+    myhold_listall()
+        
+buy_max = 0        
+def choose_one2buy(today_list):
+    global buy_max
+    buylists = []
+#    buylists.append(today_list[buy_max-1])
+#    for i in range(0, buy_max):
+#        buylists.append(today_list[i])
+    index = random.randint(0, len(today_list))
+    buylists.append(today_list[index])
+    print 'random number ', index
+    return buylists
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -757,6 +968,13 @@ if  __name__ == '__main__':
             get_guess_realH_count()
         elif option=='9':
             analyze_realH_count()
+        elif option=='10':
+            for i in range(0, 10):
+                global buy_max
+                buy_max = buy_max + 1 
+                print 'BUY_MAX', buy_max, 'START!'
+                do_trade_emulator()
+                print 'BUY_MAX', buy_max, 'END!'
             
     print 'main done!'
 
