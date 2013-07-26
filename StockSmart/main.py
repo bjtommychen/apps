@@ -7,12 +7,14 @@ import math
 import csv
 import shutil
 import random
+import winsound
 
 from StockSmart import *
 from Gtalk_test import *
 from mail_process import *
 
 code_list = ['sh600036', 'sh601328']
+buy_max = 0        
 
 #windows: GBK
 #ubuntu: ascii
@@ -22,6 +24,15 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 reload(sys) 
 sys.setdefaultencoding('utf8')
 #sys.setdefaultencoding('ascii')
+
+
+def beep_sos(): 
+    for i in range(0, 3): 
+        winsound.Beep(2000, 100) 
+    for i in range(0, 3): 
+        winsound.Beep(2000, 400)
+    for i in range(0, 3):
+        winsound.Beep(2000, 100)
 
 def autoreload():
     mod_names = ['Gtalk_test', 'StockSmart']
@@ -474,7 +485,7 @@ def check_all_open():
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     fcsv = open('check_all_open.csv', 'wb')
     csvWriter = csv.writer(fcsv)
-    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%'    
+    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '', 'lastclose', 'open', 'curr'    
     csvWriter.writerow(line)
     print 'check_all_open, wait...'
     i = 0
@@ -504,7 +515,11 @@ def check_all_open():
                             float('%.1f' % avgL), get_percent_str(todaylow, lastclose),
                             realH_percent,
                             count, 
-                            float('%.1f' % (curr_percent - chg))
+                            float('%.1f' % (curr_percent - chg)),
+                            '',
+                            float('%.1f' % float(lastclose)),
+                            float('%.1f' % float(openprice)),
+                            float('%.1f' % float(curr)),
                             )
                     if (avgH and count > 4):
                         list.append(line)
@@ -743,7 +758,21 @@ def get_history_price(date_csv, check_code):
     
 def check_all_open_from_history(date_str, date_csv):
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
-    fcsv = open('temp_'+date_str+'.csv', 'wb')
+    filename = 'data/check_all_open_'+date_str+'.csv'
+    if os.path.exists(filename):
+        print 'get data from', filename
+        list = []
+        lists = csv.reader(file(filename,'rb'))
+        lists.next()
+        for row in lists:
+            line = (row[0], row[1],
+                    float(row[2]),float(row[3]),float(row[4]),float(row[5]),float(row[6]),
+                    float(row[7]),float(row[8]),float(row[9]),float(row[10]),float(row[11]),
+                    float(row[12])
+                            )
+            list.append(line)
+        return list
+    fcsv = open(filename, 'wb')
     csvWriter = csv.writer(fcsv)
     line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%','openprice', 'lastclose',date_csv    
     csvWriter.writerow(line)
@@ -797,7 +826,7 @@ def check_all_open_from_history(date_str, date_csv):
     i = 0
 #    print 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count', 'CurrHighProfit%'
     for line in list:
-        if (i < 20):
+        if (i < 200):
             csvWriter.writerow(line)
 #            print line
         i = i + 1
@@ -808,9 +837,9 @@ def do_trade_emulator():
     global myhold
     
     cnt1 = 0
-    myhold_init(10*10000)
+    myhold_init(100*10000)
     print myhold
-    for year in range(2013, 2014, 1):
+    for year in range(2012, 2014, 1):
         for month in range(1, 12+1):
             for day in range (1, 31+1):
                 list = []
@@ -839,6 +868,7 @@ def do_trade_emulator():
 #                        print 'try to sell', code
                         name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
                         if openprice:
+#                            myhold_sell(code, (float(todaylow)+float(todayhigh))/2, float(amount))
                             myhold_sell(code, float(openprice), float(amount))
                             print '--------------- sell price chg%', get_percent_str(openprice, buyprice)
 #                        print myhold
@@ -846,9 +876,10 @@ def do_trade_emulator():
 #                if len(myhold) == 0:
                 if True:
 #                    print 'need buy some.'
-                    buylists = choose_one2buy(today_list)
+                    weekday  = datetime.datetime(year,month,day).weekday()
+                    buylists = choose_one2buy(today_list, weekday)
                     for buylist in buylists:
-                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, openprice, lastclose = buylist 
+                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, openprice, lastclose = buylist
                         myhold_buy(buylist[0], openprice, int(10000/openprice))
                 myhold_listall()
     myhold_listall()
@@ -925,16 +956,27 @@ def do_test_myhold():
     myhold_sell('12', 5.6, 200)
     myhold_listall()
         
-buy_max = 0        
-def choose_one2buy(today_list):
+def choose_one2buy(today_list, weekday):
     global buy_max
     buylists = []
 #    buylists.append(today_list[buy_max-1])
 #    for i in range(0, buy_max):
 #        buylists.append(today_list[i])
-    index = random.randint(0, len(today_list))
-    buylists.append(today_list[index])
-    print 'random number ', index
+#    index = random.randint(0, len(today_list))
+#    buylists.append(today_list[index])
+#    print 'random number ', index
+#    if (weekday != buy_max):
+#        return []
+
+    total = 0
+    for list in today_list:
+        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, openprice, lastclose = list
+        if 20 > count >= 1:
+            print list
+            buylists.append(list)
+            total = total + 1
+        if total ==3:
+            break
     return buylists
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
@@ -969,12 +1011,12 @@ if  __name__ == '__main__':
         elif option=='9':
             analyze_realH_count()
         elif option=='10':
-            for i in range(0, 10):
-                global buy_max
-                buy_max = buy_max + 1 
+            
+            for i in range(0, 1):
                 print 'BUY_MAX', buy_max, 'START!'
                 do_trade_emulator()
                 print 'BUY_MAX', buy_max, 'END!'
+                buy_max = buy_max + 1 
             
     print 'main done!'
-
+    beep_sos()
