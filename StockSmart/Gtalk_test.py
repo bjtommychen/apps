@@ -107,8 +107,11 @@ def Gtalk_send(msg):
                 log_d('Gtalk_init failed. retry!')
             Gtalk_run()
             time.sleep(2)
-        log_d('send msg:' + msg)    
-        res = conn.send(xmpp.Message('chen.tao.tommy@gmail.com', msg, typ = 'chat'))
+        log_d('send msg:' + msg)
+        try:    
+            res = conn.send(xmpp.Message('chen.tao.tommy@gmail.com', msg, typ = 'chat'))
+        except:
+            print 'gtalk send msg failed.'
         log_d( 'send ' + res)
     else:
         log_d(msg)

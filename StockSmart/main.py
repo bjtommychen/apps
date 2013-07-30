@@ -7,7 +7,9 @@ import math
 import csv
 import shutil
 import random
-import winsound
+import datetime
+
+#import winsound
 
 from StockSmart import *
 from Gtalk_test import *
@@ -27,12 +29,13 @@ sys.setdefaultencoding('utf8')
 
 
 def beep_sos(): 
-    for i in range(0, 3): 
-        winsound.Beep(2000, 100) 
-    for i in range(0, 3): 
-        winsound.Beep(2000, 400)
-    for i in range(0, 3):
-        winsound.Beep(2000, 100)
+    sys.stdout.write('\a')
+#    for i in range(0, 3): 
+#        winsound.Beep(2000, 100) 
+#    for i in range(0, 3): 
+#        winsound.Beep(2000, 400)
+#    for i in range(0, 3):
+#        winsound.Beep(2000, 100)
 
 def autoreload():
     mod_names = ['Gtalk_test', 'StockSmart']
@@ -59,6 +62,8 @@ def test_StockSmart():
 
 def check_market_open():
     checkopen = False
+    if (datetime.datetime.now().weekday() > 4):
+        return False
     text = time.strftime("%H:%M", time.localtime())
     if text > '09:20' and text <= '11:30':
         checkopen = True
@@ -78,6 +83,8 @@ def check_market_justopen():
 
 def check_if_need_send_analysis_report():
     checkopen = False
+    if (datetime.datetime.now().weekday() > 4):
+        return False    
     text = time.strftime("%H:%M", time.localtime())
     if not check_market_open():
         return False
@@ -379,6 +386,7 @@ def get_all_history():
             get_stock_history_csv(row[0], row[1])
         except:
             print 'error'
+#        break
 
 #########################################################################
 def write_price_map_csv(code, name, history_csv, out_csv):
@@ -517,9 +525,9 @@ def check_all_open():
                             count, 
                             float('%.1f' % (curr_percent - chg)),
                             '',
-                            float('%.1f' % float(lastclose)),
-                            float('%.1f' % float(openprice)),
-                            float('%.1f' % float(curr)),
+                            float('%.2f' % float(lastclose)),
+                            float('%.2f' % float(openprice)),
+                            float('%.2f' % float(curr)),
                             )
                     if (avgH and count > 4):
                         list.append(line)
@@ -765,16 +773,18 @@ def check_all_open_from_history(date_str, date_csv):
         lists = csv.reader(file(filename,'rb'))
         lists.next()
         for row in lists:
+#            print row
             line = (row[0], row[1],
                     float(row[2]),float(row[3]),float(row[4]),float(row[5]),float(row[6]),
-                    float(row[7]),float(row[8]),float(row[9]),float(row[10]),float(row[11]),
-                    float(row[12])
+                    float(row[7]),float(row[8]),float(row[9]),float(row[10]),row[11],
+                    float(row[12]), float(row[13]), float(row[14]), float(row[15])
                             )
             list.append(line)
         return list
     fcsv = open(filename, 'wb')
     csvWriter = csv.writer(fcsv)
-    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%','openprice', 'lastclose',date_csv    
+    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '',\
+            'lastclose', 'openprice', 'todayHigh', 'todayLow', date_csv    
     csvWriter.writerow(line)
     print 'check_all_open_from_history, wait...'
     i = 0
@@ -809,8 +819,11 @@ def check_all_open_from_history(date_str, date_csv):
                             realH_percent,
                             count, 
                             float('%.1f' % (curr_percent - chg)),
+                            '',
+                            float(lastclose),
                             float(openprice),
-                            float(lastclose)
+                            float(todayhigh),
+                            float(todaylow)
                             )
 #                    if (code == '600315'):
 #                        print line
@@ -820,14 +833,16 @@ def check_all_open_from_history(date_str, date_csv):
             print 'error'
             
     print "*** Result ***",
-    print 'Items:', len(list), 'Field:', len(list[0])
+    print 'Items:', len(list), 
+    if (len(list)):
+        print 'Field:', len(list[0])
     list.sort(key=lambda data : data[2], reverse=True)
 #    print 'sorted.'
     i = 0
 #    print 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealHighProfit%', 'count', 'CurrHighProfit%'
     for line in list:
-        if (i < 200):
-            csvWriter.writerow(line)
+#        if (i < 200):
+        csvWriter.writerow(line)
 #            print line
         i = i + 1
     fcsv.close() 
@@ -839,7 +854,7 @@ def do_trade_emulator():
     cnt1 = 0
     myhold_init(100*10000)
     print myhold
-    for year in range(2012, 2014, 1):
+    for year in range(2013, 2014, 1):
         for month in range(1, 12+1):
             for day in range (1, 31+1):
                 list = []
@@ -879,11 +894,34 @@ def do_trade_emulator():
                     weekday  = datetime.datetime(year,month,day).weekday()
                     buylists = choose_one2buy(today_list, weekday)
                     for buylist in buylists:
-                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, openprice, lastclose = buylist
+                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
                         myhold_buy(buylist[0], openprice, int(10000/openprice))
                 myhold_listall()
     myhold_listall()
     print 'done!'
+
+def choose_one2buy(today_list, weekday):
+    global buy_max
+    buylists = []
+#    buylists.append(today_list[buy_max-1])
+#    for i in range(0, buy_max):
+#        buylists.append(today_list[i])
+#    index = random.randint(0, len(today_list))
+#    buylists.append(today_list[index])
+#    print 'random number ', index
+#    if (weekday != buy_max):
+#        return []
+
+    total = 0
+    for list in today_list:
+        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = list
+        if 20 > count >= 1 and 2.0 > open > -3.0:
+            print list
+            buylists.append(list)
+            total = total + 1
+        if total ==3:
+            break
+    return buylists
 
 mycash = 0
 myhold=[]
@@ -956,28 +994,7 @@ def do_test_myhold():
     myhold_sell('12', 5.6, 200)
     myhold_listall()
         
-def choose_one2buy(today_list, weekday):
-    global buy_max
-    buylists = []
-#    buylists.append(today_list[buy_max-1])
-#    for i in range(0, buy_max):
-#        buylists.append(today_list[i])
-#    index = random.randint(0, len(today_list))
-#    buylists.append(today_list[index])
-#    print 'random number ', index
-#    if (weekday != buy_max):
-#        return []
 
-    total = 0
-    for list in today_list:
-        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, openprice, lastclose = list
-        if 20 > count >= 1:
-            print list
-            buylists.append(list)
-            total = total + 1
-        if total ==3:
-            break
-    return buylists
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -997,7 +1014,7 @@ if  __name__ == '__main__':
         elif option=='2':
             stock_daemon()    
         elif option=='3':
-            get_price_map()
+            get_all_history()
         elif option=='4':
             get_price_map_csv()
         elif option=='5':
