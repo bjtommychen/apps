@@ -117,9 +117,9 @@ def stock_daemon():
             if check_if_need_send_analysis_report() or DebugAll:
                 if need_checkall or DebugAll:
                     Gtalk_send('Preparing analysis reoprt...')
-                    check_all_open()
+                    maintext = check_all_open()
                     shutil.copy2("check_all_open.csv", 'data/check_all_open_'+time.strftime("%Y%m%d_%H%M", time.localtime())+'.csv')
-                    send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y%m%d-%H%M", time.localtime()),
+                    send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y%m%d-%H%M", time.localtime()) + maintext,
                                'data/check_all_open_'+time.strftime("%Y%m%d_%H%M", time.localtime())+'.csv')
                     need_checkall = False
                     Gtalk_send('Sent mail with check_all_open.csv, please check soon!')
@@ -468,10 +468,10 @@ def get_rt_price(code):
         else:
             return ('', 0, 0, 0, 0, 0)
 
-def check_history_open_data(map_csv, open, lastclose):
+def check_history_open_data(map_csv, openprice, lastclose):
     if os.path.exists(map_csv):
         reader = csv.reader(file(map_csv,'rb'))
-        val = get_percent_str(open, lastclose)
+        val = get_percent_str(openprice, lastclose)
 #        print 'val', val
 #        print type(val)
         i = 0
@@ -549,7 +549,19 @@ def check_all_open():
 #                'tHigh%', line[5], 'avgL%', line[6], 'tLow%', line[7], \
 #                'RealHigh%', line[8], 'count', line[9]
     fcsv.close()
-              
+    # highlight one
+    maintext = "\n"
+    total = 0
+    for oneline in list:
+        if total > 5:
+            break;
+        total += 1
+        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open_gap, space1, lastclose, openprice, curr_price = oneline
+        if todayl <= avgl:
+            maintext += str(oneline)
+            maintext += "\n"
+    print maintext
+    return maintext
               
 def list_lastclose_add(list, code, lastclose):
 #    print code, lastclose, len(list)
@@ -894,7 +906,7 @@ def do_trade_emulator():
                     weekday  = datetime.datetime(year,month,day).weekday()
                     buylists = choose_one2buy(today_list, weekday)
                     for buylist in buylists:
-                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
+                        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
                         myhold_buy(buylist[0], openprice, int(10000/openprice))
                 myhold_listall()
     myhold_listall()
