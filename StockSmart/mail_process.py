@@ -31,9 +31,18 @@ html_sign = """\
     """ + os.getcwd() +"""</i> </p>
     <b>End</b>
 """    
+def send_mail(subject, content, filename):
+    try_num = 5
+    while(try_num):
+        if send_mail_local(subject, content, filename):
+            return True
+        print 'send mail failed. try again!'
+        try_num -= 1
+    return False
  
-def send_mail(subject, content, filename = None):  
-    print 'enter send mail.'
+ 
+def send_mail_local(subject, content, filename = None):  
+    print 'start to send mail.'
     try:  
         message = MIMEMultipart()  
         message.attach(MIMEText(content, 'plain'))  
@@ -60,7 +69,7 @@ def send_mail(subject, content, filename = None):
         smtp.starttls()
         smtp.ehlo()
         smtp.login(MAIL_USER, MAIL_PASS)  
-        print "login."
+        print "login OK."
         smtp.sendmail(MAIL_FROM, MAIL_LIST, message.as_string())  
         smtp.quit()  
         return True 
@@ -71,7 +80,7 @@ def send_mail(subject, content, filename = None):
 if __name__ == "__main__":  
 #   , r"G:\attachment.rar"): 
 #    if send_mail("subject", "Hi!\nHow are you?\nHere is the link you wanted:\nhttp://www.python.org", "check_all_open.csv"):
-    if send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y%m%d-%H%M", time.localtime()),
+    if send_mail("TEST:Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y%m%d-%H%M", time.localtime()),
                    "check_all_open.csv"):  
         print "send mail OK."
     else:  
