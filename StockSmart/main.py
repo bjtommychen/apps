@@ -558,13 +558,16 @@ def check_all_open():
     maintext = "\n"
     total = 0
     for oneline in list:
-        if total > 5:
+        if total >= 10:
             break;
-        total += 1
         code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open_gap, space1, lastclose, openprice, curr_price = oneline
         if todayl <= avgl:
-            maintext += str(oneline)
+            maintext += str(oneline) 
+            maintext += '\n\t\tCurr:' + str(get_percent_str(float(curr_price), float(lastclose)))+'%,'
+            maintext += 'Curr-avgL:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgl)) +'%,'
             maintext += "\n"
+            total += 1
+
     print maintext
     return maintext
               
