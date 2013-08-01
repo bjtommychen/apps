@@ -379,14 +379,19 @@ def get_stock_history_csv(code, name):
         
 
 def get_all_history():
-    reader = csv.reader(file('table_stocklist_sh.csv','rb'))    
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    error_count = 0    
     for row in reader:
 #        print 'code:', row[0], 'name:', row[1]
         try:
             get_stock_history_csv(row[0], row[1])
+            error_count = 0
         except:
             print 'error'
-#        break
+            error_count = error_count + 1
+        if error_count > 10:
+            print 'error count gt 10 ! exit !'
+            break
 
 #########################################################################
 def write_price_map_csv(code, name, history_csv, out_csv):
@@ -866,12 +871,12 @@ def do_trade_emulator():
     cnt1 = 0
     myhold_init(100*10000)
     print myhold
-    for year in range(2013, 2014, 1):
+    for year in range(2012, 2014, 1):
         for month in range(1, 12+1):
             for day in range (1, 31+1):
                 list = []
-#                if cnt1 > 8:
-#                    break;
+#                 if cnt1 > 5:
+#                     break;
                 cnt1 = cnt1 + 1
                 date_str = str(year)+'-'+str('%02d' % month)+'-'+str('%02d' % day)
                 print date_str,
@@ -895,9 +900,10 @@ def do_trade_emulator():
 #                        print 'try to sell', code
                         name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
                         if openprice:
+                            sellprice = float(openprice)
 #                            myhold_sell(code, (float(todaylow)+float(todayhigh))/2, float(amount))
-                            myhold_sell(code, float(openprice), float(amount))
-                            print '--------------- sell price chg%', get_percent_str(openprice, buyprice)
+                            myhold_sell(code, sellprice, float(amount))
+                            print '--------------- sell price chg%', get_percent_str(sellprice, buyprice)
 #                        print myhold
                          
 #                if len(myhold) == 0:
@@ -906,8 +912,11 @@ def do_trade_emulator():
                     weekday  = datetime.datetime(year,month,day).weekday()
                     buylists = choose_one2buy(today_list, weekday)
                     for buylist in buylists:
-                        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
-                        myhold_buy(buylist[0], openprice, int(10000/openprice))
+                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
+                        buyprice = lastclose * (1.0 + ((avgl+todayl)/2)/100.)
+                        print buyprice, openprice
+#                         myhold_buy(buylist[0], openprice, int(10000/openprice))
+                        myhold_buy(buylist[0], buyprice, int(10000/buyprice))
                 myhold_listall()
     myhold_listall()
     print 'done!'
@@ -915,19 +924,22 @@ def do_trade_emulator():
 def choose_one2buy(today_list, weekday):
     global buy_max
     buylists = []
-#    buylists.append(today_list[buy_max-1])
-#    for i in range(0, buy_max):
-#        buylists.append(today_list[i])
-#    index = random.randint(0, len(today_list))
-#    buylists.append(today_list[index])
-#    print 'random number ', index
-#    if (weekday != buy_max):
-#        return []
+    if len(today_list) == 0:
+        return []
+
+#     if True:
+#         total = 3
+#         while(total):
+#             index = random.randint(0, len(today_list)-1)
+#             print index, len(today_list)
+#             buylists.append(today_list[index])
+#             total = total - 1
+#         return buylists
 
     total = 0
     for list in today_list:
         code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = list
-        if 20 > count >= 1 and 2.0 > open > -3.0:
+        if 20 > count >= 1 and 2.0 > open > -3.0 and guess < 6 and todayl <= avgl:
             print list
             buylists.append(list)
             total = total + 1
