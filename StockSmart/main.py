@@ -14,6 +14,8 @@ import datetime
 from StockSmart import *
 from Gtalk_test import *
 from mail_process import *
+from trader import *
+
 
 code_list = ['sh600036', 'sh601328']
 buy_max = 0        
@@ -96,6 +98,7 @@ def stock_daemon():
     '''Get the price of stock list, then send it out through Gtalk.
     
     No arguments. '''
+    print 'enter stock_daemon.'
     price_old = 0.0
     inited = False
     market_open = False
@@ -109,6 +112,9 @@ def stock_daemon():
         while True:
             index = 0
             diff = False
+            
+            #do trade
+            do_trade_auto()
             
             if market_open != check_market_open():
                 price_old = 0.
@@ -156,7 +162,7 @@ def stock_daemon():
                 Gtalk_send(text)
 #            else:
 #                print 'same ',
-            sleep_seconds = 15
+            sleep_seconds = 5
             DebugAll = False
             while(sleep_seconds):
                 sleep_seconds = sleep_seconds - 1
@@ -870,7 +876,9 @@ def check_all_open_from_history(date_str, date_csv):
         
 def do_trade_emulator():
     global myhold
-    
+
+    fcsv = open('do_trade_emulator.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
     cnt1 = 0
     myhold_init(100*10000)
     print myhold
@@ -897,8 +905,10 @@ def do_trade_emulator():
                 today_list = check_all_open_from_history(date_str, date_csv)
 #                print today_list
                 myhold_to_sell = myhold[:]
+                funds = 10*1000
                 if len(myhold_to_sell):
 #                    print 'need sell now!'
+                    sell_chg_array = []
                     for code,buyprice,amount in myhold_to_sell:
 #                        print 'try to sell', code
                         name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
@@ -907,21 +917,30 @@ def do_trade_emulator():
 #                            myhold_sell(code, (float(todaylow)+float(todayhigh))/2, float(amount))
                             myhold_sell(code, sellprice, float(amount))
                             print '--------------- sell price chg%', get_percent_str(sellprice, buyprice)
+                            sell_chg_array.append(get_percent_str(sellprice, buyprice))
 #                        print myhold
-                         
+                    if True:
+                        print 'avg chg % is ', avg(sell_chg_array)
+                        totalcash, total = myhold_listall()
+                        line = date_str, avg(sell_chg_array), totalcash, total
+                        csvWriter.writerow(line)
+                        if avg(sell_chg_array) >= 2.0:
+                            funds *= 2
 #                if len(myhold) == 0:
                 if True:
 #                    print 'need buy some.'
                     weekday  = datetime.datetime(year,month,day).weekday()
                     buylists = choose_one2buy(today_list, weekday)
                     for buylist in buylists:
-                        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
-                        buyprice = lastclose * (1.0 + ((avgl+todayl)/2)/100.)
-                        print buyprice, openprice
+                        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
+#                        buyprice = lastclose * (1.0 + ((avgl+todayl)/2)/100.)
+                        buyprice = openprice
+#                        print buyprice, openprice
 #                         myhold_buy(buylist[0], openprice, int(10000/openprice))
-                        myhold_buy(buylist[0], buyprice, int(10000/buyprice))
+                        myhold_buy(buylist[0], buyprice, int(funds/buyprice))
                 myhold_listall()
     myhold_listall()
+    fcsv.close()
     print 'done!'
 
 def choose_one2buy(today_list, weekday):
@@ -941,8 +960,8 @@ def choose_one2buy(today_list, weekday):
 
     total = 0
     for list in today_list:
-        code, name, guess, open, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = list
-        if 20 > count >= 1 and 2.0 > open > -3.0 and guess < 6 and todayl <= avgl:
+        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = list
+        if 20 > count >= 1 and 2.0 > open_percent > -3.0 and guess < 6 :#and todayl <= avgl:
             print list
             buylists.append(list)
             total = total + 1
@@ -977,6 +996,7 @@ def myhold_listall():
             market_value = market_value + price*amount
     print 'Cash:', int(mycash), ', Total:', int(mycash + market_value)
     print '***************************************'
+    return int(mycash), int(mycash + market_value)
         
 def myhold_buy(code, price, amount):
     global mycash
