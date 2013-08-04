@@ -29,7 +29,7 @@ def log_d(string):
         print string
 
 def log_i(string):
-    if False:
+    if True:
         print string
         
 # Msg call back
