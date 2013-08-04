@@ -27,10 +27,14 @@ def trader_sendcmd(cmd):
     if False:
         return
     clip_setText(cmd)
+    max_time_wait = 5
     while True:
         if clip_getText() == "ok":
             break
         time.sleep(1)
+        max_time_wait -= 1
+        if max_time_wait == 0:
+            break
                  
 def trader_cmd_buy(code, price, cnt):
             cmdstr = "trader|" + "buy|" + str(code) + '|'+str(price)+'|'+str(cnt)
