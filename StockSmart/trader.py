@@ -27,7 +27,7 @@ def trader_sendcmd(cmd):
     if False:
         return
     clip_setText(cmd)
-    max_time_wait = 5
+    max_time_wait = 30   # Min. set to 10s. as we can't guarantee to completed in < 10s 
     while True:
         if clip_getText() == "ok":
             break
@@ -124,15 +124,18 @@ def choose_one2buy(today_list):
                  
 def traderDo_at926():
     global todaybuylist
+    global report_text
     maintext = ""
     print 'enter traderDo_at926'
     todaybuylist = choose_one2buy(trader_check_all_open())
     maintext += 'today buy list ready, total ' + str(len(todaybuylist)) + '\n'
+    report_text += maintext
     return maintext
 #    print todaybuylist
     
 def traderDo_at930():
     global todaybuylist
+    global report_text
     print 'enter traderDo_at930'
     maintext = ""
     if os.path.exists("myholds.csv"):
@@ -154,6 +157,7 @@ def traderDo_at930():
         csvWriter.writerow(csv_line)
         maintext += 'buyflash.' + str(csv_line) + '\n'
     fcsv.close()
+    report_text += maintext
     return maintext
 
 def trader_check_time(checkstr, reftime):
@@ -178,49 +182,68 @@ def trader_check_time(checkstr, reftime):
 
 trade_step = 0
 trade_debug_timer = 0
+report_text = ''
 def do_trade_auto():
     global trade_step
     global trade_debug_timer
+    global report_text
+    if trade_debug_timer == 0:
+        trader_showinfo('AutoTrader commander ready !')
+    trader_sendcmd("trader|laptop d620")
 #    trade_debug_timer += 1
     print 'trade_debug_timer', trade_debug_timer
     msg = ''
-    if trader_check_time("09:26", "") or trade_debug_timer == 2:
+    if trader_check_time("9:26:", "") or trade_debug_timer == 1:
         if trade_step == 0:
+            report_text = ''
             msg += traderDo_at926()
             trade_step = 1
-    if trader_check_time("09:30", "") or trade_debug_timer == 4:
+    if trader_check_time("9:28:", "") or trade_debug_timer == 2:
         if trade_step == 1:
             msg += traderDo_at930()
+            send_mail("AutoBuySell at MarketOpen done!", report_text, None)
             trade_step = 2
-    if trader_check_time("09:40", "") or trade_debug_timer == 8:
+    if trader_check_time("09:40:", "") or trade_debug_timer == 3:
         if trade_step == 2:
             trade_step = 0
-            trade_debug_timer = 0            
+            trade_debug_timer = 0
+            if trade_debug_timer == 3:
+                os.system('shutdown -s -f -t 600')
 
     if not msg == '':
-        Gtalk_send(msg)
+        trader_showinfo(msg)
     return 
-                               
+         
+def trader_showinfo(str):
+    print str
+#     Gtalk_send(str)         
+         
+def test_autotrade():
+    while True:
+        do_trade_auto()
+        time.sleep(10)
+                                   
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
     print 'trader start.'
     time.sleep(.1)
-    if False:
+    if True:
         content = clip_getText()
         print "The content in clipboard is: '%s'." %content
     #    clip_setText("logon")
         time.sleep(1)
-        for i in range(1, 10):
-            cmdstr = "trader|" + "buy|" + str(600080+i) + '|'+str(.01*i)+'|'+str(i*100)
-            trader_sendcmd(cmdstr)
-            print i, ' ', cmdstr
+#         for i in range(1, 10):
+#             cmdstr = "trader|" + "buy|" + str(600080+i) + '|'+str(.01*i)+'|'+str(i*100)
+#             trader_sendcmd(cmdstr)
+#             print i, ' ', cmdstr
+#     
+#         for i in range(1, 10):
+#             cmdstr = "trader|" + "sell|" + str(600050+i) + '|'+str(10*i)+'|'+str(i*100)
+#             trader_sendcmd(cmdstr)
+#             print i, ' ', cmdstr
     
-        for i in range(1, 10):
-            cmdstr = "trader|" + "sell|" + str(600034+i) + '|'+str(10*i)+'|'+str(i*100)
-            trader_sendcmd(cmdstr)
-            print i, ' ', cmdstr
-    
-    traderDo_at926()
-    traderDo_at930()
+#     traderDo_at926()
+#     traderDo_at930()
+    test_autotrade()
     
     
