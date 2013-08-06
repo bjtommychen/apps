@@ -8,6 +8,7 @@ from mail_process import *
 from main import *
 
 todaybuylist = []
+DEBUG_TRADER = False
 
 def clip_getText():
     clip.OpenClipboard()
@@ -23,8 +24,9 @@ def clip_setText(aString):
     clip.CloseClipboard()
 
 def trader_sendcmd(cmd):
+    global DEBUG_TRADER
     print 'trader_sendcmd:', cmd
-    if False:
+    if DEBUG_TRADER:
         return
     clip_setText(cmd)
     max_time_wait = 30   # Min. set to 10s. as we can't guarantee to completed in < 10s 
@@ -143,7 +145,11 @@ def traderDo_at930():
         print 'stock need to sell '
         for row in reader:
             trader_cmd_sellflash(row[0], row[1])
-            maintext += 'sellflash.' + str(row[0]) + ' ' + str(row[1]) + '\n'
+            name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+row[0])
+            maintext += 'sellflash.' + str(row[0]) + '.' + name + ', ' + str(row[1]) 
+            maintext += ', buyprice:~' + str(row[2]) + ', sellprice:~' + curr
+            maintext += ', chg%:~' + str(get_percent_str(float(curr), float(row[2]))) + '\n'
+#            print float(curr), float(row[2]), get_percent_str(float(curr), float(row[2]))
                 
     fcsv = open('myholds.csv', 'wb')
     csvWriter = csv.writer(fcsv)                
@@ -151,11 +157,13 @@ def traderDo_at930():
     for buyone in todaybuylist:
         code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, currprice = buyone
         cnt = int((funds/currprice)/100)*100
-        cnt = 100 # THIS IS FOR DEBUG    
+        if cnt < 100:
+            cnt = 100 # THIS IS FOR DEBUG    
         trader_cmd_buyflash(code, cnt)
         csv_line = code, cnt, currprice
         csvWriter.writerow(csv_line)
-        maintext += 'buyflash.' + str(csv_line) + '\n'
+        print buyone
+        maintext += 'buyflash.' + str(csv_line) + '.' + name.decode("gb2312") +'\n'
     fcsv.close()
     report_text += maintext
     return maintext
@@ -186,28 +194,35 @@ report_text = ''
 def do_trade_auto():
     global trade_step
     global trade_debug_timer
-
+    global DEBUG_TRADER
     global report_text
+
     if trade_debug_timer == 0:
         trader_showinfo('AutoTrader commander ready !')
+        if DEBUG_TRADER:
+            trader_showinfo('***** DEBUG mode on *****')
+        trade_debug_timer += 1
     trader_sendcmd("trader|laptop d620")
-	
-#    trade_debug_timer += 1		#Enable this to debug.
+    if DEBUG_TRADER:
+        trade_debug_timer += 1		#Enable this to debug.
     print 'trade_debug_timer', trade_debug_timer
     msg = ''
-    if trader_check_time("09:26:", "") or trade_debug_timer == 1:
+    if trader_check_time("09:26:", "") or trade_debug_timer == 2:
         if trade_step == 0:
             report_text = ''
             msg += traderDo_at926()
             trade_step = 1
 
-    if trader_check_time("09:30:", "") or trade_debug_timer == 2:
+    if trader_check_time("09:30:", "") or trade_debug_timer == 3:
         if trade_step == 1:
             msg += traderDo_at930()
-            send_mail("AutoBuySell at MarketOpen done!", report_text, None)
+            if DEBUG_TRADER:
+                print '*** AutoBuySell at MarketOpen done! *** \n' + report_text
+            else:
+                send_mail("AutoBuySell at MarketOpen done!", report_text, None)
             trade_step = 2
 
-    if trader_check_time("09:40:", "") or trade_debug_timer == 3:
+    if trader_check_time("09:40:", "") or trade_debug_timer == 5:
         if trade_step == 2:
             trade_step = 0
             trade_debug_timer = 0
@@ -223,9 +238,18 @@ def trader_showinfo(str):
 #     Gtalk_send(str)         
          
 def test_autotrade():
-    while True:
-        do_trade_auto()
-        time.sleep(10)
+    try:
+        while True:
+            do_trade_auto()
+            sleep_seconds = 10
+            while(sleep_seconds):
+                sleep_seconds -= 1
+                print '.',
+                time.sleep(1)            
+    except KeyboardInterrupt:
+        print 'Exception!'
+    finally:
+        time.sleep(1)
                                    
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
