@@ -877,7 +877,7 @@ def do_trade_emulator():
     cnt1 = 0
     myhold_init(100*10000)
     print myhold
-    for year in range(2012, 2014, 1):
+    for year in range(2008, 2014, 1):
         for month in range(1, 12+1):
             for day in range (1, 31+1):
                 list = []
@@ -1073,7 +1073,7 @@ if  __name__ == '__main__':
             analyze_realH_count()
         elif option=='10':
             trader_mainloop()
-        elif option=='101':
+        elif option=='11':
             for i in range(0, 1):
                 print 'BUY_MAX', buy_max, 'START!'
                 do_trade_emulator()
