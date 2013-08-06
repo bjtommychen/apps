@@ -783,8 +783,19 @@ def get_history_price(date_csv, check_code):
                 "%-5s" % todayhigh, "%-5s" % todaylow)
 #    print 'get_history_price failed.', check_code
     return ('', 0, 0, 0, 0, 0)
-    
-    
+  
+def get_history_price_from_list(todaylist, check_code):
+    for row in todaylist:
+        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayhigh, todaylow = row
+        if len(row) < 10:
+            continue
+        if (check_code == code):
+            return (name, "%-5s" % openprice, "%-5s" % lastclose, "%-5s" % todayclose, 
+                "%-5s" % todayhigh, "%-5s" % todaylow)
+#    print 'get_history_price failed.', check_code
+    return ('', 0, 0, 0, 0, 0)    
+
+# Creat data/check_all_open_20130101.csv files if not exist. and return the list in csv.    
 def check_all_open_from_history(date_str, date_csv):
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     filename = 'data/check_all_open_'+date_str+'.csv'
@@ -798,14 +809,16 @@ def check_all_open_from_history(date_str, date_csv):
             line = (row[0], row[1],
                     float(row[2]),float(row[3]),float(row[4]),float(row[5]),float(row[6]),
                     float(row[7]),float(row[8]),float(row[9]),float(row[10]),row[11],
-                    float(row[12]), float(row[13]), float(row[14]), float(row[15])
+                    float(row[12]), float(row[13]), float(row[14]), float(row[15], float(row[16]))
                             )
             list.append(line)
         return list
+    
+    # Not Exist, creat it!
     fcsv = open(filename, 'wb')
     csvWriter = csv.writer(fcsv)
     line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '',\
-            'lastclose', 'openprice', 'todayHigh', 'todayLow', date_csv    
+            'lastclose', 'openprice', 'todayclose', 'todayHigh', 'todayLow', date_csv    
     csvWriter.writerow(line)
     print 'check_all_open_from_history, wait...'
     i = 0
@@ -843,12 +856,13 @@ def check_all_open_from_history(date_str, date_csv):
                             '',
                             float(lastclose),
                             float(openprice),
+                            float(curr),
                             float(todayhigh),
                             float(todaylow)
                             )
 #                    if (code == '600315'):
 #                        print line
-                    if (avgH and count > 4):
+                    if (avgH and count):
                         list.append(line)
         except:
             print 'error'
@@ -877,7 +891,7 @@ def do_trade_emulator():
     cnt1 = 0
     myhold_init(100*10000)
     print myhold
-    for year in range(2008, 2014, 1):
+    for year in range(2012, 2014, 1):
         for month in range(1, 12+1):
             for day in range (1, 31+1):
                 list = []
@@ -906,7 +920,21 @@ def do_trade_emulator():
                     sell_chg_array = []
                     for code,buyprice,amount in myhold_to_sell:
 #                        print 'try to sell', code
-                        name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
+#                        name, openprice, lastclose, currX, todayhigh, todaylow = get_history_price(date_csv, code)
+#                        print 'get_history_price', name, openprice, lastclose, currX, todayhigh, todaylow 
+#                        name, openprice, lastclose, currX, todayhigh, todaylow = get_history_price_from_list(today_list, code)
+#                        print 'get_history_price_from_list', name, openprice, lastclose, currX, todayhigh, todaylow 
+                        
+                        name1, openprice, lastclose, currX, todayhigh, todaylow = get_history_price(date_csv, code)
+                        print 'get_history_price', name1, openprice, lastclose, currX, todayhigh, todaylow 
+                        name2, openprice, lastclose, currX, todayhigh, todaylow = get_history_price_from_list(today_list, code)
+                        print 'get_history_price_from_list', name2, openprice, lastclose, currX, todayhigh, todaylow
+                        if name1 != name2:
+                            print 'error'
+                            while True:
+                                time.sleep(1)  
+                        
+                        
                         if openprice:
                             sellprice = float(openprice)
 #                            myhold_sell(code, (float(todaylow)+float(todayhigh))/2, float(amount))
@@ -927,7 +955,7 @@ def do_trade_emulator():
                     weekday  = datetime.datetime(year,month,day).weekday()
                     buylists = choose_one2buy(today_list, weekday)
                     for buylist in buylists:
-                        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = buylist
+                        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayHighPrice, todayLowPrice = buylist
 #                        buyprice = lastclose * (1.0 + ((avgl+todayl)/2)/100.)
                         buyprice = openprice
 #                        print buyprice, openprice
@@ -955,7 +983,7 @@ def choose_one2buy(today_list, weekday):
 
     total = 0
     for list in today_list:
-        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayHighPrice, todayLowPrice = list
+        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayHighPrice, todayLowPrice = list
         if 20 > count >= 1 and 2.0 > open_percent > -3.0 and guess < 6 :#and todayl <= avgl:
             print list
             buylists.append(list)
