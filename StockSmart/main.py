@@ -14,8 +14,6 @@ import datetime
 from StockSmart import *
 from Gtalk_test import *
 from mail_process import *
-from trader import *
-
 
 code_list = ['sh600036', 'sh601328']
 buy_max = 0        
@@ -1040,19 +1038,7 @@ def do_test_myhold():
         
 def trader_mainloop():
     print 'enter trader_mainloop.'
-    try:
-        while True:
-            #do trade
-            do_trade_auto()
 
-            sleep_seconds = 10
-            while(sleep_seconds):
-                sleep_seconds -= 1
-                time.sleep(1)
-    except KeyboardInterrupt:
-        print 'Exception!'
-    finally:
-        time.sleep(1)
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
