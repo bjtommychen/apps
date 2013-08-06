@@ -113,9 +113,6 @@ def stock_daemon():
             index = 0
             diff = False
             
-            #do trade
-            do_trade_auto()
-            
             if market_open != check_market_open():
                 price_old = 0.
                 market_open = check_market_open()
@@ -1041,7 +1038,21 @@ def do_test_myhold():
     myhold_sell('12', 5.6, 200)
     myhold_listall()
         
+def trader_mainloop():
+    print 'enter trader_mainloop.'
+    try:
+        while True:
+            #do trade
+            do_trade_auto()
 
+            sleep_seconds = 10
+            while(sleep_seconds):
+                sleep_seconds -= 1
+                time.sleep(1)
+    except KeyboardInterrupt:
+        print 'Exception!'
+    finally:
+        time.sleep(1)
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
@@ -1075,7 +1086,8 @@ if  __name__ == '__main__':
         elif option=='9':
             analyze_realH_count()
         elif option=='10':
-            
+            trader_mainloop()
+        elif option=='101':
             for i in range(0, 1):
                 print 'BUY_MAX', buy_max, 'START!'
                 do_trade_emulator()
