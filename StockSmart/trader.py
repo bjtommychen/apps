@@ -191,25 +191,23 @@ def do_trade_auto():
     if trade_debug_timer == 0:
         trader_showinfo('AutoTrader commander ready !')
     trader_sendcmd("trader|laptop d620")
-#    trade_debug_timer += 1
+	
+#    trade_debug_timer += 1		#Enable this to debug.
     print 'trade_debug_timer', trade_debug_timer
     msg = ''
     if trader_check_time("09:26:", "") or trade_debug_timer == 1:
-
         if trade_step == 0:
             report_text = ''
             msg += traderDo_at926()
             trade_step = 1
 
     if trader_check_time("09:30:", "") or trade_debug_timer == 2:
-
         if trade_step == 1:
             msg += traderDo_at930()
             send_mail("AutoBuySell at MarketOpen done!", report_text, None)
             trade_step = 2
 
     if trader_check_time("09:40:", "") or trade_debug_timer == 3:
-
         if trade_step == 2:
             trade_step = 0
             trade_debug_timer = 0
