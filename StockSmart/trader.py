@@ -255,6 +255,7 @@ def test_autotrade():
 if  __name__ == '__main__':
     print 'trader start.'
     time.sleep(.1)
+    clip_setText('trader start.')
     if True:
         content = clip_getText()
         print "The content in clipboard is: '%s'." %content
