@@ -181,18 +181,18 @@ trade_debug_timer = 0
 def do_trade_auto():
     global trade_step
     global trade_debug_timer
-#    trade_debug_timer += 1
+#    trade_debug_timer += 1    #Enable this to debug.
     print 'trade_debug_timer', trade_debug_timer
     msg = ''
-    if trader_check_time("09:26", "") or trade_debug_timer == 2:
+    if trader_check_time("09:26:", "") or trade_debug_timer == 2:
         if trade_step == 0:
             msg += traderDo_at926()
             trade_step = 1
-    if trader_check_time("09:30", "") or trade_debug_timer == 4:
+    if trader_check_time("09:30:", "") or trade_debug_timer == 4:
         if trade_step == 1:
             msg += traderDo_at930()
             trade_step = 2
-    if trader_check_time("09:40", "") or trade_debug_timer == 8:
+    if trader_check_time("09:40:", "") or trade_debug_timer == 8:
         if trade_step == 2:
             trade_step = 0
             trade_debug_timer = 0            
