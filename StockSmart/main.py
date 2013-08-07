@@ -119,9 +119,11 @@ def stock_daemon():
                 if need_checkall or DebugAll:
                     Gtalk_send('Preparing analysis reoprt...')
                     maintext = check_all_open()
-                    shutil.copy2("check_all_open.csv", 'data/check_all_open_'+time.strftime("%Y%m%d_%H%M", time.localtime())+'.csv')
-                    send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y%m%d-%H%M", time.localtime()) + maintext,
-                               'data/check_all_open_'+time.strftime("%Y%m%d_%H%M", time.localtime())+'.csv')
+                    attach_filename = 'data/check_all_open_'+time.strftime("%Y-%m-%d_%H%M", time.localtime())+'.csv'
+                    print attach_filename
+                    shutil.copy2("check_all_open.csv", attach_filename)
+                    send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y-%m-%d_%H%M", time.localtime()) + maintext,
+                               attach_filename)
                     need_checkall = False
                     Gtalk_send('Sent mail with check_all_open.csv, please check soon!')
             else:
@@ -499,7 +501,7 @@ def check_all_open():
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     fcsv = open('check_all_open.csv', 'wb')
     csvWriter = csv.writer(fcsv)
-    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '', 'lastclose', 'open', 'curr'    
+    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '', 'lastclose', 'open', 'curr', 'todayHigh', 'todayLow'    
     csvWriter.writerow(line)
     print 'check_all_open, wait...'
     i = 0
@@ -534,8 +536,10 @@ def check_all_open():
                             float('%.2f' % float(lastclose)),
                             float('%.2f' % float(openprice)),
                             float('%.2f' % float(curr)),
+                            float('%.2f' % float(todayhigh)),
+                            float('%.2f' % float(todaylow))
                             )
-                    if (avgH and count > 4):
+                    if (avgH and count):
                         list.append(line)
         except:
             print 'error'
@@ -551,22 +555,21 @@ def check_all_open():
 #        if (i < 20):
 #            print line
         i = i + 1
-#        print line[0], line[1], 'guess%', line[2], 'open%', line[3], 'avgH%', line[4], \
-#                'tHigh%', line[5], 'avgL%', line[6], 'tLow%', line[7], \
-#                'RealHigh%', line[8], 'count', line[9]
     fcsv.close()
+    
     # highlight one
     maintext = "\n"
     total = 0
     for oneline in list:
         if total >= 10:
             break;
-        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open_gap, space1, lastclose, openprice, curr_price = oneline
-        if todayl <= avgl:
+        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open_gap, space1, lastclose, openprice, curr_price, todayHigh, todayLow = oneline
+        if todayl < avgl or todayh > avgh:
             maintext += str(oneline) 
             maintext += '\n\t\tCurr:' + str(get_percent_str(float(curr_price), float(lastclose)))+'%,'
             maintext += 'Curr-avgL:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgl)) +'%,'
-            maintext += "\n"
+            maintext += 'Curr-avgH:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgh)) +'%,'
+            maintext += name + "\n"
             total += 1
 
     print maintext
