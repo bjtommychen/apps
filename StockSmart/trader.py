@@ -9,6 +9,7 @@ from main import *
 
 todaybuylist = []
 DEBUG_TRADER = False
+DEBUG_TRADER_D620 = False
 
 def clip_getText():
     clip.OpenClipboard()
@@ -26,7 +27,7 @@ def clip_setText(aString):
 def trader_sendcmd(cmd):
     global DEBUG_TRADER
     print 'trader_sendcmd:', cmd
-    if DEBUG_TRADER:
+    if DEBUG_TRADER and not DEBUG_TRADER_D620:
         return
     clip_setText(cmd)
     max_time_wait = 30   # Min. set to 10s. as we can't guarantee to completed in < 10s 
@@ -221,9 +222,13 @@ def do_trade_auto():
         trader_showinfo('AutoTrader commander ready !')
         if socket.gethostname() == 'Tommy5510':
             DEBUG_TRADER = True
+        else:
+            DEBUG_TRADER = DEBUG_TRADER_D620
 
         if DEBUG_TRADER:
-            trader_showinfo('***** DEBUG mode on *****')
+            trader_showinfo('***** DEBUG mode ON ! *****')
+        else:
+            trader_showinfo('***** DEBUG mode OFF ! *****')
         trade_debug_timer += 1
     
     if socket.gethostname() == 'Tommy5510':
@@ -231,7 +236,7 @@ def do_trade_auto():
     else:
         trader_sendcmd("trader|laptop d620")
     
-    if DEBUG_TRADER:
+    if DEBUG_TRADER or DEBUG_TRADER_D620:
         trade_debug_timer += 1		#Enable this to debug.
     print 'trade_debug_timer', trade_debug_timer
     
@@ -257,14 +262,14 @@ def do_trade_auto():
     if trader_check_time("09:50:", "") or trade_debug_timer == 6:
         if trade_step == 3:
             trade_step = 0
-            if not trade_debug_timer == 6:
-                os.system('shutdown -h -f -t 60')
+            if not trade_debug_timer == 6:# or DEBUG_TRADER_D620:
+                trade_debug_timer = 0
+                os.system('shutdown /h /f')
             trade_debug_timer = 0
 
     # Should not go here.
     if trader_check_time("10:00:", ""):
-        os.system('shutdown -h -f -t 60')
-        
+        os.system('shutdown /h /f')
 
     if not msg == '':
         trader_showinfo(msg)
