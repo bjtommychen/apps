@@ -54,6 +54,9 @@ def trader_cmd_sellflash(code, cnt):
             cmdstr = "trader|" + "sellflash|" + str(code) + '|'+str(cnt)
             trader_sendcmd(cmdstr)    
 
+def trader_cmd_sellflashall(code):
+            cmdstr = "trader|" + "sellflashall|" + str(code)
+            trader_sendcmd(cmdstr)    
             
 def trader_check_all_open():
 #based on check_all_open():
@@ -139,8 +142,12 @@ def traderDo_at930():
     global todaybuylist
     global report_text
     print 'enter traderDo_at930'
+    
+    # SELL WHAT WE HOLD
     maintext = ""
     if os.path.exists("myholds.csv"):
+        shutil.copyfile("myholds.csv", "myholds_to_sell.csv")
+    if os.path.exists("myholds_to_sell.csv"):
         reader = csv.reader(file('myholds.csv','rb'))
         print 'stock need to sell '
         for row in reader:
@@ -150,7 +157,8 @@ def traderDo_at930():
             maintext += ', buyprice:~' + str(row[2]) + ', sellprice:~' + curr
             maintext += ', chg%:~' + str(get_percent_str(float(curr), float(row[2]))) + '\n'
 #            print float(curr), float(row[2]), get_percent_str(float(curr), float(row[2]))
-                
+
+    # BUY WHAT THE TODAYBUYLIST LIST                
     fcsv = open('myholds.csv', 'wb')
     csvWriter = csv.writer(fcsv)                
     funds = 3*1000
@@ -160,11 +168,23 @@ def traderDo_at930():
         if cnt < 100:
             cnt = 100 # THIS IS FOR DEBUG    
         trader_cmd_buyflash(code, cnt)
-        csv_line = code, cnt, currprice
+        csv_line = code, cnt, openprice
         csvWriter.writerow(csv_line)
         print buyone
         maintext += 'buyflash.' + str(csv_line) + '.' + name.decode("gb2312") +'\n'
     fcsv.close()
+    
+    # SELL WHAT WE HOLD AGAIN.
+#    if os.path.exists("myholds_to_sell.csv"):
+#        reader = csv.reader(file('myholds.csv','rb'))
+#        print 'stock need to sell '
+#        for row in reader:
+#            trader_cmd_sellflashall(row[0])
+#            name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+row[0])
+#            maintext += 'sellflash.' + str(row[0]) + '.' + name + ', ' + str(row[1]) 
+#            maintext += ', buyprice:~' + str(row[2]) + ', sellprice:~' + curr
+#            maintext += ', chg%:~' + str(get_percent_str(float(curr), float(row[2]))) + '\n'    
+    
     report_text += maintext
     return maintext
 
@@ -199,35 +219,52 @@ def do_trade_auto():
 
     if trade_debug_timer == 0:
         trader_showinfo('AutoTrader commander ready !')
+        if socket.gethostname() == 'Tommy5510':
+            DEBUG_TRADER = True
+
         if DEBUG_TRADER:
             trader_showinfo('***** DEBUG mode on *****')
         trade_debug_timer += 1
-    trader_sendcmd("trader|laptop d620")
+    
+    if socket.gethostname() == 'Tommy5510':
+        trader_sendcmd("trader|laptop e5510")
+    else:
+        trader_sendcmd("trader|laptop d620")
+    
     if DEBUG_TRADER:
         trade_debug_timer += 1		#Enable this to debug.
     print 'trade_debug_timer', trade_debug_timer
+    
     msg = ''
-    if trader_check_time("09:26:", "") or trade_debug_timer == 2:
+    if trader_check_time("09:15:", "") or trade_debug_timer == 2:
         if trade_step == 0:
             report_text = ''
-            msg += traderDo_at926()
+            trader_send_mail("AutoBuySell ready for commands.", 'hostname: '+socket.gethostname(), None)
             trade_step = 1
-
-    if trader_check_time("09:30:", "") or trade_debug_timer == 3:
+    
+    if trader_check_time("09:26:", "") or trade_debug_timer == 3:
         if trade_step == 1:
-            msg += traderDo_at930()
-            if DEBUG_TRADER:
-                print '*** AutoBuySell at MarketOpen done! *** \n' + report_text
-            else:
-                send_mail("AutoBuySell at MarketOpen done!", report_text, None)
+            report_text = ''
+            msg += traderDo_at926()
             trade_step = 2
 
-    if trader_check_time("09:40:", "") or trade_debug_timer == 5:
+    if trader_check_time("09:30:", "") or trade_debug_timer == 4:
         if trade_step == 2:
+            msg += traderDo_at930()
+            trader_send_mail("AutoBuySell at MarketOpen done!", report_text, None)
+            trade_step = 3
+
+    if trader_check_time("09:50:", "") or trade_debug_timer == 6:
+        if trade_step == 3:
             trade_step = 0
+            if not trade_debug_timer == 6:
+                os.system('shutdown -h -f -t 60')
             trade_debug_timer = 0
-            if trade_debug_timer == 3:
-                os.system('shutdown -s -f -t 600')
+
+    # Should not go here.
+    if trader_check_time("10:00:", ""):
+        os.system('shutdown -h -f -t 60')
+        
 
     if not msg == '':
         trader_showinfo(msg)
@@ -236,6 +273,15 @@ def do_trade_auto():
 def trader_showinfo(str):
     print str
 #     Gtalk_send(str)         
+
+def trader_send_mail(subject, content, filename):
+    if DEBUG_TRADER:
+        print '******** Mail main start *********'
+        print subject 
+        print content
+        print '******** Mail main end *********'
+    else:
+        send_mail(subject, content, filename)   
          
 def test_autotrade():
     try:
