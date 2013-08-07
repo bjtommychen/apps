@@ -814,8 +814,32 @@ def check_all_open_from_history(date_str, date_csv):
                             )
             list.append(line)
         return list
+
+    filename = 'data/check_all_open_'+date_str+'_1500.csv'
+    print 'check more file: ',filename
+    if os.path.exists(filename):
+        print 'get data from', filename
+        list = []
+        lists = csv.reader(file(filename,'rb'))
+        lists.next()
+        for row in lists:
+#            print row
+            if len(row) == 15:
+                line = (row[0], row[1],
+                        float(row[2]),float(row[3]),float(row[4]),float(row[5]),float(row[6]),
+                        float(row[7]),float(row[8]),float(row[9]),float(row[10]),row[11],
+                        float(row[12]), float(row[13]), float(row[14]), 0, 0)
+            else:
+                line = (row[0], row[1],
+                        float(row[2]),float(row[3]),float(row[4]),float(row[5]),float(row[6]),
+                        float(row[7]),float(row[8]),float(row[9]),float(row[10]),row[11],
+                        float(row[12]), float(row[13]), float(row[14]), float(row[15]), float(row[16])
+                            )
+            list.append(line)
+        return list
     
     # Not Exist, creat it!
+    filename = 'data/check_all_open_'+date_str+'.csv'    
     fcsv = open(filename, 'wb')
     csvWriter = csv.writer(fcsv)
     line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '',\
@@ -892,8 +916,8 @@ def do_trade_emulator():
     cnt1 = 0
     myhold_init(100*10000)
     print myhold
-    for year in range(2013, 2014, 1):
-        for month in range(8, 12+1):
+    for year in range(2012, 2014, 1):
+        for month in range(1, 12+1):
             for day in range (1, 31+1):
                 list = []
 #                 if cnt1 > 5:
@@ -909,7 +933,7 @@ def do_trade_emulator():
                     print 'invalid date'
                     continue
                 date_csv = 'data/'+date_str+'.csv'    
-                if not os.path.exists(date_csv):
+                if not os.path.exists(date_csv) and not os.path.exists('data/check_all_open_'+date_str+'_1500.csv'):
                     print 'no data file.'
                     continue                        
                 today_list = check_all_open_from_history(date_str, date_csv)
@@ -919,31 +943,22 @@ def do_trade_emulator():
                 if len(myhold_to_sell):
 #                    print 'need sell now!'
                     sell_chg_array = []
-                    for code,buyprice,amount in myhold_to_sell:
-                        print 'try to sell', code
+                    for code,buyprice,amount,buyname in myhold_to_sell:
+#                        print 'try to sell', code
 #                         name, openprice, lastclose, currX, todayhigh, todaylow = get_history_price(date_csv, code)
 #                         print 'get_history_price', name, openprice, lastclose, currX, todayhigh, todaylow 
                         name, openprice, lastclose, currX, todayhigh, todaylow = get_history_price_from_list(today_list, code)
 #                        print 'get_history_price_from_list', name, openprice, lastclose, currX, todayhigh, todaylow 
                         
-#                         name, openprice, lastclose, currX, todayhigh, todaylow = get_history_price(date_csv, code)
-#                         print 'get_history_price', name1, openprice, lastclose, currX, todayhigh, todaylow 
-#                         name2, openprice, lastclose, currX, todayhigh, todaylow = get_history_price_from_list(today_list, code)
-#                         print 'get_history_price_from_list', code, name2, openprice, lastclose, currX, todayhigh, todaylow
-#                         if name1 != name2:
-#                             print 'error'
-#                             while True:
-#                                 time.sleep(1)  
-                        
                         if openprice:
                             sellprice = float(openprice)
 #                            myhold_sell(code, (float(todaylow)+float(todayhigh))/2, float(amount))
-                            myhold_sell(code, sellprice, float(amount))
+                            myhold_sell(code, sellprice, float(amount), name)
                             print '--------------- sell price chg%', get_percent_str(sellprice, buyprice)
                             sell_chg_array.append(get_percent_str(sellprice, buyprice))
 #                        print myhold
                     if True:
-                        print 'avg chg % is ', avg(sell_chg_array)
+                        print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> avg chg % is ', avg(sell_chg_array), '%!'
                         totalcash, total = myhold_listall()
                         line = date_str, avg(sell_chg_array), totalcash, total
                         csvWriter.writerow(line)
@@ -960,7 +975,7 @@ def do_trade_emulator():
                         buyprice = openprice
 #                        print buyprice, openprice
 #                         myhold_buy(buylist[0], openprice, int(10000/openprice))
-                        myhold_buy(buylist[0], buyprice, int(funds/buyprice))
+                        myhold_buy(buylist[0], buyprice, int(funds/buyprice), name)
                 myhold_listall()
     myhold_listall()
     fcsv.close()
@@ -1013,32 +1028,32 @@ def myhold_listall():
     market_value = 0    
     print '*************** list ****************'
     
-    for code,price,amount in myhold:
+    for code,price,amount, codename in myhold:
         if (code and price and amount):
-            print 'list',code,price,amount
+            print 'list',code,price,amount, codename
             market_value = market_value + price*amount
     print 'Cash:', int(mycash), ', Total:', int(mycash + market_value)
     print '***************************************'
     return int(mycash), int(mycash + market_value)
         
-def myhold_buy(code, price, amount):
+def myhold_buy(code, price, amount, name = None):
     global mycash
     global myhold
     if ((price*amount)*1.002) < mycash:
-        line = (code, price, amount)
+        line = (code, price, amount, name)
         myhold.insert(0, line)
         mycash = mycash - (price*amount)*(1. + 0.002)
-        print 'buy', line
+        print 'buy', line, name
     else:
         print 'buy,out of cash!'
 
-def myhold_sell(code, price, sell_amount):
+def myhold_sell(code, price, sell_amount, name = None):
     global mycash
     global myhold
     for i in range(0,len(myhold)):
         if myhold[i][0] == code:
-            code,buyprice,amount = myhold[i]
-            print 'sell', code, price, sell_amount
+            code,buyprice,amount, name = myhold[i]
+            print 'sell', code, price, sell_amount, name
             if sell_amount <= amount:
                 mycash = mycash + price*sell_amount*(1. - 0.002)
                 if  sell_amount < amount:
