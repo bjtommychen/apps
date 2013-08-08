@@ -73,7 +73,7 @@ def trader_check_all_open():
         try:
             code = row[0]
             name = row[1]
-            map_csv = 'data/'+str(code)+'_map.csv'
+            map_csv = 'data/'+str(code)+'_map_Lc2Th.csv'
             if os.path.exists(map_csv):
                 name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
                 if (float(openprice) and float(lastclose)):
@@ -251,7 +251,7 @@ def do_trade_auto():
     if trader_check_time("09:30:", "") or trade_debug_timer == 4:
         if trade_step == 2:
             msg += traderDo_at930()
-            trader_send_mail("AutoBuySell at MarketOpen done!", report_text, None)
+            trader_send_mail("AutoBuySell at MarketOpen done!", report_text.encode('utf-8'), None)
             trade_step = 3
 
     if trader_check_time("09:50:", "") or trade_debug_timer == 6:
@@ -280,8 +280,7 @@ def trader_send_mail(subject, content, filename):
         print subject 
         print content
         print '******** Mail main end *********'
-    else:
-        send_mail(subject, content, filename)   
+    send_mail(subject, content, filename)   
          
 def test_autotrade():
     try:
