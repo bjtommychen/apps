@@ -390,14 +390,14 @@ def get_all_history():
             get_stock_history_csv(row[0], row[1])
             error_count = 0
         except:
-            print 'error'
+            print 'get_all_history error'
             error_count = error_count + 1
         if error_count > 10:
             print 'error count gt 10 ! exit !'
             break
 
 #########################################################################
-def write_price_map_csv(code, name, history_csv, out_csv):
+def write_price_map_csv(code, name, history_csv, out_csv, mode):
     k_list = []
     reader = csv.reader(file(history_csv,'rb'))
     i = 0
@@ -421,8 +421,12 @@ def write_price_map_csv(code, name, history_csv, out_csv):
     fcsv = open(out_csv, 'wb')
     csvWriter = csv.writer(fcsv)
 
-    line = 'percent', 'len(listHigh)',  'max(listHigh)', 'min(listHigh)', 'avg(listHigh)'
-    line += '','len(listLow)',  'max(listLow)', 'min(listLow)', 'avg(listLow)'
+    if mode == 1:
+        line = 'percent', 'len(listHigh)',  'max(listHigh)', 'min(listHigh)', 'avg(listHigh)'
+        line += '','len(listLow)',  'max(listLow)', 'min(listLow)', 'avg(listLow)'
+    if mode == 2:
+        line = 'percent', 'len(listTclose)',  'max(listTclose)', 'min(listTclose)', 'avg(listTclose)'
+        
     csvWriter.writerow(line)
      
     for jj in range(-50, 50, 1):
@@ -431,31 +435,52 @@ def write_price_map_csv(code, name, history_csv, out_csv):
         listLow = []
 
 #        print 'checking', j
-        for i in range(2, len(k_list)-1):
-            val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))   #last close
+        if mode == 1:
+            for i in range(2, len(k_list)-1):
+                val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))   #last close
+                if (float('%.1f' % val) == j ):
+                    listHigh.append((get_percent_str(k_list[i][idx_high],k_list[i+1][idx_close])))
+                    listLow.append((get_percent_str(k_list[i][idx_low],k_list[i+1][idx_close])))
+            if len(listHigh) or len(listLow):
+                line = float('%.1f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
+                line += '', len(listLow),  max(listLow), min(listLow), avg(listLow)
+                csvWriter.writerow(line)
+                        
+        if mode == 2:
+            for i in range(2, len(k_list)-1):
+                val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))   #last close
+                if (float('%.1f' % val) == j ):
+                    percent = (float(k_list[i][idx_close])-float(k_list[i][idx_open])) *100. / float(k_list[i+1][idx_close])
+                    listHigh.append(float('%.1f' % percent))
+            if len(listHigh):
+                line = float('%.1f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
+                csvWriter.writerow(line)
 
-            if (float('%.1f' % val) == j ):
-                listHigh.append((get_percent_str(k_list[i][idx_high],k_list[i+1][idx_close])))
-                listLow.append((get_percent_str(k_list[i][idx_low],k_list[i+1][idx_close])))
-        if len(listHigh) or len(listLow):
-            line = float('%.1f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
-            line += '', len(listLow),  max(listLow), min(listLow), avg(listLow)
-#            print  line
-            csvWriter.writerow(line)
     fcsv.close()
 
-def get_all_mapfile():
+# mode 1: guess todayhigh/lastclose based on todayopen/lastclose
+# mode 2: guess todayclose/todayopen based on todayopen/lastclose
+def get_all_mapfile(mode = 1):
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    total = 0
     for row in reader:
         try:
             code = row[0]
             name = row[1]
             history_csv = 'data/'+str(code)+'.csv'
-            out_csv = 'data/'+str(code)+'_map.csv'
+            if mode == 1:
+                out_csv = 'data/'+str(code)+'_map_Lc2Th.csv'    #LastClose -> TodayHigh
+            if mode == 2:
+                out_csv = 'data/'+str(code)+'_map_To2Tc.csv'    #TodayOpen -> TodayClose
+
             if os.path.exists(history_csv):
-                write_price_map_csv(code, name, history_csv, out_csv)
+                write_price_map_csv(code, name, history_csv, out_csv, mode)
+            total += 1
+            print total
+#            if total > 2:
+#                return
         except:
-            print 'error'
+            print 'get_all_mapfile error'
 
 #########################################################################
 def get_rt_price(code):
@@ -489,6 +514,27 @@ def check_history_open_data(map_csv, openprice, lastclose):
         for row in reader:
             v = float(row[0])
             line = (val, float(row[4]), float(row[9]), int(row[1]))
+            if (val > v):
+                continue
+            if (val <= v):
+                return line
+                break
+#         print 'val', val
+        return line
+
+def check_history_open_data_To2Tc(map_csv, openprice, lastclose):
+    if os.path.exists(map_csv):
+        reader = csv.reader(file(map_csv,'rb'))
+        val = get_percent_str(openprice, lastclose)
+        if val > 5.0:
+            val = 5.0
+        if val < -5.0:
+            val = -5.0
+        line =  (0, 0, 0, 0)
+        reader.next()
+        for row in reader:
+            v = float(row[0])
+            line = (val, float(row[4]), int(row[1]))
             if (val > v):
                 continue
             if (val <= v):
@@ -542,7 +588,7 @@ def check_all_open():
                     if (avgH and count):
                         list.append(line)
         except:
-            print 'error'
+            print 'check_all_open error'
             
     print "*** Result ***"
     print len(list), len(list[0])
@@ -800,9 +846,11 @@ def get_history_price_from_list(todaylist, check_code):
     return ('', 0, 0, 0, 0, 0)    
 
 # Creat data/check_all_open_20130101.csv files if not exist. and return the list in csv.    
-def check_all_open_from_history(date_str, date_csv):
+def check_all_open_from_history(date_str, date_csv, mode = 1):
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     filename = 'data/check_all_open_'+date_str+'.csv'
+    if mode == 2:
+        filename = 'data/check_all_open_To2Tc'+date_str+'.csv'
     if os.path.exists(filename):
         print 'get data from', filename
         list = []
@@ -819,8 +867,8 @@ def check_all_open_from_history(date_str, date_csv):
         return list
 
     filename = 'data/check_all_open_'+date_str+'_1500.csv'
-    print 'check more file: ',filename
-    if os.path.exists(filename):
+    if os.path.exists(filename) and mode == 1:
+        print 'check more file: ',filename
         print 'get data from', filename
         list = []
         lists = csv.reader(file(filename,'rb'))
@@ -842,11 +890,15 @@ def check_all_open_from_history(date_str, date_csv):
         return list
     
     # Not Exist, creat it!
-    filename = 'data/check_all_open_'+date_str+'.csv'    
+    filename = 'data/check_all_open_To2Tc'+date_str+'.csv'    
     fcsv = open(filename, 'wb')
     csvWriter = csv.writer(fcsv)
     line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '',\
-            'lastclose', 'openprice', 'todayclose', 'todayHigh', 'todayLow', date_csv    
+            'lastclose', 'openprice', 'todayclose', 'todayHigh', 'todayLow', date_csv
+    if mode == 2:
+        line = 'Code' , 'Name', 'Guess%','Open%','avgTo2Tc%','NULL','NULL','NULL', 'Close%', 'count', 'Close-Open%', '',\
+                'lastclose', 'openprice', 'todayclose', 'todayHigh', 'todayLow', date_csv
+            
     csvWriter.writerow(line)
     print 'check_all_open_from_history, wait...'
     i = 0
@@ -860,40 +912,74 @@ def check_all_open_from_history(date_str, date_csv):
         try:
             code = row[0]
             name = row[1]
-            map_csv = 'data/'+str(code)+'_map.csv'
-            if os.path.exists(map_csv) and os.path.exists(date_csv):
-                name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
-#                 if (code == '600844'):
-#                     print name, openprice, lastclose, curr, todayhigh, todaylow 
-                if (float(openprice) and float(lastclose)):
-#                    print name, code, open, lastclose, curr, todayhigh, todaylow
-                    chg, avgH, avgL, count = check_history_open_data(map_csv, openprice, lastclose)
-#                    if (code == '600315'):
-#                        print chg, avgH, avgL, count                    
-                    curr_chg = get_percent_str(curr, lastclose)
-                    realH_percent = float('%.1f' % (get_percent_str(todayhigh,lastclose) - chg))
-                    guess_percent = float('%.1f' % (avgH - chg))
-                    curr_percent =  float('%.1f' % (get_percent_str(curr,lastclose)))                    
-                    line = (code, (row[1]),
-                            guess_percent, chg,
-                            float('%.1f' % avgH), get_percent_str(todayhigh,lastclose),
-                            float('%.1f' % avgL), get_percent_str(todaylow, lastclose),
-                            realH_percent,
-                            count, 
-                            float('%.1f' % (curr_percent - chg)),
-                            '',
-                            float(lastclose),
-                            float(openprice),
-                            float(curr),
-                            float(todayhigh),
-                            float(todaylow)
-                            )
-#                     if (code == '600844'):
-#                         print line
-                    if (avgH and count):
-                        list.append(line)
+            if mode == 1:
+                map_csv = 'data/'+str(code)+'_map_Lc2Th.csv'
+                if os.path.exists(map_csv) and os.path.exists(date_csv):
+                    name, openprice, lastclose, curr, todayhigh, todaylow = get_history_price(date_csv, code)
+    #                 if (code == '600844'):
+    #                     print name, openprice, lastclose, curr, todayhigh, todaylow 
+                    if (float(openprice) and float(lastclose)):
+    #                    print name, code, open, lastclose, curr, todayhigh, todaylow
+                        chg, avgH, avgL, count = check_history_open_data(map_csv, openprice, lastclose)
+    #                    if (code == '600315'):
+    #                        print chg, avgH, avgL, count                    
+                        curr_chg = get_percent_str(curr, lastclose)
+                        realH_percent = float('%.1f' % (get_percent_str(todayhigh,lastclose) - chg))
+                        guess_percent = float('%.1f' % (avgH - chg))
+                        curr_percent =  float('%.1f' % (get_percent_str(curr,lastclose)))                    
+                        line = (code, (row[1]),
+                                guess_percent, chg,
+                                float('%.1f' % avgH), get_percent_str(todayhigh,lastclose),
+                                float('%.1f' % avgL), get_percent_str(todaylow, lastclose),
+                                realH_percent,
+                                count, 
+                                float('%.1f' % (curr_percent - chg)),
+                                '',
+                                float(lastclose),
+                                float(openprice),
+                                float(curr),
+                                float(todayhigh),
+                                float(todaylow)
+                                )
+    #                     if (code == '600844'):
+    #                         print line
+                        if (avgH and count):
+                            list.append(line)
+            if mode == 2:
+                map_csv = 'data/'+str(code)+'_map_To2Tc.csv'
+                if os.path.exists(map_csv) and os.path.exists(date_csv):
+                    name, openprice, lastclose, todayclose, todayhigh, todaylow = get_history_price(date_csv, code)
+    #                 if (code == '600844'):
+#                    print name, openprice, lastclose, todayclose, todayhigh, todaylow 
+                    if (float(openprice) and float(lastclose)):
+    #                    print name, code, open, lastclose, curr, todayhigh, todaylow
+                        open_percent, avgTo2Tc, count = check_history_open_data_To2Tc(map_csv, openprice, lastclose)
+    #                    if (code == '600315'):
+#                        print code, open_percent, avgTo2Tc, count, 'check_history_open_data_To2Tc'                    
+                        curr_chg = get_percent_str(todayclose, lastclose)
+                        realH_percent = float('%.1f' % (get_percent_str(todayclose,lastclose) - open_percent))
+                        guess_percent = float('%.1f' % (avgTo2Tc))
+#                        curr_percent =  float('%.1f' % (get_percent_str(curr,lastclose)))    
+                        line = (code, (row[1]),
+                                guess_percent, open_percent,
+                                float('%.1f' % avgTo2Tc), 0,
+                                0, 0,
+                                float('%.1f' % (get_percent_str(todayclose,lastclose))),
+                                count, 
+                                realH_percent,
+                                '',
+                                float(lastclose),
+                                float(openprice),
+                                float(todayclose),
+                                float(todayhigh),
+                                float(todaylow)
+                                )
+    #                     if (code == '600844'):
+#                        print line
+                        if (avgTo2Tc and count):
+                            list.append(line)                
         except:
-            print 'error'
+            print 'check_all_open_from_history error'
             
     print "*** Result ***",
     print 'Items:', len(list), 
@@ -911,7 +997,7 @@ def check_all_open_from_history(date_str, date_csv):
     fcsv.close() 
     return list       
         
-def do_trade_emulator():
+def do_trade_emulator(mode = 1):
     global myhold
 
     fcsv = open('do_trade_emulator.csv', 'wb')
@@ -919,7 +1005,7 @@ def do_trade_emulator():
     cnt1 = 0
     myhold_init(100*10000)
     print myhold
-    for year in range(2012, 2014, 1):
+    for year in range(2013, 2014, 1):
         for month in range(1, 12+1):
             for day in range (1, 31+1):
                 list = []
@@ -939,7 +1025,7 @@ def do_trade_emulator():
                 if not os.path.exists(date_csv) and not os.path.exists('data/check_all_open_'+date_str+'_1500.csv'):
                     print 'no data file.'
                     continue                        
-                today_list = check_all_open_from_history(date_str, date_csv)
+                today_list = check_all_open_from_history(date_str, date_csv, mode)
 #                print today_list
                 myhold_to_sell = myhold[:]
                 funds = 10*1000
@@ -1091,7 +1177,7 @@ def trader_mainloop():
 how init the data.
 step by step.
 1. use --3 to download 6000030.csv
-2. use --7 to get csv by date.
+2. use --7 to get csv by date.  2006-03-29.csv
 3. use --8 to get stock price map.csv, call get_all_mapfile()
 '''
                         
@@ -1123,7 +1209,7 @@ if  __name__ == '__main__':
         elif option=='7':
             get_day_history_csv()
         elif option=='8':
-            get_all_mapfile()
+            get_all_mapfile(2)
         elif option=='9':
             analyze_realH_count()
         elif option=='10':
@@ -1131,7 +1217,7 @@ if  __name__ == '__main__':
         elif option=='11':
             for i in range(0, 1):
                 print 'BUY_MAX', buy_max, 'START!'
-                do_trade_emulator()
+                do_trade_emulator(0)
                 print 'BUY_MAX', buy_max, 'END!'
                 buy_max = buy_max + 1 
             
