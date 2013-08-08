@@ -447,7 +447,16 @@ def write_price_map_csv(code, name, history_csv, out_csv, mode):
                 csvWriter.writerow(line)
                         
         if mode == 2:
+            skip_date = True
+            skip_count = 0
             for i in range(2, len(k_list)-1):
+#                print k_list[i][idx_date]
+                if '2012-12-31' == k_list[i][idx_date]:
+#                    print k_list[i][idx_date]
+                    skip_date = False
+                if skip_date:
+                    skip_count += 1
+                    continue
                 val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))   #last close
                 if (float('%.1f' % val) == j ):
                     percent = (float(k_list[i][idx_close])-float(k_list[i][idx_open])) *100. / float(k_list[i+1][idx_close])
@@ -455,6 +464,7 @@ def write_price_map_csv(code, name, history_csv, out_csv, mode):
             if len(listHigh):
                 line = float('%.1f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
                 csvWriter.writerow(line)
+#                print 'skip_count', skip_count
 
     fcsv.close()
 
@@ -850,7 +860,7 @@ def check_all_open_from_history(date_str, date_csv, mode = 1):
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     filename = 'data/check_all_open_'+date_str+'.csv'
     if mode == 2:
-        filename = 'data/check_all_open_To2Tc'+date_str+'.csv'
+        filename = 'data/check_all_open_To2Tc_'+date_str+'.csv'
     if os.path.exists(filename):
         print 'get data from', filename
         list = []
@@ -890,7 +900,7 @@ def check_all_open_from_history(date_str, date_csv, mode = 1):
         return list
     
     # Not Exist, creat it!
-    filename = 'data/check_all_open_To2Tc'+date_str+'.csv'    
+    filename = 'data/check_all_open_To2Tc_'+date_str+'.csv'    
     fcsv = open(filename, 'wb')
     csvWriter = csv.writer(fcsv)
     line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '',\
@@ -1006,7 +1016,7 @@ def do_trade_emulator(mode = 1):
     myhold_init(100*10000)
     print myhold
     for year in range(2013, 2014, 1):
-        for month in range(1, 12+1):
+        for month in range(4, 12+1):
             for day in range (1, 31+1):
                 list = []
 #                 if cnt1 > 5:
@@ -1217,7 +1227,7 @@ if  __name__ == '__main__':
         elif option=='11':
             for i in range(0, 1):
                 print 'BUY_MAX', buy_max, 'START!'
-                do_trade_emulator(0)
+                do_trade_emulator(2)
                 print 'BUY_MAX', buy_max, 'END!'
                 buy_max = buy_max + 1 
             
