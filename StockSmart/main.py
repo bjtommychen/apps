@@ -88,6 +88,8 @@ def check_if_need_send_analysis_report():
     text = time.strftime("%H:%M", time.localtime())
     if not check_market_open():
         return False
+    if '9:26' in text:
+        checkopen = True
     if ':30' in text or ':00' in text:
         checkopen = True
     return checkopen
@@ -124,8 +126,19 @@ def stock_daemon():
                     shutil.copy2("check_all_open.csv", attach_filename)
                     send_mail("Notice: check_all_open.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y-%m-%d_%H%M", time.localtime()) + maintext,
                                attach_filename)
-                    need_checkall = False
                     Gtalk_send('Sent mail with check_all_open.csv, please check soon!')
+
+                    Gtalk_send('Preparing analysis reoprt... To2Tc')
+                    maintext = check_all_open_To2Tc()
+                    attach_filename = 'data/check_all_open_To2Tc_'+time.strftime("%Y-%m-%d_%H%M", time.localtime())+'.csv'
+                    print attach_filename
+                    shutil.copy2("check_all_open.csv", attach_filename)
+                    send_mail("Notice: check_all_open_To2Tc.csv is Ready!", "Hi!\nCreate time:"+time.strftime("%Y-%m-%d_%H%M", time.localtime()) + maintext,
+                               attach_filename)
+                    Gtalk_send('Sent mail with check_all_open_To2Tc.csv, please check soon!')
+
+                    need_checkall = False
+
             else:
                 need_checkall = True
                 
@@ -583,7 +596,7 @@ def check_all_open():
         try:
             code = row[0]
             name = row[1]
-            map_csv = 'data/'+str(code)+'_map.csv'
+            map_csv = 'data/'+str(code)+'_map_Lc2Th.csv'
             if os.path.exists(map_csv):
                 name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price('sh'+code)
                 if (float(openprice) and float(lastclose)):
@@ -632,16 +645,97 @@ def check_all_open():
         if total >= 10:
             break;
         code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open_gap, space1, lastclose, openprice, curr_price, todayHigh, todayLow = oneline
-        if todayl < avgl or todayh > avgh:
+        if todayl < (avgl - 2.0) and count < 20 and guess > 2.5: #and get_percent_str(float(curr_price), float(lastclose)) > (avgl + 1.0):
             maintext += str(oneline) 
-            maintext += '\n\t\tCurr:' + str(get_percent_str(float(curr_price), float(lastclose)))+'%,'
-            maintext += 'Curr-avgL:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgl)) +'%,'
-            maintext += 'Curr-avgH:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgh)) +'%,'
+            maintext += '\n\t\t'
+            maintext += 'Curr-avgL:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgl)) +'%, '
+            maintext += 'Curr:' + str(get_percent_str(float(curr_price), float(lastclose)))+'%, '
+#            maintext += 'Curr-avgH:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgh)) +'%,'
             maintext += name + "\n"
             total += 1
 
     print maintext
     return maintext
+              
+def check_all_open_To2Tc():
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    fcsv = open('check_all_open.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    line = 'Code' , 'Name', 'Guess%','Open%','avgTo2Tc%','NULL','NULL','NULL', 'Close%', 'count', 'Close-Open%', '',\
+                'lastclose', 'openprice', 'todayclose', 'todayHigh', 'todayLow'    
+    csvWriter.writerow(line)
+    print 'check_all_open_To2Tc, wait...'
+    i = 0
+    list = []
+    for row in reader:
+#        if (i > 10):
+#            break;
+        i = i+1;
+        if (i%100 == 0):
+            print i
+        try:
+            code = row[0]
+            name = row[1]
+            map_csv = 'data/'+str(code)+'_map_To2Tc.csv'
+            if os.path.exists(map_csv):
+                name, openprice, lastclose, todayclose, todayhigh, todaylow = get_rt_price('sh'+code)
+                if (float(openprice) and float(lastclose)):
+#                    print name, code, open, lastclose, curr, todayhigh, todaylow
+                    open_percent, avgTo2Tc, count = check_history_open_data_To2Tc(map_csv, openprice, lastclose)
+                    curr_chg = get_percent_str(todayclose, lastclose)
+                    realH_percent = float('%.1f' % (get_percent_str(todayclose,lastclose) - open_percent))
+                    guess_percent = float('%.1f' % (avgTo2Tc))
+                    line = (code, (row[1]),
+                            guess_percent, open_percent,
+                            float('%.1f' % avgTo2Tc), 0,
+                            0, 0,
+                            float('%.1f' % (get_percent_str(todayclose,lastclose))),
+                            count, 
+                            realH_percent,
+                            '',
+                            float(lastclose),
+                            float(openprice),
+                            float(todayclose),
+                            float(todayhigh),
+                            float(todaylow)
+                            )
+                    if (avgTo2Tc and count):
+                        list.append(line)
+        except:
+            print 'check_all_open_To2Tc error'
+            
+    print "*** Result ***"
+    print len(list), len(list[0])
+    list.sort(key=lambda data : data[2], reverse=True)
+    print 'sorted.'
+    i = 0
+    print 'Code' , 'Name', 'Guess%','Open%','avgTo2Tc%','NULL','NULL','NULL', 'Close%', 'count', 'Close-Open%', '',\
+                'lastclose', 'openprice', 'todayclose', 'todayHigh', 'todayLow'   
+    for line in list:
+        csvWriter.writerow(line)
+#        if (i < 20):
+#            print line
+        i = i + 1
+    fcsv.close()
+    
+    # highlight one
+    maintext = "\n"
+    total = 0
+    for oneline in list:
+        if total >= 10:
+            break;
+        code, name, guess, open_percent, avgTo2Tc, todayh, avgl, todayl, realguess, count, curr_open_gap, space1, lastclose, openprice, curr_price, todayHigh, todayLow = oneline
+        if todayLow < (openprice*.98) and count < 10 and avgTo2Tc > 1: #and get_percent_str(float(curr_price), float(lastclose)) > (avgl + 1.0):
+            maintext += str(oneline) 
+            maintext += '\n\t\t'
+            maintext += 'Curr-Open*.98: ' + str(float('%.1f' % ((curr_price - openprice*.98)*100. /lastclose))) +'%, '
+            maintext += 'Curr:' + str(get_percent_str(float(curr_price), float(lastclose)))+'%, '
+#            maintext += 'Curr-avgH:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgh)) +'%,'
+            maintext += name + "\n"
+            total += 1
+
+    print maintext
+    return maintext              
               
 def list_lastclose_add(list, code, lastclose):
 #    print code, lastclose, len(list)
