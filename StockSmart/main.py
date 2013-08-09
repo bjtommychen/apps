@@ -638,8 +638,22 @@ def check_all_open():
         i = i + 1
     fcsv.close()
     
+    maintext = ""
+    
+    # suggest one
+    maintext += "Suggest buy list:\n"
+    total = 0
+    for oneline in list:
+        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayHighPrice, todayLowPrice = oneline
+        if 20 > count >= 1 and 2.0 > open_percent > -3.0 and guess < 6 :#and todayl <= avgl:
+            maintext += str(oneline)
+            maintext += name + "\n"
+            total = total + 1
+        if total ==3:
+            break
+        
     # highlight one
-    maintext = "\n"
+    maintext += "\n\nHighlights list:\n"
     total = 0
     for oneline in list:
         if total >= 10:
@@ -653,7 +667,6 @@ def check_all_open():
 #            maintext += 'Curr-avgH:' + str(get_percent_str(float(curr_price), float(lastclose)) - float(avgh)) +'%,'
             maintext += name + "\n"
             total += 1
-
     print maintext
     return maintext
               
@@ -717,9 +730,22 @@ def check_all_open_To2Tc():
 #            print line
         i = i + 1
     fcsv.close()
-    
+
+    maintext = ""
+    # suggest one
+    maintext += "Suggest buy list:\n"
+    total = 0
+    for oneline in list:
+        code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayHighPrice, todayLowPrice = oneline
+        if 10 > count >= 1 and open_percent > -5.0 and guess:
+            maintext += str(oneline)
+            maintext += name + "\n"
+            total = total + 1
+        if total ==3:
+            break
+            
     # highlight one
-    maintext = "\n"
+    maintext += "\n\nHighlights list:\n"
     total = 0
     for oneline in list:
         if total >= 10:
