@@ -47,7 +47,7 @@ def send_mail_local(subject, content, filename = None):
         message = MIMEMultipart()  
         message.attach(MIMEText(content, 'plain'))  
 #        message.attach(MIMEText(html, 'html'))  
-#        message.attach(MIMEText(html_sign, 'html'))  
+        message.attach(MIMEText(html_sign, 'html'))  
         message["Subject"] = subject  
         message["From"] = MAIL_FROM  
         message["To"] = ";".join(MAIL_LIST)
