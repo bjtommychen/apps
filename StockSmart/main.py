@@ -8,7 +8,9 @@ import csv
 import shutil
 import random
 import datetime
-
+import thread 
+import workerpool
+import profile
 #import winsound
 
 from StockSmart import *
@@ -208,7 +210,6 @@ def get_percent_str(value, base):
     percent = (float(value) - float(base)) *100. / float(base)
     return float('%.1f' % percent) 
 
-
 def avg(sequence):
         if len(sequence) < 1:
             return None
@@ -382,7 +383,9 @@ def get_stock_list():
     fcsv.close()
 
 #########################################################################
-def get_stock_history_csv(code, name):  
+thread_num = 0
+def get_stock_history_csv(code, name):
+    global thread_num  
     url = 'http://table.finance.yahoo.com/table.csv?s=' + str(code) +'.ss'
     local = 'data/'+str(code)+'.csv'
     if os.path.exists(local):
@@ -392,15 +395,22 @@ def get_stock_history_csv(code, name):
         socket.setdefaulttimeout(2)  
         urllib.urlretrieve(url, local, 0)
         print 'got csv file, size:', os.path.getsize(local), 'bytes!'
-        
+    thread_num -= 1
 
 def get_all_history():
+    global thread_num
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
     error_count = 0    
     for row in reader:
 #        print 'code:', row[0], 'name:', row[1]
+#        while thread_num > 5:
+#            time.sleep(1)
+#            print '~',
         try:
             get_stock_history_csv(row[0], row[1])
+#            thread.start_new_thread(get_stock_history_csv, (row[0], row[1]))
+#            thread_num += 1
+#            time.sleep(1)
             error_count = 0
         except:
             print 'get_all_history error'
@@ -408,6 +418,50 @@ def get_all_history():
         if error_count > 10:
             print 'error count gt 10 ! exit !'
             break
+
+
+class DownloadJob_get_stock_history_csv(workerpool.Job):
+    "Job for downloading a given URL."
+    def __init__(self, code, name):
+        self.code = code
+        self.name = name
+    def run(self):
+        self.url = 'http://table.finance.yahoo.com/table.csv?s=' + str(self.code) +'.ss'
+        self.local = 'data/'+str(self.code)+'.csv'
+        if os.path.exists(self.local):
+            print self.local, 'exist! skip!'
+        else:  
+            print 'get csv for', self.name, ', url:', self.url
+            socket.setdefaulttimeout(5)
+            try:  
+                urllib.urlretrieve(self.url, self.local, 0)
+                print 'got csv file, size:', os.path.getsize(self.local), 'bytes!'
+            except:
+                print 'download failed.'
+
+def get_all_history_multithread():
+    global thread_num
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    error_count = 0    
+
+    # Initialize a pool, 5 threads in this case
+    pool = workerpool.WorkerPool(size=20)
+        
+    for row in reader:
+        try:
+            job = DownloadJob_get_stock_history_csv(row[0], row[1])
+            pool.put(job)            
+            error_count = 0
+        except:
+            print 'get_all_history error'
+            error_count = error_count + 1
+        if error_count > 10:
+            print 'error count gt 10 ! exit !'
+            break
+
+    # Send shutdown jobs to all threads, and wait until all the jobs have been completed
+    pool.shutdown()
+    pool.wait()
 
 #########################################################################
 def write_price_map_csv(code, name, history_csv, out_csv, mode):
@@ -444,7 +498,8 @@ def write_price_map_csv(code, name, history_csv, out_csv, mode):
         line = 'percent', 'len(listTclose)',  'max(listTclose)', 'min(listTclose)', 'avg(listTclose)'
         
     csvWriter.writerow(line)
-     
+    
+    skip_day = 0 
     for jj in range(-50, 50, 1):
         j = jj/10.
         listHigh = []
@@ -452,7 +507,15 @@ def write_price_map_csv(code, name, history_csv, out_csv, mode):
 
 #        print 'checking', j
         if mode == 1:
+            skip_date = True
+            skip_count = 0
             for i in range(2, len(k_list)-1):
+                if '2012-' in k_list[i][idx_date]:
+                    if skip_date:
+                        skip_date = False
+                if skip_date:
+                    skip_count += 1
+                    continue
                 val = (get_percent_str( k_list[i][idx_open], k_list[i+1][idx_close]))   #last close
                 if (float('%.1f' % val) == j ):
                     listHigh.append((get_percent_str(k_list[i][idx_high],k_list[i+1][idx_close])))
@@ -461,13 +524,15 @@ def write_price_map_csv(code, name, history_csv, out_csv, mode):
                 line = float('%.1f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
                 line += '', len(listLow),  max(listLow), min(listLow), avg(listLow)
                 csvWriter.writerow(line)
+            if skip_day == 0 and skip_count:
+                skip_day = skip_count                
                         
         if mode == 2:
             skip_date = True
             skip_count = 0
             for i in range(2, len(k_list)-1):
 #                print jj, i, k_list[i][idx_date], len(k_list)-1
-                # Until before 2013, we start to colletct data.
+                # !!! Ignore data after 20130101
                 if '2012-' in k_list[i][idx_date]:
                     if skip_date:
                         skip_date = False
@@ -482,7 +547,9 @@ def write_price_map_csv(code, name, history_csv, out_csv, mode):
             if len(listHigh):
                 line = float('%.1f' % j), len(listHigh),  max(listHigh), min(listHigh), avg(listHigh)
                 csvWriter.writerow(line)
-#                print 'skip_count', skip_count
+            if skip_day == 0 and skip_count:
+                skip_day = skip_count
+    print 'skip_day', skip_day
     fcsv.close()
 
 # mode 1: guess todayhigh/lastclose based on todayopen/lastclose
@@ -506,6 +573,8 @@ def get_all_mapfile(mode = 1):
 #            print total
 #            if total > 2:
 #                return
+        except KeyboardInterrupt:
+            break
         except:
             print 'get_all_mapfile error'
 
@@ -1011,9 +1080,11 @@ def check_all_open_from_1500(filename):
 # Creat data/check_all_open_20130101.csv files if not exist. and return the list in csv.    
 def check_all_open_from_history(date_str, date_csv, mode = 1):
     reader = csv.reader(file('table_stocklist_sh.csv','rb'))
-    filename = 'data/check_all_open_'+date_str+'.csv'
+    if mode == 1:
+        filename = 'data/check_all_open_Lc2Th_'+date_str+'.csv'
     if mode == 2:
         filename = 'data/check_all_open_To2Tc_'+date_str+'.csv'
+#    print filename
     if os.path.exists(filename):
         print 'get data from', filename
         list = []
@@ -1034,10 +1105,14 @@ def check_all_open_from_history(date_str, date_csv, mode = 1):
         return check_all_open_from_1500(filename)
     
     # Not Exist, creat it!
-    filename = 'data/check_all_open_To2Tc_'+date_str+'.csv'    
+    if mode == 1:
+        filename = 'data/check_all_open_Lc2Th_'+date_str+'.csv'
+    if mode == 2:
+        filename = 'data/check_all_open_To2Tc_'+date_str+'.csv'
     fcsv = open(filename, 'wb')
     csvWriter = csv.writer(fcsv)
-    line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '',\
+    if mode == 1:
+        line = 'Code' , 'Name', 'Guess%','Open%','avgH%','tHigh%','avgL%','tLow%', 'RealGuess%', 'count', 'Curr-Open%', '',\
             'lastclose', 'openprice', 'todayclose', 'todayHigh', 'todayLow', date_csv
     if mode == 2:
         line = 'Code' , 'Name', 'Guess%','Open%','avgTo2Tc%','NULL','NULL','NULL', 'Close%', 'count', 'Close-Open%', '',\
@@ -1056,6 +1131,7 @@ def check_all_open_from_history(date_str, date_csv, mode = 1):
         try:
             code = row[0]
             name = row[1]
+            
             if mode == 1:
                 map_csv = 'data/'+str(code)+'_map_Lc2Th.csv'
                 if os.path.exists(map_csv) and os.path.exists(date_csv):
@@ -1154,6 +1230,10 @@ def check_all_open_from_history(date_str, date_csv, mode = 1):
 def do_trade_emulator(mode = 1):
     global myhold
 
+    if mode == 0:
+        print 'This mode not supported !'
+        return
+
     fcsv = open('do_trade_emulator.csv', 'wb')
     csvWriter = csv.writer(fcsv)
     cnt1 = 0
@@ -1171,7 +1251,7 @@ def do_trade_emulator(mode = 1):
                 if date_str > today_date:
                     continue
                 
-                print date_str, 
+                print '\n',date_str, 
                 try:
                     if (datetime.datetime(year,month,day).weekday() > 4):
                         print 'skip weekend.'
@@ -1206,8 +1286,8 @@ def do_trade_emulator(mode = 1):
 #                        print myhold
                     if True:
                         print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> avg chg % is ', avg(sell_chg_array), '%!'
-                        totalcash, total = myhold_listall()
-                        line = date_str, avg(sell_chg_array), totalcash, total
+                        totalcash, total, totalchg = myhold_listall()
+                        line = date_str, avg(sell_chg_array), totalchg, totalcash, total
                         csvWriter.writerow(line)
                         if avg(sell_chg_array) >= 2.0:
                             funds *= 2
@@ -1222,7 +1302,7 @@ def do_trade_emulator(mode = 1):
                         buyprice = openprice
 #                        print buyprice, openprice
 #                         myhold_buy(buylist[0], openprice, int(10000/openprice))
-                        myhold_buy(buylist[0], buyprice, int(funds/buyprice), name)
+                        myhold_buy(buylist[0], buyprice, int(int(funds/buyprice)/100)*100, name)
                 myhold_listall()
     myhold_listall()
     fcsv.close()
@@ -1282,11 +1362,15 @@ def choose_one2buy(today_list, weekday, mode = 1):
 
 mycash = 0
 myhold=[]
+mytotal_yesterday = 0
+
 def myhold_init(value):
     global mycash
     global myhold
+    global mytotal_yesterday
     mycash = value
-    myhold = []   
+    myhold = []
+    mytotal_yesterday = value   
     print 'init. mycash', value
 
 def myhold_get_cashsize():
@@ -1298,6 +1382,7 @@ def myhold_get_cashsize():
 def myhold_listall():
     global mycash
     global myhold
+    global mytotal_yesterday    
     market_value = 0    
     print '*************** list ****************'
     
@@ -1307,7 +1392,9 @@ def myhold_listall():
             market_value = market_value + price*amount
     print 'Cash:', int(mycash), ', Total:', int(mycash + market_value)
     print '***************************************'
-    return int(mycash), int(mycash + market_value)
+    total_yesteray =  mytotal_yesterday
+    mytotal_yesterday = int(mycash + market_value)
+    return int(mycash), mytotal_yesterday,  mytotal_yesterday - total_yesteray
         
 def myhold_buy(code, price, amount, name = None):
     global mycash
@@ -1338,24 +1425,63 @@ def myhold_sell(code, price, sell_amount, name = None):
                 return
     print 'sell failed.'  
 
-def do_test_myhold():
-    myhold_init(10*10000)
-    myhold_listall()
-    myhold_buy('11', 4.5, 1000)
-    myhold_listall()
-    myhold_buy('12', 5.5, 200)
-    myhold_listall()
-    myhold_sell('13', 1.1, 200)
-    myhold_listall()
-    myhold_sell('11', 4.8, 800)
-    myhold_listall()
-    myhold_sell('12', 5.6, 200)
-    myhold_listall()
-        
-def trader_mainloop():
-    print 'enter trader_mainloop.'
+
+def check_limitup_from_history(date_csv):
+    list = []
+    if os.path.exists(date_csv):
+        print 'check_limitup_from_history data from', date_csv
+        lists = csv.reader(file(date_csv,'rb'))
+        lists.next()
+        for row in lists:
+#            print row
+            code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayhigh, todaylow = row
+            if float(todayh) > 9.8:
+               
+                line = (code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayhigh, todaylow, date_csv)
+#                print line
+                list.append(line)
+
+    print "*** Result ***",
+    print 'Items:', len(list), 
+    if (len(list)):
+        print 'Field:', len(list[0])
+#    print list
+    return list   
 
 
+def get_limitup():
+    print 'enter get_limitup'
+    global myhold
+
+    fcsv = open('all_limitup.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+
+    today_date = time.strftime("%Y-%m-%d", time.localtime())
+    for year in range(2011, 2013, 1):
+        for month in range(1, 12+1):
+            for day in range (1, 31+1):
+                date_str = str(year)+'-'+str('%02d' % month)+'-'+str('%02d' % day)
+                if date_str > today_date:
+                    continue
+                
+                print date_str, 
+                try:
+                    if (datetime.datetime(year,month,day).weekday() > 4):
+                        print 'skip weekend.'
+                        continue
+                except ValueError:
+                    print 'invalid date'
+                    continue
+                date_csv = 'data/check_all_open_'+date_str+'.csv'    
+                if not os.path.exists(date_csv):
+                    print 'no data file.'
+                    continue                        
+                today_list = check_limitup_from_history(date_csv)
+                for row in today_list:
+                    csvWriter.writerow(row)
+
+    fcsv.close()
+    print 'done!'
 
 '''
 how init the data.
@@ -1363,6 +1489,7 @@ step by step.
 1. use --3 to download 6000030.csv
 2. use --7 to get csv by date.  2006-03-29.csv
 3. use --8 to get stock price map.csv, call get_all_mapfile()
+4. use --11 to do_trade_emulator. to creat check_all_open_xxx.cvs for special date.
 '''
                         
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
@@ -1383,11 +1510,11 @@ if  __name__ == '__main__':
         elif option=='2':
             stock_daemon()    
         elif option=='3':
-            get_all_history()
+            get_all_history_multithread()
         elif option=='4':
             get_price_map_csv()
         elif option=='5':
-            get_stock_list()()
+            get_stock_list()
         elif option=='6':
             check_all_open()
         elif option=='7':
@@ -1397,13 +1524,11 @@ if  __name__ == '__main__':
         elif option=='9':
             analyze_realH_count()
         elif option=='10':
-            trader_mainloop()
+            get_limitup()
         elif option=='11':
-            for i in range(0, 1):
-                print 'BUY_MAX', buy_max, 'START!'
-                do_trade_emulator(2)
-                print 'BUY_MAX', buy_max, 'END!'
-                buy_max = buy_max + 1 
+            do_trade_emulator(2)
+        elif option=='100':
+            profile.run("get_all_mapfile(2)")
             
     print 'main done!'
     beep_sos()
