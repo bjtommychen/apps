@@ -4,8 +4,6 @@ package com.tanmo.smscleaner;
 // TODO select all
 // 
 
-import android.R.bool;
-import android.R.color;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
@@ -18,25 +16,22 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import java.util.*;
-import android.os.Bundle;
 import android.widget.*;
 import android.view.*;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Contacts;
-import android.provider.Contacts.People;
+import android.provider.ContactsContract;
 import android.app.AlertDialog;
-import android.app.AlertDialog.Builder;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager.NameNotFoundException;
 
 public class SmsClean extends Activity
 {
 	static final String TAG = "smsclean";
-	static final boolean debugmode = false; // 0 for release mode.
-	static final int MAX_SMS_BROWSE = 20000; // Tommy: max sms displayed. too
+	static final boolean debugmode = true; // 0 for release mode.
+	static final int MAX_SMS_BROWSE = 10000; // Tommy: max sms displayed. too
 	// large will slower.
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
@@ -173,18 +168,20 @@ public class SmsClean extends Activity
 		final ProgressDialog pd;
 
 		pd = new ProgressDialog(this);
-//		pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-		 pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		pd.setTitle(getString(R.string.app_name));
 		pd.setMessage(getString(R.string.load));
-		 pd.setMax(0);
-//		 pd.setProgress(0);
-//		pd.setIndeterminate(true);
+		pd.setMax(0);
 		pd.setCancelable(false);
-		// pd.setCancelable(true);
+//		pd.setCancelable(true);
 
 		pd.show();
-
+		
+		if (debugmode)
+		{
+			toast.setText("Debug mode !");
+			toast.show();
+		}
 		/*
 		 * m_count = 0; while (m_count <= iSelected) { m_count++; //
 		 * progressDialog.setProgress(m_count);
@@ -256,23 +253,11 @@ public class SmsClean extends Activity
 	{
 		int i;
 		int index;
+		int contactIdIndex = 0;
+		boolean bStranger;
 
 		if (num == 0)
 			num = 99999;
-
-		// String[] sw = new String[100];
-		// for (i = 0; i < 100; i++)
-		// {
-		// sw[i] = "listtest_" + i;
-		// }
-
-		// for (i = 0; i < 10; i++)
-		// {
-		// HashMap<String, Object> map = new HashMap<String, Object>();
-		// map.put("ADDR", "Test Title");
-		// map.put("BODY", "listtest_" + i);
-		// sms_array1.add(map);
-		// }
 
 		i = 1;
 		// arrayadapter_sms.clear();
@@ -281,14 +266,9 @@ public class SmsClean extends Activity
 		sms_array1.clear();
 
 		uri = Uri.parse("content://sms/inbox");
-		// uri = Uri.parse("content://mms/inbox");
-		// uri = (People.CONTENT_URI);
-		// uri = Contacts.Phones.CONTENT_URI;
-		// cur = this.managedQuery(uri, null, null, null, null);
-
-		// cur = getContentResolver().query(uri, null, null, null, null);
-		// null, Contacts.Phones.PERSON_ID +"=662", null, null);
-		cur = getContentResolver().query(uri, new String[] { "_id", "thread_id", "address", "person", "body" }, null, null, null);
+		cur = getContentResolver().query(uri, new String[] { "_id", "thread_id", "address", /*"person",*/ "body" }, null, null, null);
+//		cur = getContentResolver().query(uri, null, null, null, null);
+		contactIdIndex = cur.getColumnIndex("address");
 
 		iSelected = 0;
 		iTotal = 0;
@@ -307,70 +287,82 @@ public class SmsClean extends Activity
 				do
 				{
 					Map<String, Object> map = new HashMap<String, Object>();
+					bStranger = false;
 
-					info = "Sms " + String.valueOf(i) + ": ";
-					// info_show = "";
+//					info = "Sms " + String.valueOf(i) + ": ";
+
+					{
+						String addr = cur.getString(contactIdIndex);
+						Uri myPerson = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
+			                        Uri.encode(addr));
+			            String[] projection = new String[] { ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
+			            Cursor cursor = getContentResolver().query(myPerson,
+			                        projection, null, null, null);								
+			            if (cursor.moveToFirst())
+			            {	
+			            	bStranger = false;
+			            	continue;
+			            }
+			            else
+			            {
+			            	bStranger = true;
+			            }
+					}
+					
+					if (bStranger == false)
+						continue;
+					
 					for (int j = 0; j < cur.getColumnCount(); j++)
 					{
+//						Log.i(TAG, "    Column:"+j+ "name:" + cur.getColumnName(j) + ", string:" + cur.getString(j));
 						if (cur.getColumnName(j).equals("body"))
 						{
-							// Log.i(TAG, "Msg is " + cur.getString(j));
-							// info_show += cur.getString(j);
+//							Log.i(TAG, "Msg is " + cur.getString(j));
+//							info_show += cur.getString(j);
 							map.put("BODY", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("address"))
 						{
-							// Log.i(TAG, i + " From " + cur.getString(j));
-							// info_show += "From:" + cur.getString(j) + "\n";
+//							Log.i(TAG, "NO." + i + " From: " + cur.getString(j));
+//							info_show += "From:" + cur.getString(j) + "\n";
 							map.put("ADDR", cur.getString(j));
-						} else if (cur.getColumnName(j).equals("person"))
-						{
-							// Log.i(TAG, Contacts.Phones.PERSON_ID
-							// +"="+cur.getString(j));
-							if (cur.getString(j) == null)
-							{ // Stranger !!!
-								map.put("CHECKED", true);
-								if (true) // when test, set to false
-								{
-									checkedItem.add(true);
-									iSelected++;
-								} else
-								{
+							
+							{
+								String addr = cur.getString(j);
+								Uri myPerson = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
+					                        Uri.encode(addr));
+					            String[] projection = new String[] { ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
+					            Cursor cursor = getContentResolver().query(myPerson,
+					                        projection, null, null, null);								
+					            if (cursor.moveToFirst())
+					            {	// Person in contacts list !
+					            	String name=cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+					            	Log.i(TAG, name);
 									checkedItem.add(false);
-								}
-							} else //if (isInteger(cur.getString(j)))
-							{ // SMS from contacts !
-								{
-									cur_contacts = getContentResolver().query(Contacts.Phones.CONTENT_URI, new String[] { People.DISPLAY_NAME }, Contacts.Phones.PERSON_ID + " = " +  cur.getString(j) , null, null);
-									// Tommy: add below to resolve BUGS report
-									// from Android Market.
-									// The returned Cursor from the query() call will never be null but it might be empty.
-									if (cur_contacts != null && cur_contacts.moveToFirst())
+//									map.put("CHECKED", false);
+//									map.put("NAME", name);
+					            }
+					            else
+					            {	// Stranger !!!
+									map.put("CHECKED", true);
+									if (true) // when test, set to false
 									{
-										index = cur_contacts.getColumnIndex(People.DISPLAY_NAME);
-										if (index != -1)
-										{
-											String name = cur_contacts.getString(index);
-											if (name != null)
-												map.put("NAME", name);
-										}
-										cur_contacts.close();
+										checkedItem.add(true);
+										iSelected++;
+									} else
+									{
+										checkedItem.add(false);
 									}
-									// Log.i(TAG, name);
-								}
-								checkedItem.add(false);
-								map.put("CHECKED", false);
+					            }
+					            cursor.close();
 							}
-						} else if (cur.getColumnName(j).equals("_id"))
+							
+						}else if (cur.getColumnName(j).equals("_id"))
 						{
 							map.put("ID", cur.getString(j));
 						} else if (cur.getColumnName(j).equals("thread_id"))
 						{
 							map.put("THREAD_ID", cur.getString(j));
-						} else if (cur.getColumnName(j).equals("body") == false)
-						{
-							info += cur.getColumnName(j) + "=" + cur.getString(j) + ";";
-						}
-
+						} 
 					}
 					// Log.i(TAG, info);
 					// arraylist_sms.add(info_show);
@@ -391,7 +383,8 @@ public class SmsClean extends Activity
 				} while (cur.moveToNext() && (i++ < num));
 			}
 		}
-
+		cur.close();
+		
 		Log.i(TAG, "done1");
 
 	}
