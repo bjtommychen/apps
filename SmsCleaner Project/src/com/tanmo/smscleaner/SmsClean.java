@@ -27,18 +27,17 @@ import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager.NameNotFoundException;
 
-public class SmsClean extends Activity
-{
+public class SmsClean extends Activity {
 	static final String TAG = "smsclean";
-	static final boolean debugmode = true; // 0 for release mode.
-	static final int MAX_SMS_BROWSE = 10000; // Tommy: max sms displayed. too
+	static final boolean debugmode = false; // 0 for release mode.
+	static final int MAX_SMS_BROWSE = 500; // Tommy: max sms to remove.
 	// large will slower.
 	private String info, dbginfo, info_show;
 	private Cursor cur, cur_contacts;
 	private Uri uri;
 	private List<String> arraylist_sms = new ArrayList<String>();
 	private ArrayList<Boolean> checkedItem = new ArrayList<Boolean>();
-	private ArrayAdapter<String> arrayadapter_sms;
+	// private ArrayAdapter<String> arrayadapter_sms;
 	private ListView list;
 	private TextView footview;
 	private ArrayList<Map<String, Object>> sms_array1 = new ArrayList<Map<String, Object>>();
@@ -62,8 +61,7 @@ public class SmsClean extends Activity
 
 	/** Called when the activity is first created. */
 	@Override
-	public void onCreate(Bundle savedInstanceState)
-	{
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
@@ -83,8 +81,7 @@ public class SmsClean extends Activity
 	 * Whenever the UI is re-created (due f.ex. to orientation change) we have
 	 * to reinitialize references to the views.
 	 */
-	private void initResourceRefs()
-	{
+	private void initResourceRefs() {
 		smslistadapter = new MyAdapter(this);
 
 		list = (ListView) findViewById(R.id.listView1);
@@ -98,58 +95,57 @@ public class SmsClean extends Activity
 		footview.setTypeface(null, Typeface.BOLD);
 		footview.setGravity(Gravity.CENTER_HORIZONTAL);
 		list.addHeaderView(footview);
-		
+
 		toast = Toast.makeText(getApplicationContext(), ".", Toast.LENGTH_LONG);
 		toast.setGravity(Gravity.CENTER, 0, 0);
-		toast2 = Toast.makeText(getApplicationContext(), ".", Toast.LENGTH_SHORT);
+		toast2 = Toast.makeText(getApplicationContext(), ".",
+				Toast.LENGTH_SHORT);
 		toast2.setGravity(Gravity.BOTTOM, 0, 0);
-		
+
 	}
 
-	private void initHandles()
-	{
-		// Create Main MSG handler
-		handler = new Handler()
-		{
-			@Override
-			public void handleMessage(Message msg)
-			{
-				switch (msg.what)
-				{
-					case GUI_SHOW_WAITING:
-						show_wait();
-						break;
+	class IncomingHandlerCallback implements Handler.Callback {
+		@Override
+		public boolean handleMessage(Message msg) {
+			switch (msg.what) {
+			case GUI_SHOW_WAITING:
+				show_wait();
+				break;
 
-					case GUI_GET_SMSINFO:
-						thread_getsmsinfo = new Thread()
-						{
-							@Override
-							public void run()
-							{
-								get_smsinfo(MAX_SMS_BROWSE);
-								handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
-								showwaiting_running = false;
-								Log.i(TAG, "thread_getsmsinfo done !");
-							}
-						};
-						thread_getsmsinfo.start();
-						Log.i(TAG, "thread_getsmsinfo start !");
-						break;
+			case GUI_GET_SMSINFO:
+				thread_getsmsinfo = new Thread() {
+					@Override
+					public void run() {
+						get_smsinfo(MAX_SMS_BROWSE);
+						handler.sendEmptyMessage(GUI_UPDATE_SMS_LIST);
+						showwaiting_running = false;
+						Log.i(TAG, "thread_getsmsinfo done !");
+					}
+				};
+				thread_getsmsinfo.start();
+				Log.i(TAG, "thread_getsmsinfo start !");
+				break;
 
-					case GUI_UPDATE_SMS_LIST:
-						update_showlist();
-						break;
+			case GUI_UPDATE_SMS_LIST:
+				update_showlist();
+				break;
 
-				}
-				super.handleMessage(msg);
 			}
-		};
+			// super.handleMessage(msg);
+			return true;
+		}
 	}
 
-	private void list_update_headview()
-	{
+	private void initHandles() {
+		// Create Main MSG handler
+		handler = new Handler(new IncomingHandlerCallback());
+
+	}
+
+	private void list_update_headview() {
 		// footview.setText("Total " + iTotal + ", " + "Selected " + iSelected);
-		footview.setText(" " + getString(R.string.sms) + " " + iSelected + "/" + iTotal + " " + getString(R.string.selected) + ". ");
+		footview.setText(" " + getString(R.string.sms) + " " + iSelected + "/"
+				+ iTotal + " " + getString(R.string.selected) + ". ");
 	}
 
 	/*
@@ -163,8 +159,7 @@ public class SmsClean extends Activity
 	 */
 
 	// 显示 '请等待...'
-	private void show_wait()
-	{
+	private void show_wait() {
 		final ProgressDialog pd;
 
 		pd = new ProgressDialog(this);
@@ -173,12 +168,12 @@ public class SmsClean extends Activity
 		pd.setMessage(getString(R.string.load));
 		pd.setMax(0);
 		pd.setCancelable(false);
-//		pd.setCancelable(true);
+		if (debugmode)
+			pd.setCancelable(true);
 
 		pd.show();
-		
-		if (debugmode)
-		{
+
+		if (debugmode) {
 			toast.setText("Debug mode !");
 			toast.show();
 		}
@@ -189,26 +184,21 @@ public class SmsClean extends Activity
 		 * SystemClock.sleep(1000);
 		 */
 		{
-			new Thread()
-			{
+			new Thread() {
 				@Override
-				public void run()
-				{
+				public void run() {
 					int bGetCount = 0;
-					try
-					{
+					try {
 						iTotal = 0;
 						iCount = 0;
-						
+
 						showwaiting_running = true;
 						handler.sendEmptyMessage(GUI_GET_SMSINFO);
 
 						// for (int j = 0; j < 150; j++)
-						while (showwaiting_running)
-						{
+						while (showwaiting_running) {
 							// pd.incrementProgressBy(1);
-							if (bGetCount == 0 && iCount != 0 )
-							{
+							if (bGetCount == 0 && iCount != 0) {
 								pd.setMax(iCount);
 								bGetCount = 1;
 							}
@@ -222,11 +212,9 @@ public class SmsClean extends Activity
 						Thread.sleep(100);
 						pd.cancel();
 						Thread.sleep(1);
-					} catch (InterruptedException e)
-					{
+					} catch (InterruptedException e) {
 						e.printStackTrace();
-					} finally
-					{
+					} finally {
 					}
 				}
 
@@ -235,139 +223,125 @@ public class SmsClean extends Activity
 
 	}
 
-	private boolean isInteger( String input )  
-	{  
-	   try  
-	   {  
-	      Integer.parseInt( input );  
-	      return true;  
-	   }  
-	   catch( Exception e)  
-	   {  
-	      return false;  
-	   }  
-	} 
-	
+	private boolean isInteger(String input) {
+		try {
+			Integer.parseInt(input);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 	// Browser all the SMS
-	private void get_smsinfo(int num)
-	{
-		int i;
-		int index;
+	private void get_smsinfo(int num) {
+		int i, index;
 		int contactIdIndex = 0;
 		boolean bStranger;
+		int count = 0;
+		String displayname = "";
 
 		if (num == 0)
-			num = 99999;
+			num = 9999;
 
-		i = 1;
+		count = 0;
 		// arrayadapter_sms.clear();
 		arraylist_sms.clear();
 		checkedItem.clear();
 		sms_array1.clear();
 
 		uri = Uri.parse("content://sms/inbox");
-		cur = getContentResolver().query(uri, new String[] { "_id", "thread_id", "address", /*"person",*/ "body" }, null, null, null);
-//		cur = getContentResolver().query(uri, null, null, null, null);
+		cur = getContentResolver().query(uri,
+				new String[] { "_id", "thread_id", "address", /* "person", */
+				"body" }, null, null, null);
+		// cur = getContentResolver().query(uri, null, null, null, null);
 		contactIdIndex = cur.getColumnIndex("address");
 
 		iSelected = 0;
 		iTotal = 0;
 		iCount = 0;
-		if (cur.getCount() == 0)
-		{
+		if (cur.getCount() == 0) {
 			Log.i(TAG, "No sms found !");
-		} else
-		{
+		} else {
 			Log.i(TAG, "Total " + cur.getCount() + " sms !!!");
 			// arraylist_sms.add("Total " + cur.getCount() + " sms !!!");
 			iCount = cur.getCount();
-			
-			if (cur.moveToFirst())
-			{
-				do
-				{
+
+			if (cur.moveToFirst()) {
+				do {
 					Map<String, Object> map = new HashMap<String, Object>();
 					bStranger = false;
 
-//					info = "Sms " + String.valueOf(i) + ": ";
-
+					// info = "Sms " + String.valueOf(i) + ": ";
 					{
 						String addr = cur.getString(contactIdIndex);
-						Uri myPerson = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
-			                        Uri.encode(addr));
-			            String[] projection = new String[] { ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
-			            Cursor cursor = getContentResolver().query(myPerson,
-			                        projection, null, null, null);								
-			            if (cursor.moveToFirst())
-			            {	
-			            	bStranger = false;
-			            	continue;
-			            }
-			            else
-			            {
-			            	bStranger = true;
-			            }
+						Uri myPerson = Uri
+								.withAppendedPath(
+										ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
+										Uri.encode(addr));
+						String[] projection = new String[] { ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
+						Cursor cursor = getContentResolver().query(myPerson,
+								projection, null, null, null);
+						if (cursor.moveToFirst()) {
+							bStranger = false;
+							// displayname = cursor
+							// .getString(cursor
+							// .getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+						} else {
+							// Stranger !!
+							bStranger = true;
+						}
+						cursor.close();
 					}
+
+					iTotal++;
 					
 					if (bStranger == false)
 						continue;
-					
-					for (int j = 0; j < cur.getColumnCount(); j++)
-					{
-//						Log.i(TAG, "    Column:"+j+ "name:" + cur.getColumnName(j) + ", string:" + cur.getString(j));
-						if (cur.getColumnName(j).equals("body"))
-						{
-//							Log.i(TAG, "Msg is " + cur.getString(j));
-//							info_show += cur.getString(j);
+
+					count++;
+
+					for (int j = 0; j < cur.getColumnCount(); j++) {
+						// Log.i(TAG, "    Column:"+j+ "name:" +
+						// cur.getColumnName(j) + ", string:" +
+						// cur.getString(j));
+						if (cur.getColumnName(j).equals("body")) {
+							// Log.i(TAG, "Msg is " + cur.getString(j));
+							// info_show += cur.getString(j);
 							map.put("BODY", cur.getString(j));
-						} else if (cur.getColumnName(j).equals("address"))
-						{
-//							Log.i(TAG, "NO." + i + " From: " + cur.getString(j));
-//							info_show += "From:" + cur.getString(j) + "\n";
+						} else if (cur.getColumnName(j).equals("address")) {
+							// Log.i(TAG, "NO." + i + " From: " +
+							// cur.getString(j));
+							// info_show += "From:" + cur.getString(j) + "\n";
 							map.put("ADDR", cur.getString(j));
-							
 							{
-								String addr = cur.getString(j);
-								Uri myPerson = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
-					                        Uri.encode(addr));
-					            String[] projection = new String[] { ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
-					            Cursor cursor = getContentResolver().query(myPerson,
-					                        projection, null, null, null);								
-					            if (cursor.moveToFirst())
-					            {	// Person in contacts list !
-					            	String name=cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-					            	Log.i(TAG, name);
-									checkedItem.add(false);
-//									map.put("CHECKED", false);
-//									map.put("NAME", name);
-					            }
-					            else
-					            {	// Stranger !!!
+								if (bStranger == false) { // Person in
+															// contacts list !
+															// Log.i(TAG,
+															// displayname);
+									// checkedItem.add(false);
+									// map.put("CHECKED", false);
+									// map.put("NAME", displayname);
+								} else { // Stranger !!!
 									map.put("CHECKED", true);
 									if (true) // when test, set to false
 									{
 										checkedItem.add(true);
 										iSelected++;
-									} else
-									{
+									} else {
 										checkedItem.add(false);
 									}
-					            }
-					            cursor.close();
+								}
 							}
-							
-						}else if (cur.getColumnName(j).equals("_id"))
-						{
+
+						} else if (cur.getColumnName(j).equals("_id")) {
 							map.put("ID", cur.getString(j));
-						} else if (cur.getColumnName(j).equals("thread_id"))
-						{
+						} else if (cur.getColumnName(j).equals("thread_id")) {
 							map.put("THREAD_ID", cur.getString(j));
-						} 
+						}
 					}
 					// Log.i(TAG, info);
 					// arraylist_sms.add(info_show);
 					sms_array1.add(map);
-					iTotal++;
 
 					if (debugmode)
 						SystemClock.sleep(10);
@@ -380,17 +354,16 @@ public class SmsClean extends Activity
 					// cur.getString(cur.getColumnIndex(People.NUMBER));
 					// Log.i(TAG, id + "  " + name + " " + number);
 
-				} while (cur.moveToNext() && (i++ < num));
+				} while (cur.moveToNext() && (count < num));
 			}
 		}
 		cur.close();
-		
+
 		Log.i(TAG, "done1");
 
 	}
 
-	private void update_showlist()
-	{
+	private void update_showlist() {
 		list_update_headview();
 
 		{ // if extends ListActivity, Tommy: this mode, can't change textsize.
@@ -424,10 +397,10 @@ public class SmsClean extends Activity
 		}
 
 		// Display SMS list statistics.
-		toast.setText(getString(R.string.stranger) + " " + getString(R.string.sms) + " " + iSelected + " ."
-				+ "\n" 
-				+ getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " ."
-				);
+		toast.setText(getString(R.string.stranger) + " "
+				+ getString(R.string.sms) + " " + iSelected + " ." + "\n"
+				+ getString(R.string.total) + " " + getString(R.string.sms)
+				+ " " + iTotal + " .");
 		toast.show();
 
 		// listView.setItemsCanFocus(false);
@@ -437,8 +410,7 @@ public class SmsClean extends Activity
 	} // get_smsinfo
 
 	// Delete SMS
-	private void delete_sms_selected()
-	{
+	private void delete_sms_selected() {
 		progressDialog = new ProgressDialog(this);
 		progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		progressDialog.setTitle(getString(R.string.processbar_deleting_title));
@@ -447,17 +419,17 @@ public class SmsClean extends Activity
 		progressDialog.setProgress(0);
 		progressDialog.setIndeterminate(false);
 		progressDialog.setCancelable(true);
-		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, getString(android.R.string.cancel), new DialogInterface.OnClickListener()
-		{
-			@Override
-			public void onClick(DialogInterface dialog, int which)
-			{
-				// dialog.cancel();
-				// If running, stop it.
-				if (delete_running)
-					delete_running = false;
-			}
-		});
+		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE,
+				getString(android.R.string.cancel),
+				new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// dialog.cancel();
+						// If running, stop it.
+						if (delete_running)
+							delete_running = false;
+					}
+				});
 
 		// SystemClock.sleep(100);
 
@@ -467,36 +439,36 @@ public class SmsClean extends Activity
 		 * progressDialog.incrementProgressBy(1); SystemClock.sleep(100); }
 		 * SystemClock.sleep(1000);
 		 */
-		if (iTotal > 0 && iSelected > 0)
-		{
+		if (iTotal > 0 && iSelected > 0) {
 			progressDialog.show();
 
-			thread_sms = new Thread()
-			{
+			thread_sms = new Thread() {
 				Boolean bDel;
 
 				@Override
 				public void run()
 
 				{
-					try
-					{
+					try {
 						m_count = 0;
-						ContentResolver resolver = SmsClean.this.getContentResolver();
+						ContentResolver resolver = SmsClean.this
+								.getContentResolver();
 						delete_running = true;
-						for (int i = 0; i < iTotal && delete_running; i++)
-						{
+						for (int i = 0; i < iTotal && delete_running; i++) {
 							bDel = (Boolean) checkedItem.get(i);
-							if (bDel)
-							{
+							if (bDel) {
 								m_count++;
-								if (!debugmode)
-								{ // Deleting SMS
-									resolver.delete(Uri.parse("content://sms/conversations/" + sms_array1.get(i).get("THREAD_ID")), "_id = " + sms_array1.get(i).get("ID"), null);
+								if (!debugmode) { // Deleting SMS
+									resolver.delete(
+											Uri.parse("content://sms/conversations/"
+													+ sms_array1.get(i).get(
+															"THREAD_ID")),
+											"_id = "
+													+ sms_array1.get(i).get(
+															"ID"), null);
 									// Log.i(TAG, "deleting " + "_id = " +
 									// sms_array1.get(i).get("ID"));
-								} else
-								{ // Simulate
+								} else { // Simulate
 									Thread.sleep(100);
 									Log.i(TAG, "deleting " + i);
 								}
@@ -509,11 +481,9 @@ public class SmsClean extends Activity
 						handler.sendEmptyMessage(GUI_SHOW_WAITING);
 						Thread.sleep(1);
 
-					} catch (InterruptedException e)
-					{
+					} catch (InterruptedException e) {
 						e.printStackTrace();
-					} finally
-					{
+					} finally {
 						// get_smsinfo(MAX_SMS_BROWSE);
 					}
 				}
@@ -522,31 +492,27 @@ public class SmsClean extends Activity
 			thread_sms.start();
 		}
 
-		progressDialog.setOnCancelListener(new ProgressDialog.OnCancelListener()
-		{
+		progressDialog
+				.setOnCancelListener(new ProgressDialog.OnCancelListener() {
 
-			@Override
-			public void onCancel(DialogInterface dialog)
-			{
-				thread_sms.interrupt();
-			}
-		});
+					@Override
+					public void onCancel(DialogInterface dialog) {
+						thread_sms.interrupt();
+					}
+				});
 
 	}
 
 	// Delete SMS
-	private void show_about()
-	{
+	private void show_about() {
 		AlertDialog.Builder aboutBox;
 		String pkName = this.getPackageName();
 
 		// this.getPackageManager().getPackageInfo返回包的一些overall信息
 		String versionName = null;
-		try
-		{
+		try {
 			versionName = this.getPackageManager().getPackageInfo(pkName, 0).versionName;
-		} catch (NameNotFoundException e)
-		{
+		} catch (NameNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -575,55 +541,47 @@ public class SmsClean extends Activity
 		if (debugmode)
 			aboutBox.setMessage("DEBUG");
 
-		aboutBox.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int which)
-			{
-			}
-		});
+		aboutBox.setPositiveButton(getString(android.R.string.ok),
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+					}
+				});
 
 		aboutBox.show();
 	}
 
 	// START of MyAdapter
-	public final class ViewHolder
-	{
+	public final class ViewHolder {
 		public TextView addr;
 		public TextView body;
 		public CheckBox checked;
 	}
 
 	// ///////////////////////////////
-	public class MyAdapter extends BaseAdapter
-	{
+	public class MyAdapter extends BaseAdapter {
 		private LayoutInflater mInflater;
 
-		public MyAdapter(Context context)
-		{
+		public MyAdapter(Context context) {
 			this.mInflater = LayoutInflater.from(context);
 		}
 
 		@Override
-		public int getCount()
-		{
+		public int getCount() {
 			return sms_array1.size();
 		}
 
 		@Override
-		public Object getItem(int arg0)
-		{
+		public Object getItem(int arg0) {
 			return null;
 		}
 
 		@Override
-		public long getItemId(int position)
-		{
+		public long getItemId(int position) {
 			return position;
 		}
 
 		@Override
-		public View getView(int position, View convertView, ViewGroup parent)
-		{
+		public View getView(int position, View convertView, ViewGroup parent) {
 			final int p = position; // Must be final.
 			ViewHolder holder = null;
 
@@ -635,22 +593,28 @@ public class SmsClean extends Activity
 			{
 				holder = new ViewHolder();
 				convertView = mInflater.inflate(R.layout.smslist_map, null);
-				holder.addr = (TextView) convertView.findViewById(R.id.sms_address);
-				holder.body = (TextView) convertView.findViewById(R.id.sms_body);
-				holder.checked = (CheckBox) convertView.findViewById(R.id.checkBox_delete);
+				holder.addr = (TextView) convertView
+						.findViewById(R.id.sms_address);
+				holder.body = (TextView) convertView
+						.findViewById(R.id.sms_body);
+				holder.checked = (CheckBox) convertView
+						.findViewById(R.id.checkBox_delete);
 				convertView.setTag(holder);
-			} else
-			{ // 得到缓存的
+			} else { // 得到缓存的
 				holder = (ViewHolder) convertView.getTag();
 			}
 
-			if ((String) sms_array1.get(position).get("NAME") == null)
-			{
-				holder.addr.setText(/* getString(R.string.from) + ": " + */(String) sms_array1.get(position).get("ADDR"));
-			} else
-			{
-				holder.addr.setText(/* getString(R.string.from) + ": " + */(String) sms_array1.get(position).get("NAME") + " (" + (String) sms_array1.get(position).get("ADDR")
-						+ ")");
+			if ((String) sms_array1.get(position).get("NAME") == null) {
+				holder.addr
+						.setText(/* getString(R.string.from) + ": " + */(String) sms_array1
+								.get(position).get("ADDR"));
+			} else {
+				holder.addr
+						.setText(/* getString(R.string.from) + ": " + */(String) sms_array1
+								.get(position).get("NAME")
+								+ " ("
+								+ (String) sms_array1.get(position).get("ADDR")
+								+ ")");
 			}
 			holder.addr.setTextColor(Color.BLACK);
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
@@ -658,94 +622,94 @@ public class SmsClean extends Activity
 			// "CHECKED"));
 			// holder.checked.setChecked(false);
 			holder.checked.setChecked(checkedItem.get(position));
-			holder.checked.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener()
-			{
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-				{
-					// sms_array1.get(p);
-					// Toast.makeText(getApplicationContext(),
-					// "Pos " + p + " will be deleted !!!",
-					// Toast.LENGTH_LONG)
-					// .show();
-					if (isChecked)
-					{
-						checkedItem.set(p, true);
-						iSelected++;
-					} else
-					{
-						checkedItem.set(p, false);
-						iSelected--;
-					}
-					list_update_headview();
-					// Display SMS list statistics.
-					toast2.setText(
-							getString(R.string.stranger) + " " + getString(R.string.sms) + " " + iSelected + " ."
-							+ "\n" 
-							+ getString(R.string.total) + " " + getString(R.string.sms) + " " + iTotal + " ." 
-							);
-					
-					toast2.setGravity(Gravity.BOTTOM, 0, 0);
-					toast2.show();					
-				}
-			});
+			holder.checked
+					.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
+						@Override
+						public void onCheckedChanged(CompoundButton buttonView,
+								boolean isChecked) {
+							// sms_array1.get(p);
+							// Toast.makeText(getApplicationContext(),
+							// "Pos " + p + " will be deleted !!!",
+							// Toast.LENGTH_LONG)
+							// .show();
+							if (isChecked) {
+								checkedItem.set(p, true);
+								iSelected++;
+							} else {
+								checkedItem.set(p, false);
+								iSelected--;
+							}
+							list_update_headview();
+							// Display SMS list statistics.
+							toast2.setText(getString(R.string.stranger) + " "
+									+ getString(R.string.sms) + " " + iSelected
+									+ " ." + "\n" + getString(R.string.total)
+									+ " " + getString(R.string.sms) + " "
+									+ iTotal + " .");
+
+							toast2.setGravity(Gravity.BOTTOM, 0, 0);
+							toast2.show();
+						}
+					});
 
 			return convertView;
 		}
 	}
 
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu)
-	{
+	public boolean onCreateOptionsMenu(Menu menu) {
 		int idGroup1 = 0;
 
 		/* The order position of the item */
 		// int orderItem1 = Menu.NONE;
 		// int orderItem3 = Menu.NONE + 2;
 
-		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE, getString(R.string.delete_seleted)).setIcon(android.R.drawable.ic_delete);
+		menu.add(Menu.NONE, MENU_DELETE_SELECTED, Menu.NONE,
+				getString(R.string.delete_seleted)).setIcon(
+				android.R.drawable.ic_delete);
 		int MENU_DRAW;
-		menu.add(Menu.NONE, MENU_ABOUT, Menu.NONE, getString(R.string.about)).setIcon(android.R.drawable.ic_menu_info_details);
-		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, getString(R.string.quit)).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		menu.add(Menu.NONE, MENU_ABOUT, Menu.NONE, getString(R.string.about))
+				.setIcon(android.R.drawable.ic_menu_info_details);
+		menu.add(Menu.NONE, MENU_QUIT, Menu.NONE, getString(R.string.quit))
+				.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return super.onCreateOptionsMenu(menu);
 	}
 
 	@Override
-	public boolean onMenuItemSelected(int featureId, MenuItem item)
-	{
-		switch (item.getItemId())
-		{
-			case (MENU_DELETE_SELECTED):
-				if (iTotal > 0 && iSelected > 0)
-				{
-				} else
-				{ // if no sms, exit
-					break;
-				}
-
-				new AlertDialog.Builder(SmsClean.this).setTitle(android.R.string.dialog_alert_title).setMessage(getString(R.string.delete_sms_confirm)).setPositiveButton(
-						getString(android.R.string.ok), new DialogInterface.OnClickListener()
-						{
-							public void onClick(DialogInterface dialog, int which)
-							{
-								delete_sms_selected();
-							}
-						}).setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener()
-				{
-					public void onClick(DialogInterface dialog, int which)
-					{
-					}
-				}).show();
-
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		switch (item.getItemId()) {
+		case (MENU_DELETE_SELECTED):
+			if (iTotal > 0 && iSelected > 0) {
+			} else { // if no sms, exit
 				break;
+			}
 
-			case (MENU_ABOUT):
-				show_about();
-				break;
+			new AlertDialog.Builder(SmsClean.this)
+					.setTitle(android.R.string.dialog_alert_title)
+					.setMessage(getString(R.string.delete_sms_confirm))
+					.setPositiveButton(getString(android.R.string.ok),
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int which) {
+									delete_sms_selected();
+								}
+							})
+					.setNegativeButton(getString(android.R.string.cancel),
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int which) {
+								}
+							}).show();
 
-			case (MENU_QUIT):
-				finish();
-				break;
+			break;
+
+		case (MENU_ABOUT):
+			show_about();
+			break;
+
+		case (MENU_QUIT):
+			finish();
+			break;
 		}
 		return super.onMenuItemSelected(featureId, item);
 	}
