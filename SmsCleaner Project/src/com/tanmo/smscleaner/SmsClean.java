@@ -33,7 +33,7 @@ public class SmsClean extends Activity {
 	static final int MAX_SMS_BROWSE = 500; // Tommy: max sms to remove.
 	// large will slower.
 	private String info, dbginfo, info_show;
-	private Cursor cur, cur_contacts;
+	private Cursor cur, cursor;
 	private Uri uri;
 	private List<String> arraylist_sms = new ArrayList<String>();
 	private ArrayList<Boolean> checkedItem = new ArrayList<Boolean>();
@@ -279,7 +279,7 @@ public class SmsClean extends Activity {
 										ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
 										Uri.encode(addr));
 						String[] projection = new String[] { ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
-						Cursor cursor = getContentResolver().query(myPerson,
+						cursor = getContentResolver().query(myPerson,
 								projection, null, null, null);
 						if (cursor.moveToFirst()) {
 							bStranger = false;
@@ -411,15 +411,16 @@ public class SmsClean extends Activity {
 
 	// Delete SMS
 	private void delete_sms_selected() {
-		progressDialog = new ProgressDialog(this);
-		progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		progressDialog.setTitle(getString(R.string.processbar_deleting_title));
-		// progressDialog.setMessage(getString(R.string.processbar_deleting_msg));
-		progressDialog.setMax(iSelected);
-		progressDialog.setProgress(0);
-		progressDialog.setIndeterminate(false);
-		progressDialog.setCancelable(true);
-		progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE,
+		final ProgressDialog pd;
+		pd = new ProgressDialog(this);
+		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		pd.setTitle(getString(R.string.processbar_deleting_title));
+		// pd.setMessage(getString(R.string.processbar_deleting_msg));
+		pd.setMax(iSelected);
+		pd.setProgress(0);
+		pd.setIndeterminate(false);
+		pd.setCancelable(true);
+		pd.setButton(DialogInterface.BUTTON_NEGATIVE,
 				getString(android.R.string.cancel),
 				new DialogInterface.OnClickListener() {
 					@Override
@@ -440,14 +441,13 @@ public class SmsClean extends Activity {
 		 * SystemClock.sleep(1000);
 		 */
 		if (iTotal > 0 && iSelected > 0) {
-			progressDialog.show();
-
+			pd.show();
+			Log.i(TAG, "new thread delete sms.");
 			thread_sms = new Thread() {
 				Boolean bDel;
 
 				@Override
 				public void run()
-
 				{
 					try {
 						m_count = 0;
@@ -472,12 +472,12 @@ public class SmsClean extends Activity {
 									Thread.sleep(100);
 									Log.i(TAG, "deleting " + i);
 								}
-								progressDialog.incrementProgressBy(1);
+								pd.incrementProgressBy(1);
 							}
 						}
 
 						delete_running = false;
-						progressDialog.cancel();
+						pd.cancel();
 						handler.sendEmptyMessage(GUI_SHOW_WAITING);
 						Thread.sleep(1);
 
@@ -487,20 +487,20 @@ public class SmsClean extends Activity {
 						// get_smsinfo(MAX_SMS_BROWSE);
 					}
 				}
-
 			};
 			thread_sms.start();
 		}
+		else
+		{
+			handler.sendEmptyMessage(GUI_SHOW_WAITING);
+		}
 
-		progressDialog
-				.setOnCancelListener(new ProgressDialog.OnCancelListener() {
-
+		pd.setOnCancelListener(new ProgressDialog.OnCancelListener() {
 					@Override
 					public void onCancel(DialogInterface dialog) {
 						thread_sms.interrupt();
 					}
 				});
-
 	}
 
 	// Delete SMS
@@ -681,7 +681,7 @@ public class SmsClean extends Activity {
 		case (MENU_DELETE_SELECTED):
 			if (iTotal > 0 && iSelected > 0) {
 			} else { // if no sms, exit
-				break;
+//				break;
 			}
 
 			new AlertDialog.Builder(SmsClean.this)
