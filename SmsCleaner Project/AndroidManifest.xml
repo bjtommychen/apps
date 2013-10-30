@@ -2,12 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.tanmo.smscleaner" android:versionName="2.0.0" android:versionCode="2000">
 	<uses-sdk android:minSdkVersion="8" android:maxSdkVersion="18"
-		android:targetSdkVersion="14" />
+		android:targetSdkVersion="18" />
 	<uses-permission android:name="android.permission.READ_SMS"></uses-permission>
 	<uses-permission android:name="android.permission.WRITE_SMS"></uses-permission>
 	<uses-permission android:name="android.permission.READ_CONTACTS"></uses-permission>
 
-	<application android:icon="@drawable/icon" android:label="@string/app_name">
+	<application android:icon="@drawable/icon" android:label="@string/app_name" android:allowBackup="false" >
 		<activity android:name=".SmsClean" android:label="@string/app_name" android:screenOrientation="portrait">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
