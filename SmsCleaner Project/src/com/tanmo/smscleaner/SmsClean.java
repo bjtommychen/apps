@@ -30,6 +30,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 public class SmsClean extends Activity {
 	static final String TAG = "smsclean";
 	static final boolean debugmode = false; // 0 for release mode.
+	static final int MAX_SMS_TO_CHECK = 9999; // Tommy: add for debug faster.
 	static final int MAX_SMS_BROWSE = 500; // Tommy: max sms to remove.
 	// large will slower.
 	private String info, dbginfo, info_show;
@@ -85,7 +86,7 @@ public class SmsClean extends Activity {
 		smslistadapter = new MyAdapter(this);
 
 		list = (ListView) findViewById(R.id.listView1);
-		list.setBackgroundColor(Color.WHITE);// (0xff02003f);
+//		list.setBackgroundColor(Color.WHITE);// (0xff02003f);
 		// Tommy: add to make color won't be changed when scroll.
 		list.setCacheColorHint(Color.TRANSPARENT);
 
@@ -354,7 +355,7 @@ public class SmsClean extends Activity {
 					// cur.getString(cur.getColumnIndex(People.NUMBER));
 					// Log.i(TAG, id + "  " + name + " " + number);
 
-				} while (cur.moveToNext() && (count < num));
+				} while (cur.moveToNext() && (count < num) &&(iTotal < MAX_SMS_TO_CHECK));
 			}
 		}
 		cur.close();
@@ -454,7 +455,7 @@ public class SmsClean extends Activity {
 						ContentResolver resolver = SmsClean.this
 								.getContentResolver();
 						delete_running = true;
-						for (int i = 0; i < iTotal && delete_running; i++) {
+						for (int i = 0; i < checkedItem.size() && delete_running; i++) {
 							bDel = (Boolean) checkedItem.get(i);
 							if (bDel) {
 								m_count++;
@@ -616,7 +617,7 @@ public class SmsClean extends Activity {
 								+ (String) sms_array1.get(position).get("ADDR")
 								+ ")");
 			}
-			holder.addr.setTextColor(Color.BLACK);
+//			holder.addr.setTextColor(Color.BLACK);
 			holder.body.setText((String) sms_array1.get(position).get("BODY"));
 			// holder.checked.setChecked((Boolean) sms_array1.get(position).get(
 			// "CHECKED"));
