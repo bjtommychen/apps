@@ -38,7 +38,7 @@ def get_OneRecord(fp, code_filter = ''):
         return 0, 0, 0
     name = get_String12(fp)
     items = get_Long(fp)
-    print code, name, items
+    print 'code:',code, 'name:',name, 'Items:',items, '...',
     if code_filter != '' and code_filter not in code:
         fp.seek(items*(8*4), 1)
         return code, name, 0
@@ -52,12 +52,23 @@ def get_OneRecord(fp, code_filter = ''):
         m_fVolume = struct.unpack("L",fp.read(4))[0]
         m_fAmount = struct.unpack("L",fp.read(4))[0]
         m_fNull = struct.unpack("L",fp.read(4))[0]
+        
+            #format
+        m_fOpen = float('%.2f' % m_fOpen)
+        m_fHigh = float('%.2f' % m_fHigh)
+        m_fLow = float('%.2f' % m_fLow)
+        m_fClose = float('%.2f' % m_fClose)
+                    
 #        print time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(m_time))
         line = (m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull)
 #        print line
         list5min.append(line) 
+    print 'done!'
     return code, name, list5min
 
+###############################################
+#### GET ONE RECORD
+###############################################
 def get_OneRecordSpecified(fp, code_filter = ''):
     while True:
         code = get_String12(fp)
@@ -65,7 +76,7 @@ def get_OneRecordSpecified(fp, code_filter = ''):
             return 0, 0, []
         name = '%s' % struct.unpack("12s",fp.read(12))
         items = struct.unpack("L",fp.read(4))[0]
-#        print code, name, items
+        print code, name, items
         if code_filter != '' and code_filter not in code:
             fp.seek(items*(8*4), 1)
 #            print '.',
@@ -80,9 +91,11 @@ def get_OneRecordSpecified(fp, code_filter = ''):
             m_fVolume = struct.unpack("L",fp.read(4))[0]
             m_fAmount = struct.unpack("L",fp.read(4))[0]
             m_fNull = struct.unpack("L",fp.read(4))[0]
+            
+
     #        print time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(m_time))
             line = (m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull)
-    #        print line
+            print line
             list5min.append(line) 
         return code, name, list5min
     return 0, 0, 0
@@ -97,16 +110,16 @@ def QM5_parserAll(filename, code_filter = ''):
     print 'QM5_parserAll', filename
     fp=open(filename,"rb")
     flag, version, total_num = get_QM_header(fp)
-    print '0x%08x' % flag, '0x%08x' % version, '0x%08x' % total_num
+    print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
     num = 0
     while True:
         code, name, lists = get_OneRecord(fp, code_filter)
         if code == 0:
             break
-        print code, name
+        print 'Got', code, name, len(lists)
         for line in lists:
             m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line
-            print get_DateString(m_time), m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
+            print get_DateString(m_time),'   ', m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
         num += 1
     print num
 
@@ -186,8 +199,10 @@ if  __name__ == '__main__':
 #    QM5_parser('Quote.QM5')
 #    QM5_parser('qm5_data/5F201307.QM5')
 #    QM5_parserOne('qm5_data/201307.QM1')
+#    QM5_parserOne('qm5_data/201307.QM1')
+    QM5_parserAll('test.qm5')
 
-    get_AllQMdata_for_one('*.qm5', 'SH600036')
+#     get_AllQMdata_for_one('*.qm5', 'SH600036')
     print 'done!'
     end = time.time()
     elapsed = end - start
