@@ -1289,8 +1289,8 @@ def do_trade_emulator(mode = 1):
                         totalcash, total, totalchg = myhold_listall()
                         line = date_str, avg(sell_chg_array), totalchg, totalcash, total
                         csvWriter.writerow(line)
-                        if avg(sell_chg_array) >= 2.0:
-                            funds *= 2
+#                        if avg(sell_chg_array) >= 2.0:
+#                            funds *= 2
 #                if len(myhold) == 0:
                 if True:
 #                    print 'need buy some.'
@@ -1349,7 +1349,7 @@ def choose_one2buy(today_list, weekday, mode = 1):
         total = 0
         for list in today_list:
             code, name, guess, open_percent, avgh, todayh, avgl, todayl, realguess, count, curr_open, space1, lastclose, openprice, todayclose, todayHighPrice, todayLowPrice = list
-            if 10 > count >= 1 and open_percent > -5.0 and guess:#and todayl <= avgl:
+            if 1000 > count >= 120 and 1.0 > open_percent > 0 :#and 0 < guess < 2:#and todayl <= avgl:
                 print list
                 buylists.append(list)
                 total = total + 1
