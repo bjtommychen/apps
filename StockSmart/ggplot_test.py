@@ -1,6 +1,10 @@
 
+import time
 from ggplot import *
-from pandas import DataFrame
+from pandas import DataFrame, Timestamp
+import datetime
+import numpy as np
+
 
 def info_meat():
     print meat
@@ -43,7 +47,20 @@ def test1():
         xlab("Time") + \
         ylab("Watts")    
 
+def test2():
+    d = 1185877080
+    print time.gmtime(d)
+    print type(time.gmtime(d))
+    print time.strftime('%Y--%m--%d %H:%M:%S', time.gmtime(d))
+    dt = datetime.datetime(time.gmtime(d).tm_year, time.gmtime(d).tm_mon, time.gmtime(d).tm_mday, 
+                           time.gmtime(d).tm_hour, time.gmtime(d).tm_min, time.gmtime(d).tm_sec, 0)
+    print dt, type(dt)
+    dt64 = np.datetime64(dt)
+    print dt64, type(dt64)
+    
+    ts = Timestamp(dt64)
+    print ts, type(ts)
 
 if  __name__ == '__main__':
-    test1()
+    test2()
     
