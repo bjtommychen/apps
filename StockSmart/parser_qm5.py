@@ -1,10 +1,10 @@
-import time
 import sys
 import os
 import struct
 import csv
 import stat,fnmatch
 import profile
+import time
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
