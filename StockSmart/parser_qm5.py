@@ -76,7 +76,7 @@ def get_OneRecordSpecified(fp, code_filter = ''):
             return 0, 0, []
         name = '%s' % struct.unpack("12s",fp.read(12))
         items = struct.unpack("L",fp.read(4))[0]
-        print code, name, items
+#         print code, name, items
         if code_filter != '' and code_filter not in code:
             fp.seek(items*(8*4), 1)
 #            print '.',
@@ -95,7 +95,7 @@ def get_OneRecordSpecified(fp, code_filter = ''):
 
     #        print time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(m_time))
             line = (m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull)
-            print line
+#             print line
             list5min.append(line) 
         return code, name, list5min
     return 0, 0, 0
@@ -152,14 +152,15 @@ def getFileList(path, ext, subdir = True ):
     else:
         return [] 
 
-def get_AllQMdata_for_one(ext, filter):
+def get_AllQMdata_for_one(ext, filter = 'SH600036'):
     dirlist = getFileList('qm5_data/', '*.qm1', subdir = False)
     listall = []
     for filename in dirlist:
         print filename  
         fp=open(filename,"rb")
         flag, version, total_num = get_QM_header(fp)
-        code, name, list5min = get_OneRecordSpecified(fp, 'SH600036')
+        print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
+        code, name, list5min = get_OneRecordSpecified(fp, filter)
         print code, name, len(list5min)
         if len(list5min):
             listall += list5min
@@ -188,7 +189,7 @@ def write_QM_data(filename, code, name, listall):
 #        print line
         fp.write(struct.pack("LffffLLL",line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7]))
     fp.close()
-    QM5_parserAll(filename)
+#     QM5_parserAll(filename)
 
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
@@ -200,9 +201,9 @@ if  __name__ == '__main__':
 #    QM5_parser('qm5_data/5F201307.QM5')
 #    QM5_parserOne('qm5_data/201307.QM1')
 #    QM5_parserOne('qm5_data/201307.QM1')
-    QM5_parserAll('test.qm5')
+#     QM5_parserAll('test.qm5')
 
-#     get_AllQMdata_for_one('*.qm5', 'SH600036')
+    get_AllQMdata_for_one('*.qm5', 'SH600036')
     print 'done!'
     end = time.time()
     elapsed = end - start
