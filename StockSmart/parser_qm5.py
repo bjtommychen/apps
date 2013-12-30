@@ -32,6 +32,19 @@ def get_String12(fp):
 def get_DateString(m_time):
     return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(m_time))
 
+###############################################
+#### GET PATH
+###############################################
+Use_MemDrv = False
+def get_Path(path):
+    if Use_MemDrv:
+        return 'm:/' + path
+    else:
+        return path
+
+###############################################
+#### GET ONE RECORD
+###############################################
 def get_OneRecord(fp, code_filter = ''):
     code = get_String12(fp)
     if code == '':
@@ -54,10 +67,11 @@ def get_OneRecord(fp, code_filter = ''):
         m_fNull = struct.unpack("L",fp.read(4))[0]
         
             #format
-        m_fOpen = float('%.2f' % m_fOpen)
-        m_fHigh = float('%.2f' % m_fHigh)
-        m_fLow = float('%.2f' % m_fLow)
-        m_fClose = float('%.2f' % m_fClose)
+        if False:
+            m_fOpen = float('%.2f' % m_fOpen)
+            m_fHigh = float('%.2f' % m_fHigh)
+            m_fLow = float('%.2f' % m_fLow)
+            m_fClose = float('%.2f' % m_fClose)
                     
 #        print time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(m_time))
         line = (m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull)
@@ -66,9 +80,7 @@ def get_OneRecord(fp, code_filter = ''):
     print 'done!'
     return code, name, list5min
 
-###############################################
-#### GET ONE RECORD
-###############################################
+
 def get_OneRecordSpecified(fp, code_filter = ''):
     while True:
         code = get_String12(fp)
@@ -120,6 +132,33 @@ def QM5_parserAll(filename, code_filter = ''):
         for line in lists:
             m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line
             print get_DateString(m_time),'   ', m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
+        num += 1
+    print num
+
+
+def QM5_CheckAll(filename, code_filter = ''):
+    print 'QM5_CheckAll', filename
+    fp=open(filename,"rb")
+    flag, version, total_num = get_QM_header(fp)
+    print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
+    num = 0
+    last_mtime = 0
+    while True:
+        code, name, lists = get_OneRecord(fp, code_filter)
+        if code == 0:
+            break
+        print 'Got', code, name, len(lists)
+        for line in lists:
+            m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line
+#             print get_DateString(m_time),'   ', m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
+            if last_mtime == 0:
+                last_mtime = m_time
+                print time.gmtime(m_time)
+                continue
+            else:
+                if ((m_time - last_mtime) > 5*60):
+#                     print (m_time - last_mtime), get_DateString(last_mtime), get_DateString(m_time)
+                    last_mtime = m_time
         num += 1
     print num
 
@@ -201,9 +240,9 @@ if  __name__ == '__main__':
 #    QM5_parser('qm5_data/5F201307.QM5')
 #    QM5_parserOne('qm5_data/201307.QM1')
 #    QM5_parserOne('qm5_data/201307.QM1')
-#     QM5_parserAll('test.qm5')
+    QM5_CheckAll( get_Path('input/SH600036.qm1'))
 
-    get_AllQMdata_for_one('*.qm5', 'SH600036')
+#     get_AllQMdata_for_one('*.qm5', 'SH600036')
     print 'done!'
     end = time.time()
     elapsed = end - start
