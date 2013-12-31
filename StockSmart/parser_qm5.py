@@ -5,6 +5,8 @@ import csv
 import stat,fnmatch
 import profile
 import time
+from ggplot import *
+from pandas import DataFrame, Timestamp
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -67,7 +69,7 @@ def get_OneRecord(fp, code_filter = ''):
         m_fNull = struct.unpack("L",fp.read(4))[0]
         
             #format
-        if False:
+        if True:
             m_fOpen = float('%.2f' % m_fOpen)
             m_fHigh = float('%.2f' % m_fHigh)
             m_fLow = float('%.2f' % m_fLow)
@@ -137,6 +139,10 @@ def QM5_parserAll(filename, code_filter = ''):
 
 
 def QM5_CheckAll(filename, code_filter = ''):
+    cnt_total = 0
+    cnt_missed = 0
+    k_list = []
+
     print 'QM5_CheckAll', filename
     fp=open(filename,"rb")
     flag, version, total_num = get_QM_header(fp)
@@ -148,19 +154,76 @@ def QM5_CheckAll(filename, code_filter = ''):
         if code == 0:
             break
         print 'Got', code, name, len(lists)
+        linecnt = 1
         for line in lists:
             m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line
 #             print get_DateString(m_time),'   ', m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
-            if last_mtime == 0:
-                last_mtime = m_time
-                print time.gmtime(m_time)
-                continue
-            else:
-                if ((m_time - last_mtime) > 5*60):
-#                     print (m_time - last_mtime), get_DateString(last_mtime), get_DateString(m_time)
+            if False:
+                if last_mtime == 0:
                     last_mtime = m_time
+                    print time.gmtime(m_time)
+                    continue
+                else:
+                    minute = (m_time - last_mtime)/60
+                    if (minute>4 and minute < 90):
+                        cnt_total +=minute
+                        cnt_missed += (minute-5)
+                        print minute, get_DateString(last_mtime), get_DateString(m_time)
+                    last_mtime = m_time
+            if False:
+                if last_mtime == 0:
+                    last_mtime = m_time
+                    ts = time.gmtime(m_time)
+                    print ts, type(ts), time.localtime(m_time)
+                    nextday_mtime = m_time - ts.tm_hour*3600 - ts.tm_min*60 - ts.tm_sec
+                    print 'init',get_DateString(m_time), get_DateString(nextday_mtime)
+                    continue
+                else:
+#                     print time.ctime(m_time),  time.ctime(nextday_mtime)
+                    if ( m_time < nextday_mtime ):
+#                         print '<'
+                        continue
+#                     print '???',get_DateString(m_time), get_DateString(nextday_mtime)
+
+                    if (m_time > nextday_mtime and m_time < (nextday_mtime + 24*3600)):
+#                         print 'inner goto nextday'
+                        nextday_mtime += 24*3600
+                    else:
+#                         print '>'
+#                         print 'skip some day?'
+                        test_mtime = nextday_mtime
+                        ts = time.gmtime(m_time)
+                        mtime_clock0 = m_time - ts.tm_hour*3600 - ts.tm_min*60 - ts.tm_sec
+                        while (test_mtime < mtime_clock0):
+                            if time.gmtime(test_mtime).tm_wday < 5:
+                                print '----',get_DateString(test_mtime), time.gmtime(test_mtime).tm_wday
+                            test_mtime += 24*3600
+                        nextday_mtime = test_mtime
+            if True:
+                row = linecnt, m_fOpen, m_fHigh, m_fLow, m_fClose
+                #, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
+                if linecnt > (len(lists) - 100): 
+                    k_list.append(row)
+                
+            linecnt += 1
+        print 'total item ', len(k_list)
+        print 'item per line', len(k_list[1])
+#         print k_list
+        powd = DataFrame(k_list, columns=['date', 'open','high','low','close'])
+#         print ggplot(aes(x='date', y='open'), data=powd) + \
+#             geom_point(color='lightblue') + \
+#             geom_line(alpha=0.25) + \
+#             stat_smooth(span=.05, color='black') + \
+#             ggtitle("Power comnsuption over 13 hours") + \
+#             xlab("Date") + \
+#             ylab("Open")
+        meat_lng = pd.melt(powd[['date', 'open', 'high', 'low']], id_vars='date')
+        print ggplot(aes(x='date', y='value', colour='variable'), data=meat_lng) + \
+            geom_point(size =3) + \
+            stat_smooth(color='red')            
         num += 1
     print num
+    print cnt_missed, cnt_total
 
 def QM5_parserOne(filename, code_filter = ''):
     fp=open(filename,"rb")
@@ -240,7 +303,7 @@ if  __name__ == '__main__':
 #    QM5_parser('qm5_data/5F201307.QM5')
 #    QM5_parserOne('qm5_data/201307.QM1')
 #    QM5_parserOne('qm5_data/201307.QM1')
-    QM5_CheckAll( get_Path('input/SH600036.qm1'))
+    QM5_CheckAll( get_Path('input/SH600036.qm5'))
 
 #     get_AllQMdata_for_one('*.qm5', 'SH600036')
     print 'done!'
