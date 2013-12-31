@@ -67,10 +67,13 @@ def messageCB(contex, msg):
         if cmd:
             contex.send(xmpp.Message(msg.getFrom(), text, typ = 'chat'))
         else:
-            contex.send(xmpp.Message(msg.getFrom(), (msg.getBody()), typ = 'chat'))
+            who = msg.getFrom().getStripped()
+#             print who.find('tommy')
+            if "tommy" in who:
+                contex.send(xmpp.Message(msg.getFrom(), (msg.getBody()), typ = 'chat'))
             global custom_cmd
             custom_cmd = msg.getBody()
-#            print 'getBody', custom_cmd
+#             print 'getBody', custom_cmd
 
 def Gtalk_GetCustomCmd(prefix):
     global custom_cmd
@@ -84,9 +87,9 @@ def Gtalk_GetCustomCmd(prefix):
 
 def presenceHandler(contex, presence):
     if presence:
-#        print "-"*100
-#        print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
-#        print "~"*100
+        print "-"*100
+        print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
+        print "~"*100
         if presence.getType()=='subscribe':
             jid = presence.getFrom().getStripped()
             """ Authorise JID 'jid'. Works only if these JID requested auth previously. """
@@ -169,8 +172,8 @@ def Gtalk_init():
 def Gtalk_run():
     thread.start_new_thread(gtalk_mainloop, ())
     time.sleep(1)
-    Gtalk_send('Gtalk robot v1.0 ---> online!')
-    Gtalk_send('Welcome Tommy:)')
+#     Gtalk_send('Gtalk robot v1.0 ---> online!')
+#     Gtalk_send('Welcome Tommy:)')
     
 def gtalk_mainloop():    
     global conn
