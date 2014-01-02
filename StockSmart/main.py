@@ -383,10 +383,12 @@ def get_stock_list():
     fcsv.close()
 
 #########################################################################
+# http://ichart.finance.yahoo.com/table.csv?s=600036.ss
+#########################################################################
 thread_num = 0
 def get_stock_history_csv(code, name):
     global thread_num  
-    url = 'http://table.finance.yahoo.com/table.csv?s=' + str(code) +'.ss'
+    url = 'http://ichart.finance.yahoo.com/table.csv?s=' + str(code) +'.ss'
     local = 'data/'+str(code)+'.csv'
     if os.path.exists(local):
         print local, 'exist! skip!'
@@ -419,15 +421,18 @@ def get_all_history():
             print 'error count gt 10 ! exit !'
             break
 
-
+#########################################################################
+# http://ichart.finance.yahoo.com/table.csv?s=600036.ss
+# we'd better use GoAgent to download all with no failure.
+#########################################################################
 class DownloadJob_get_stock_history_csv(workerpool.Job):
     "Job for downloading a given URL."
     def __init__(self, code, name):
         self.code = code
         self.name = name
     def run(self):
-        self.url = 'http://table.finance.yahoo.com/table.csv?s=' + str(self.code) +'.ss'
-        self.local = 'data/'+str(self.code)+'.csv'
+        self.url = 'http://ichart.finance.yahoo.com/table.csv?s=' + str(self.code) +'.ss'
+        self.local = 'output/'+str(self.code)+'.csv'
         if os.path.exists(self.local):
             print self.local, 'exist! skip!'
         else:  
