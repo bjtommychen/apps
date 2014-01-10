@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*
+
 import sys
 import os
 import struct
@@ -12,8 +14,10 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
-#sys.setdefaultencoding('utf8')
+sys.setdefaultencoding('utf8')
 #sys.setdefaultencoding('ascii')
+
+#coding:utf-8 
 
 def get_Long(fp):
     num = struct.unpack("L",fp.read(4))
@@ -294,18 +298,146 @@ def write_QM_data(filename, code, name, listall):
 #     QM5_parserAll(filename)
 
 
+# 怎么回事
+def reformat_history_csv(codename):
+    filename = 'data/'+codename+'.csv'
+    filename_out = codename+'_out.csv'
+    reader = csv.reader(file(filename,'rb'))
+    i = 0
+    k_list = []
+    listall = []
+    print 'read ...'
+    for row in reader:
+        if i ==0:
+            i = 1
+            continue
+        listall.append(row)
+    print len(listall), len(listall[0])
+    print 'sort ...'    
+    listall.sort(key=lambda data : data[0], reverse=False)
+    print
+    i = 1
+    print 'No. Date    Open    High    Low    Close    Volume    Adj Close'
+    for row in listall:
+        if (float(row[5]) == 0): #check Volume==0 row.
+            continue
+        line = []
+        line.append(i)
+        for j in range(0, len(listall[0])):
+            line.append(row[j])
+#         print line
+        k_list.append(line)
+        i += 1
+    listall = []
+    
+    print 'write sorted data to csv ...'
+    if True:
+        fcsv = open(filename_out, 'wb')
+        csvWriter = csv.writer(fcsv)
+        for row in k_list:
+            csvWriter.writerow(row)
+        fcsv.close()
+    print 'string to float ...'
+    for row in k_list:
+        line = int(row[0]), row[1], float(row[2]), float(row[3]), float(row[4]), float(row[5]), int(row[6]), float(row[7])
+        listall.append(line)
+
+    print 'ggplot ...'
+    if False:
+        powd = DataFrame(listall, columns=['index','date', 'open','high','low','close','volume','adj'])
+        print ggplot(aes(x='index', y='open'), data=powd) + \
+            geom_point(color='lightblue') + \
+            geom_line(alpha=0.25) + \
+            stat_smooth(span=.05, color='black') + \
+            ggtitle("Power comnsuption over 13 hours") + \
+            xlab("Date") + \
+            ylab("Open")
+        meat_lng = pd.melt(powd[['index', 'high','low']], id_vars='index')
+        print ggplot(aes(x='index', y='value', colour='variable'), data=meat_lng) + \
+            geom_point(size =3) + \
+            stat_smooth(color='red')   
+
+# 怎么回事
+def check_rebound_percent(codename,pctDown, pctRebound, pctDown2):
+    filename_out = codename+'_out.csv'
+    reader = csv.reader(file(filename_out,'rb'))
+    tHigh = tHighIdx = 0.
+    tLow = tLowIdx = 0.
+    tRebound = tReboundIdx = 0
+    mode = 0
+    for row in reader:
+        mIndex, mDate, mOpen, mHigh, mLow, mClose, mVolume, mAdj = row
+        mIndex = int(mIndex)
+        mHigh = float(mHigh)
+        mLow = float(mLow)
+        # init
+#         print 'checking', mIndex, 
+        if mode == 0:
+            print 'init'
+            tHigh = mHigh
+            tLow = mLow
+            tHighIdx = mIndex
+            tLowIdx = mIndex
+            mode = 1
+        # find peak
+        elif mode == 1: 
+            if mHigh > tHigh:
+                tHigh = mHigh
+                tHighIdx = mIndex
+                tLow = mLow
+                tLowIdx = mIndex
+            if mLow < tLow:
+                tLow = mLow
+                tLowIdx = mIndex
+            if tHighIdx > tLowIdx:
+                continue
+            pct1 = (tHigh - tLow)*100./tHigh
+            if pct1 > pctDown:
+#                 print 'got bottom'
+#                 print 'pct', pct, 'pctDown', pctDown
+                print tHigh, tHighIdx
+                print tLow, tLowIdx
+                mode = 2
+                tRebound = tLow
+                tReboundIdx = tLowIdx
+        # find bottom
+        elif mode == 2:
+            if mLow < tLow:
+                tLow = mLow
+                tLowIdx = mIndex
+                tRebound = tLow
+                tReboundIdx = tLowIdx
+            if mHigh > tRebound:
+                tRebound = mHigh
+                tReboundIdx = mIndex
+            pct2 = (tRebound - tLow)*100./tLow
+            if pct2 > pctRebound:
+                pct1 = (tHigh - tLow)*100./tHigh     
+                mode = 3       
+        elif mode == 3: 
+            print ' -------------- mode 2 -----------------'
+            print ' ---- ', tHigh, tHighIdx, '-', tLow, tLowIdx, 'diff', (tLowIdx - tHighIdx)
+            print ' ---- ', tLow, tLowIdx, '-', tRebound, tReboundIdx, 'diff', (tReboundIdx - tLowIdx)
+            print ' ---- ', 'pct1', pct1, 'pct2', pct2
+            print ' -----------------------------'
+            mode = 0
+            
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
     
     start = time.time()
     print 'start!'
+
 #    QM5_parser('Quote.QM5')
 #    QM5_parser('qm5_data/5F201307.QM5')
 #    QM5_parserOne('qm5_data/201307.QM1')
 #    QM5_parserOne('qm5_data/201307.QM1')
-    QM5_CheckAll( get_Path('input/SH600036.qm5'))
+#     QM5_CheckAll( get_Path('input/SH600036.qm5'))
 
 #     get_AllQMdata_for_one('*.qm5', 'SH600036')
+
+#     reformat_history_csv('600036')
+    check_rebound_percent('600036',10,8,1)
     print 'done!'
     end = time.time()
     elapsed = end - start
