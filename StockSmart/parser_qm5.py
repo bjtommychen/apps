@@ -234,9 +234,9 @@ def QM5_parserOne(filename, code_filter = ''):
     flag, version, total_num = get_QM_header(fp)
     print '0x%08x' % flag, '0x%08x' % version, '0x%08x' % total_num
     
-    code, name, list5min = get_OneRecordSpecified(fp, 'SH600036')
+    code, name, list5min = get_OneRecordSpecified(fp, code_filter)
     print code, name, len(list5min)
-    print list5min
+#     print list5min
     
     
 def getFileList(path, ext, subdir = True ):
@@ -259,7 +259,7 @@ def getFileList(path, ext, subdir = True ):
         return [] 
 
 def get_AllQMdata_for_one(ext, filter = 'SH600036'):
-    dirlist = getFileList('qm5_data/', '*.qm1', subdir = False)
+    dirlist = getFileList('qm5_data/', ext, subdir = False)
     listall = []
     for filename in dirlist:
         print filename  
