@@ -15,10 +15,11 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
 sys.setdefaultencoding('utf8')
-#sys.setdefaultencoding('ascii')
+# sys.setdefaultencoding('ascii')
 
-#coding:utf-8 
-
+rblist = []
+rblist2 = []
+    
 def get_Long(fp):
     num = struct.unpack("L",fp.read(4))
     return int(num[0])
@@ -301,12 +302,17 @@ def write_QM_data(filename, code, name, listall):
 # 怎么回事
 def reformat_history_csv(codename):
     filename = 'data/'+codename+'.csv'
-    filename_out = codename+'_out.csv'
+    filename_out = 'temp/'  + codename+'_out.csv'
+    
+    if os.path.exists(filename_out): 
+        print 'skip reformat ',   
+        return
+    
     reader = csv.reader(file(filename,'rb'))
     i = 0
     k_list = []
     listall = []
-    print 'read ...'
+    print '\nread ...'
     for row in reader:
         if i ==0:
             i = 1
@@ -315,11 +321,10 @@ def reformat_history_csv(codename):
     print len(listall), len(listall[0])
     print 'sort ...'    
     listall.sort(key=lambda data : data[0], reverse=False)
-    print
     i = 1
     print 'No. Date    Open    High    Low    Close    Volume    Adj Close'
     for row in listall:
-        if (float(row[5]) == 0): #check Volume==0 row.
+        if (len(row) < 7 or float(row[5]) == 0): #check Volume==0 row.
             continue
         line = []
         line.append(i)
@@ -339,8 +344,9 @@ def reformat_history_csv(codename):
         fcsv.close()
     print 'string to float ...'
     for row in k_list:
-        line = int(row[0]), row[1], float(row[2]), float(row[3]), float(row[4]), float(row[5]), int(row[6]), float(row[7])
-        listall.append(line)
+        if (len(row) == 8):
+            line = int(row[0]), row[1], float(row[2]), float(row[3]), float(row[4]), float(row[5]), int(row[6]), float(row[7])
+            listall.append(line)
 
     print 'ggplot ...'
     if False:
@@ -357,23 +363,27 @@ def reformat_history_csv(codename):
             geom_point(size =3) + \
             stat_smooth(color='red')   
 
-# 怎么回事
+# 检查在至少下跌pctDown情况下, 最多的反弹pct
 def check_rebound_percent(codename,pctDown, pctRebound, pctDown2):
-    filename_out = codename+'_out.csv'
+    filename_out = 'temp/' +codename+'_out.csv'
     reader = csv.reader(file(filename_out,'rb'))
     tHigh = tHighIdx = 0.
     tLow = tLowIdx = 0.
     tRebound = tReboundIdx = 0
+    tReboundLow = tReboundLowIdx = 0
     mode = 0
+
     for row in reader:
+        if (len(row) != 8):
+            continue
         mIndex, mDate, mOpen, mHigh, mLow, mClose, mVolume, mAdj = row
         mIndex = int(mIndex)
         mHigh = float(mHigh)
         mLow = float(mLow)
         # init
-#         print 'checking', mIndex, 
+#         print 'mIndex', mIndex
         if mode == 0:
-            print 'init'
+#             print 'init'
             tHigh = mHigh
             tLow = mLow
             tHighIdx = mIndex
@@ -381,52 +391,106 @@ def check_rebound_percent(codename,pctDown, pctRebound, pctDown2):
             mode = 1
         # find peak
         elif mode == 1: 
-            if mHigh > tHigh:
+            if mHigh > tHigh:   #Higher found
                 tHigh = mHigh
                 tHighIdx = mIndex
                 tLow = mLow
                 tLowIdx = mIndex
-            if mLow < tLow:
+            if mLow < tLow:     #Lower found
                 tLow = mLow
                 tLowIdx = mIndex
-            if tHighIdx > tLowIdx:
+            if tHighIdx >= tLowIdx:
                 continue
             pct1 = (tHigh - tLow)*100./tHigh
             if pct1 > pctDown:
-#                 print 'got bottom'
 #                 print 'pct', pct, 'pctDown', pctDown
-                print tHigh, tHighIdx
-                print tLow, tLowIdx
+#                 print tHigh, tHighIdx, tLow, tLowIdx
                 mode = 2
                 tRebound = tLow
                 tReboundIdx = tLowIdx
         # find bottom
         elif mode == 2:
-            if mLow < tLow:
+            if mLow < tLow: #Lower found
                 tLow = mLow
                 tLowIdx = mIndex
                 tRebound = tLow
                 tReboundIdx = tLowIdx
-            if mHigh > tRebound:
+            if mHigh > tRebound:    #Rebound higher
                 tRebound = mHigh
                 tReboundIdx = mIndex
+            if tReboundIdx <= tLowIdx:
+                continue
             pct2 = (tRebound - tLow)*100./tLow
             if pct2 > pctRebound:
-                pct1 = (tHigh - tLow)*100./tHigh     
-                mode = 3       
-        elif mode == 3: 
-            print ' -------------- mode 2 -----------------'
-            print ' ---- ', tHigh, tHighIdx, '-', tLow, tLowIdx, 'diff', (tLowIdx - tHighIdx)
-            print ' ---- ', tLow, tLowIdx, '-', tRebound, tReboundIdx, 'diff', (tReboundIdx - tLowIdx)
-            print ' ---- ', 'pct1', pct1, 'pct2', pct2
-            print ' -----------------------------'
+                mode = 3
+                tReboundLow = tRebound
+                tReboundLowIdx = tReboundIdx
+#                 print 'mode2',tReboundLowIdx, tReboundLow, tReboundIdx, tRebound
+        elif mode ==3:
+            if mHigh > tRebound:    #Rebound higher
+                tRebound = mHigh
+                tReboundIdx = mIndex
+                tReboundLow = mLow
+                tReboundLowIdx = mIndex
+            if mLow < tReboundLow: #Lower found
+                tReboundLow = mLow
+                tReboundLowIdx = mIndex
+#             print tReboundLowIdx, tReboundLow, tReboundIdx, tRebound
+            if tReboundLowIdx <= tReboundIdx:
+                continue
+            pct2 = (tRebound - tReboundLow)*100./tRebound
+            if pct2 > pctDown2:
+                mode = 4                         
+        elif mode == 4:
+            pct1 = float('%.2f' % ((tHigh - tLow)*100./tHigh))
+            pct2 = float('%.2f' %((tRebound - tLow)*100./tLow))
+            if False:   
+                print ' -------------- Rebound  -----------------'
+                print ' ---- ', tHigh, tHighIdx, '-(',  (tLowIdx - tHighIdx), pct1, '%', ')-', tLow, tLowIdx, '-(', (tReboundIdx - tLowIdx), pct2,'%', ')-', tRebound, tReboundIdx
+                print ' ---------------------------------------------------'
             mode = 0
+#             line = tHighIdx, tHigh
+#             rblist.append(line)
+#             line = tLowIdx, tLow
+#             rblist.append(line)            
+#             line = tReboundIdx, tRebound
+#             rblist.append(line)            
+#             line = tReboundLowIdx, tReboundLow
+#             rblist.append(line)
+            global rblist2
+#             print mDate, pct1, pct2
+            year = int(mDate.split('-')[0])
+#             line = pct1, pct2, year
+#             if 1 < pct1 < 50 and 1 < pct2 < 50 and year > 2010:
+            line = pct1, (tLowIdx - tHighIdx), year
+            rblist2.append(line)
+
+def rebound_list_draw():
+    if True:
+        global rblist2
+        print rblist2
+        powd = DataFrame(rblist2, columns=['index','open','year'])
+        print ggplot(aes(x='index', y='open'), data=powd) + \
+            geom_point(color='lightblue', size = 9) + \
+            ggtitle("Rebound") + \
+            xlab("Date") + \
+            ylab("Open")
             
+def check_rebound_all():
+    reader = csv.reader(file('table_stocklist_sh.csv','rb'))
+    for row in reader:
+        codename = row[0]
+#         if '600036' not in codename:
+#             continue
+        print 'code:', codename
+        reformat_history_csv(codename)
+        check_rebound_percent(codename,10,5,3)
+                
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''        
 if  __name__ == '__main__':
     
     start = time.time()
-    print 'start!'
+    print 'main start!'
 
 #    QM5_parser('Quote.QM5')
 #    QM5_parser('qm5_data/5F201307.QM5')
@@ -437,9 +501,11 @@ if  __name__ == '__main__':
 #     get_AllQMdata_for_one('*.qm5', 'SH600036')
 
 #     reformat_history_csv('600036')
-    check_rebound_percent('600036',10,8,1)
+#     check_rebound_percent('600036',20,10,5)
+    check_rebound_all()
+    rebound_list_draw()
+#     check_rebound_percent('600036',10,5,2.5)
     print 'done!'
     end = time.time()
-    elapsed = end - start
+    elapsed = float('%.2f' %(end - start))
     print "Time taken: ", elapsed, "seconds."
-    
