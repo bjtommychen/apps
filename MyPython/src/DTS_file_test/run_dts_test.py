@@ -100,6 +100,19 @@ def convert_cmdline(line):
     print 'Standard Output: %s' % stdout_val
     print stdout_val, stderr_val
 
+def convert_cmdline2(line):
+    dir2mk = dstdir
+    cmdline = cygwin_dir +'find ' + dir2mk + '|' + cygwin_dir + 'grep ogg' 
+    stdout_val, stderr_val = external_cmd(cmdline)
+    
+    filelist = stdout_val
+    list = filelist.split()
+    for line in list:
+        cmdline = cygwin_dir +'md5sum ' + line
+        stdout_val, stderr_val = external_cmd(cmdline)
+        print '%s' % stdout_val
+        
+    exit()
     
 if __name__ == '__main__':
     print 'start!'
