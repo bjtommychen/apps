@@ -83,6 +83,7 @@ def convert_cmdline(line):
     print 'Standard Output: %s' % stdout_val
     print stdout_val, stderr_val
 #     dir2mk = dir2mk.replace('\\', '/')
+
     cmdline = cygwin_dir +'find ' + dir2mk 
 #     + ' | grep wav | xargs md5sum'
 #     cmdline = cmdline.replace('\\', '\\\\')
@@ -90,6 +91,15 @@ def convert_cmdline(line):
     stdout_val, stderr_val = external_cmd(cmdline)
     print 'Standard Output: %s' % stdout_val
     print stdout_val, stderr_val
+
+    cmdline = cygwin_dir +'find ' + dir2mk +  '| xargs md5sum ' 
+#     + ' | grep wav | xargs md5sum'
+#     cmdline = cmdline.replace('\\', '\\\\')
+    print cmdline            
+    stdout_val, stderr_val = external_cmd(cmdline)
+    print 'Standard Output: %s' % stdout_val
+    print stdout_val, stderr_val
+
     
 if __name__ == '__main__':
     print 'start!'
