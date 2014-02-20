@@ -1,12 +1,18 @@
-# import time
-# import sys
-# import os
+import time
+import sys
+import os
 import string
 import subprocess
+import thread 
+import workerpool
 
 srcdir='D:'
-dstdir='D:\\ram_mirror\\'
+dstdir='M:\\'
+# dstdir='D:\\DTS_TMP_DIR\\'
 cygwin_dir='c:\\cygwin\\bin\\'
+bRemvoeFileAfterCheck = True
+
+thread_num=10
 
 def external_cmd(cmd, msg_in=''):
 #     print cmd
@@ -27,7 +33,7 @@ def external_cmd(cmd, msg_in=''):
         print("IOError: %s" % err)
         return None, None
 
-def convert_cmdline(line):
+def run_cmdline(line):
 #     print line
     line = line.strip()
     line = line.replace('filename=', 'filename='+srcdir)
@@ -97,24 +103,73 @@ def convert_cmdline(line):
         cmdline = cygwin_dir +'md5sum ' + line
         stdout_val, stderr_val = external_cmd(cmdline)
         print '%s' % stdout_val    
+        
+    if bRemvoeFileAfterCheck:
+        cmdline = cygwin_dir +'rm -rf ' + dir2mk
+        stdout_val, stderr_val = external_cmd(cmdline)
 
 
-    
+#########################################################################
+# http://ichart.finance.yahoo.com/table.csv?s=600036.ss
+# we'd better use GoAgent to download all with no failure.
+#########################################################################
+class DoOneJob(workerpool.Job):
+    "Job for downloading a given URL."
+    def __init__(self, cmdline, taskid):
+        self.cmdline = cmdline
+        self.taskid = taskid
+    def run(self):
+        try:  
+#             print 'task ', self.taskid, 'start'
+            run_cmdline(self.cmdline)
+#             print 'task ', self.taskid, 'stop'
+            time.sleep(0.1)
+        except:
+            print 'DoOneJob failed.'
+
+def do_multithread(cmdlines):
+    global thread_num
+    # Initialize a pool, 5 threads in this case
+    pool = workerpool.WorkerPool(size=thread_num, maxjobs=20)
+    cnt = 0
+    for line in cmdlines:
+        try:
+            time.sleep(0.1)
+            cnt += 1
+            try:
+                job = DoOneJob(line, cnt)
+                pool.put(job)    
+#                 print '-------------- put pool', cnt, pool.size(), pool.unfinished_tasks
+                time.sleep(0.1)        
+            except:
+                print 'get  error'
+                break
+        except:
+            break
+        
+    # Send shutdown jobs to all threads, and wait until all the jobs have been completed
+    pool.shutdown()
+    pool.wait()
+
+def do_onethread(cmdlines):
+#     print cmdlines
+    cnt = 0
+    for line in cmdlines:
+        cnt += 1
+        run_cmdline(line)
+    print 'total', cnt
+        
+
+###########################################################################33    
 if __name__ == '__main__':
     print 'start!'
+    ISOTIMEFORMAT='%Y-%m-%d %X' 
+    print time.strftime( ISOTIMEFORMAT, time.localtime( time.time() ) )
     f = open('cmdlog.txt')
-    cnt = 0
-#     print f.readlines()
-    for line in f.readlines():
-        print 'NO.',cnt
-#         print cnt, line
-#         print '---------------------------------------------------------------------------------------------------------------'
-        convert_cmdline(line)
-        cnt +=1
-#        if cnt > 2:
-#            break
-        
-    print 'total', cnt
+    cmdlines = f.readlines()
+#     do_onethread(cmdlines)
+    do_multithread(cmdlines)
     f.close()
     print 'done'
-    pass
+    print time.strftime( ISOTIMEFORMAT, time.localtime( time.time() ) )
+    exit()
