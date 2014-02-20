@@ -9,6 +9,7 @@ dstdir='D:\\ram_mirror\\'
 cygwin_dir='c:\\cygwin\\bin\\'
 
 def external_cmd(cmd, msg_in=''):
+#     print cmd
 #     return None, None
     try:
         proc = subprocess.Popen(cmd,
@@ -30,14 +31,15 @@ def convert_cmdline(line):
 #     print line
     line = line.strip()
     line = line.replace('filename=', 'filename='+srcdir)
-    line = line.replace('outputdir=D:\\DTS\\', 'outputdir='+dstdir )    
+    line = line.replace('outputdir=D:\\DTS\\M8\\dts_test\\M8\\', 'outputdir='+dstdir )    
     
     cmds = line.split()
 #     print len(cmds)
     if len(cmds) < 3:
         print 'parameter count < 3, error!'
         return
-    
+
+##### Do decode #####    
 #     if cmds[0].find('dts_decoder_dut') != -1:
 #         return
     
@@ -73,46 +75,30 @@ def convert_cmdline(line):
             if cmds[i].find('.\\Transcoder\\') != -1:
                 cmds[i] = srcdir + cmds[i]
         line =  " ".join(cmds)
-#         print line
         stdout_val, stderr_val = external_cmd(line)
-            
+
+
+##### verify #####
 #     print dir2mk
-    cmdline = cygwin_dir +'find ' + dir2mk + ' | grep wav | wc '
-    print cmdline            
-    stdout_val, stderr_val = external_cmd(cmdline)
-    print 'Standard Output: %s' % stdout_val
-    print stdout_val, stderr_val
-#     dir2mk = dir2mk.replace('\\', '/')
+#     cmdline = cygwin_dir +'find ' + dir2mk + ' | grep wav | wc '
+#     stdout_val, stderr_val = external_cmd(cmdline)
+#     print 'Standard Output: %s' % stdout_val
 
-    cmdline = cygwin_dir +'find ' + dir2mk 
-#     + ' | grep wav | xargs md5sum'
-#     cmdline = cmdline.replace('\\', '\\\\')
-    print cmdline            
+#    Creating md5sum 
+#     cmdline = cygwin_dir +'find ' + dir2mk 
+#     stdout_val, stderr_val = external_cmd(cmdline)
+#     print 'Standard Output: %s' % stdout_val
+    cmdline = cygwin_dir +'find ' + dir2mk +  '| grep wav'
     stdout_val, stderr_val = external_cmd(cmdline)
-    print 'Standard Output: %s' % stdout_val
-    print stdout_val, stderr_val
-
-    cmdline = cygwin_dir +'find ' + dir2mk +  '| xargs md5sum ' 
-#     + ' | grep wav | xargs md5sum'
-#     cmdline = cmdline.replace('\\', '\\\\')
-    print cmdline            
-    stdout_val, stderr_val = external_cmd(cmdline)
-    print 'Standard Output: %s' % stdout_val
-    print stdout_val, stderr_val
-
-def convert_cmdline2(line):
-    dir2mk = dstdir
-    cmdline = cygwin_dir +'find ' + dir2mk + '|' + cygwin_dir + 'grep ogg' 
-    stdout_val, stderr_val = external_cmd(cmdline)
-    
+#     print 'Standard Output: %s' % stdout_val
     filelist = stdout_val
     list = filelist.split()
     for line in list:
         cmdline = cygwin_dir +'md5sum ' + line
         stdout_val, stderr_val = external_cmd(cmdline)
-        print '%s' % stdout_val
-        
-    exit()
+        print '%s' % stdout_val    
+
+
     
 if __name__ == '__main__':
     print 'start!'
@@ -125,8 +111,8 @@ if __name__ == '__main__':
 #         print '---------------------------------------------------------------------------------------------------------------'
         convert_cmdline(line)
         cnt +=1
-        if cnt > 2:
-            break
+#        if cnt > 2:
+#            break
         
     print 'total', cnt
     f.close()
