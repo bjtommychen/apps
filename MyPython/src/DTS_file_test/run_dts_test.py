@@ -6,13 +6,19 @@ import subprocess
 import thread 
 import workerpool
 
+#
 srcdir='D:'
+#This is output dir, or ramdisk drive
 dstdir='M:\\'
 # dstdir='D:\\DTS_TMP_DIR\\'
+backdir='D:\\dts_dec_bak\\'
 cygwin_dir='c:\\cygwin\\bin\\'
-bRemvoeFileAfterCheck = True
+bRemvoeFileAfterCheck = False            #must be defined for ram disk, because short of space.
+bBackupFileAfterCheck = True
+bUseMultiCore = True
+nBackupFileNumEveryTime=20
+thread_num=6
 
-thread_num=10
 
 def external_cmd(cmd, msg_in=''):
 #     print cmd
@@ -34,7 +40,6 @@ def external_cmd(cmd, msg_in=''):
         return None, None
 
 def run_cmdline(line):
-#     print line
     line = line.strip()
     line = line.replace('filename=', 'filename='+srcdir)
     line = line.replace('outputdir=D:\\DTS\\M8\\dts_test\\M8\\', 'outputdir='+dstdir )    
@@ -42,7 +47,7 @@ def run_cmdline(line):
     cmds = line.split()
 #     print len(cmds)
     if len(cmds) < 3:
-        print 'parameter count < 3, error!'
+        print 'parameter count < 3, error!', cmds
         return
 
 ##### Do decode #####    
@@ -76,24 +81,15 @@ def run_cmdline(line):
         dir2mk = dstdir + cmds[len(cmds)-1][2:]
         cmdline = cygwin_dir +'mkdir --parents ' + dir2mk
         stdout_val, stderr_val = external_cmd(cmdline)
-        cmds[len(cmds)-1] = cmds[len(cmds)-1][:2] + dstdir + cmds[len(cmds)-1][2:]
+        cmds[len(cmds)-1] = cmds[len(cmds)-1][:2] + dir2mk +'\\' + cmds[len(cmds)-1][2:]
         for i in range(1, len(cmds)-1):
             if cmds[i].find('.\\Transcoder\\') != -1:
-                cmds[i] = srcdir + cmds[i]
+                cmds[i] = srcdir + '\\DTS\\M8\\dts_test\\M8\\Transcoder\\DUTCreation_Material\\PCM\\' + cmds[i]
         line =  " ".join(cmds)
+        print line
         stdout_val, stderr_val = external_cmd(line)
 
-
 ##### verify #####
-#     print dir2mk
-#     cmdline = cygwin_dir +'find ' + dir2mk + ' | grep wav | wc '
-#     stdout_val, stderr_val = external_cmd(cmdline)
-#     print 'Standard Output: %s' % stdout_val
-
-#    Creating md5sum 
-#     cmdline = cygwin_dir +'find ' + dir2mk 
-#     stdout_val, stderr_val = external_cmd(cmdline)
-#     print 'Standard Output: %s' % stdout_val
     cmdline = cygwin_dir +'find ' + dir2mk +  '| grep wav'
     stdout_val, stderr_val = external_cmd(cmdline)
 #     print 'Standard Output: %s' % stdout_val
@@ -102,7 +98,9 @@ def run_cmdline(line):
     for line in list:
         cmdline = cygwin_dir +'md5sum ' + line
         stdout_val, stderr_val = external_cmd(cmdline)
-        print '%s' % stdout_val    
+        line = stdout_val.strip()
+        print '%s' % line
+        fw.write(line)    
         
     if bRemvoeFileAfterCheck:
         cmdline = cygwin_dir +'rm -rf ' + dir2mk
@@ -132,6 +130,7 @@ def do_multithread(cmdlines):
     # Initialize a pool, 5 threads in this case
     pool = workerpool.WorkerPool(size=thread_num, maxjobs=20)
     cnt = 0
+    runcnt = 0
     for line in cmdlines:
         try:
             time.sleep(0.1)
@@ -139,6 +138,17 @@ def do_multithread(cmdlines):
             try:
                 job = DoOneJob(line, cnt)
                 pool.put(job)    
+                runcnt += 1
+                print runcnt
+                if runcnt > nBackupFileNumEveryTime and bBackupFileAfterCheck == True:
+                    print 'Backuping ................ '
+                    pool.wait()
+                    while(pool.unfinished_tasks>0):
+                        time.sleep(5)
+                        print 'wait.'
+                    do_backup()
+                    time.sleep(2)
+                    runcnt = 0
 #                 print '-------------- put pool', cnt, pool.size(), pool.unfinished_tasks
                 time.sleep(0.1)        
             except:
@@ -154,22 +164,56 @@ def do_multithread(cmdlines):
 def do_onethread(cmdlines):
 #     print cmdlines
     cnt = 0
+    runcnt = 0
     for line in cmdlines:
         cnt += 1
+#         if cnt < 2600:
+#             continue
         run_cmdline(line)
+        runcnt += 1
+        print runcnt
+        if runcnt > nBackupFileNumEveryTime and bBackupFileAfterCheck == True:
+            print 'Backuping ................ '
+            do_backup()
+            time.sleep(2)
+            runcnt = 0
     print 'total', cnt
         
+def do_backup():
+    cmdline = cygwin_dir +'mkdir --parents ' + backdir
+    stdout_val, stderr_val = external_cmd(cmdline)    
+
+    for filename in os.listdir(dstdir):
+        line = dstdir + filename
+#         print line
+        if os.path.isdir(line):
+            cmdline = cygwin_dir +'cp -rf  ' + line + ' '+backdir
+#             print cmdline
+            stdout_val, stderr_val = external_cmd(cmdline)
+#             print stdout_val, stderr_val 
+            cmdline = cygwin_dir +'rm -rf  ' + line 
+            print cmdline
+            stdout_val, stderr_val = external_cmd(cmdline)
+#             print stdout_val, stderr_val 
+
 
 ###########################################################################33    
 if __name__ == '__main__':
-    print 'start!'
+    print 'start! read cmds from cmdlog.txt....\n'
     ISOTIMEFORMAT='%Y-%m-%d %X' 
     print time.strftime( ISOTIMEFORMAT, time.localtime( time.time() ) )
+#     do_backup()
+#     exit()
+  
     f = open('cmdlog.txt')
+    fw = open('md5sum_log.txt', 'w')
     cmdlines = f.readlines()
-#     do_onethread(cmdlines)
-    do_multithread(cmdlines)
+    if bUseMultiCore == False:
+        do_onethread(cmdlines)
+    else:
+        do_multithread(cmdlines)
     f.close()
+    fw.close()
     print 'done'
     print time.strftime( ISOTIMEFORMAT, time.localtime( time.time() ) )
     exit()
