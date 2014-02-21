@@ -82,15 +82,17 @@ def send_mail_local(subject, content, flist = None):
         print "Send mail failed to: %s" % errmsg  
         return False 
 
-def get_body(filename):
+def get_body(filename='body.txt'):
     body = 'Mail from Robot\n' 
     body += "Hi!\nCreate time: "+time.strftime("%Y%m%d-%H%M", time.localtime()) + '\n'
     body += 'Send Mail from ' + socket.gethostname() + ' under ' + os.getcwd() + '\n'
     body += '\n\n=========================== Main Text start ================================\n\n'
     print filename
-    f = open(filename)
-    for line in f.readlines():
-        body +=line
+    if os.path.exists(filename):
+        f = open(filename)
+        for line in f.readlines():
+            body +=line
+        f.close()
     return body
 
 if __name__ == '__main__':
@@ -105,7 +107,7 @@ if __name__ == '__main__':
     print filelist
 
     if len(sys.argv) < 3:
-		bodytext = 'No Main Text.'
+		bodytext = get_body()
     else:
 		bodytext = get_body(sys.argv[2])
 	
