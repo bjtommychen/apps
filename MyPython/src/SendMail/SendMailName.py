@@ -97,14 +97,19 @@ if __name__ == '__main__':
 #     global filelist
 #     print 'argv', len(sys.argv)
 #     print sys.argv
-    
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         print 'Example: \"Test Mail" body.txt attache.txt attach2.bin'
         exit(1)
     for i in range(3, len(sys.argv)):
         filelist.append(sys.argv[i])
     print filelist
-    if send_mail(sys.argv[1], get_body(sys.argv[2]), filelist):  
+
+    if len(sys.argv) < 3:
+		bodytext = 'No Main Text.'
+    else:
+		bodytext = get_body(sys.argv[2])
+	
+    if send_mail(sys.argv[1], bodytext, filelist):  
         print "send mail OK."
     else:  
         print "send mail failed !"
