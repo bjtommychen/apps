@@ -11,7 +11,7 @@ srcdir='D:'
 #This is output dir, or ramdisk drive
 dstdir='M:\\'
 # dstdir='D:\\DTS_TMP_DIR\\'
-backdir='D:\\dts_dec_bak\\'
+backdir='D:\\dts_dec_bak\\testing\\'
 cygwin_dir='c:\\cygwin\\bin\\'
 bRemvoeFileAfterCheck = False            #must be defined for ram disk, because short of space.
 bBackupFileAfterCheck = True
@@ -67,16 +67,16 @@ def run_cmdline(line):
                 
 #         print dir2mk
         cmdline = cygwin_dir +'mkdir --parents ' + dir2mk
-#         print cmdline
+#        print cmdline
         stdout_val, stderr_val = external_cmd(cmdline)
-#         print 'Standard Output: %s' % stdout_val
-#         print 'Standard Error: %s' % stderr_val
+#        print 'Standard Output: %s' % stdout_val
+#        print 'Standard Error: %s' % stderr_val
         
         line =  " ".join(cmds)
-#         print line        
+#        print line        
         stdout_val, stderr_val = external_cmd(line)
-#         print 'Standard Output: %s' % stdout_val
-#         print 'Standard Error: %s' % stderr_val
+#        print 'Standard Output: %s' % stdout_val
+#        print 'Standard Error: %s' % stderr_val
     elif cmds[0].find('DTSTEnc_DUT') != -1:
         dir2mk = dstdir + cmds[len(cmds)-1][2:]
         cmdline = cygwin_dir +'mkdir --parents ' + dir2mk
@@ -86,13 +86,13 @@ def run_cmdline(line):
             if cmds[i].find('.\\Transcoder\\') != -1:
                 cmds[i] = srcdir + '\\DTS\\M8\\dts_test\\M8\\Transcoder\\DUTCreation_Material\\PCM\\' + cmds[i]
         line =  " ".join(cmds)
-        print line
+#        print line
         stdout_val, stderr_val = external_cmd(line)
 
 ##### verify #####
     cmdline = cygwin_dir +'find ' + dir2mk +  '| grep wav'
     stdout_val, stderr_val = external_cmd(cmdline)
-#     print 'Standard Output: %s' % stdout_val
+    print 'Standard Output: %s' % stdout_val
     filelist = stdout_val
     list = filelist.split()
     for line in list:
@@ -100,7 +100,7 @@ def run_cmdline(line):
         stdout_val, stderr_val = external_cmd(cmdline)
         line = stdout_val.strip()
         print '%s' % line
-        fw.write(line)    
+        fw.write(line+'\n')    
         
     if bRemvoeFileAfterCheck:
         cmdline = cygwin_dir +'rm -rf ' + dir2mk
@@ -167,13 +167,14 @@ def do_onethread(cmdlines):
     runcnt = 0
     for line in cmdlines:
         cnt += 1
-#         if cnt < 2600:
-#             continue
+#        if cnt < 2220:
+#            continue
         run_cmdline(line)
         runcnt += 1
         print runcnt
         if runcnt > nBackupFileNumEveryTime and bBackupFileAfterCheck == True:
             print 'Backuping ................ '
+            time.sleep(2)
             do_backup()
             time.sleep(2)
             runcnt = 0
@@ -202,6 +203,20 @@ if __name__ == '__main__':
     print 'start! read cmds from cmdlog.txt....\n'
     ISOTIMEFORMAT='%Y-%m-%d %X' 
     print time.strftime( ISOTIMEFORMAT, time.localtime( time.time() ) )
+    print 'Config:\n'
+    print '\tsrcdir = ', srcdir
+    print '\tdstdir = ', dstdir
+    print '\tbackdir = ', backdir
+    print '\tcygwin_dir = ', cygwin_dir
+    print '\tbRemvoeFileAfterCheck = ', bRemvoeFileAfterCheck
+    print '\tbBackupFileAfterCheck = ', bBackupFileAfterCheck
+    print '\tbUseMultiCore = ', bUseMultiCore
+    print '\tnBackupFileNumEveryTime = ', nBackupFileNumEveryTime
+    print '\tthread_num = ', thread_num
+
+    print '\n\nWait 10s to start ... Ctrl+C to cancle now !\n'
+    time.sleep(10)
+    
 #     do_backup()
 #     exit()
   
