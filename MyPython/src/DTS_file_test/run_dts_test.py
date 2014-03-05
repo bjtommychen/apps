@@ -9,16 +9,28 @@ import workerpool
 #
 srcdir='D:'
 #This is output dir, or ramdisk drive
-dstdir='M:\\'
-# dstdir='D:\\DTS_TMP_DIR\\'
-backdir='D:\\dts_dec_bak\\testing\\'
 cygwin_dir='c:\\cygwin\\bin\\'
-bRemvoeFileAfterCheck = False            #must be defined for ram disk, because short of space.
-bBackupFileAfterCheck = True
+nBackupFileNumEveryTime=10
 bUseMultiCore = True
-nBackupFileNumEveryTime=20
-thread_num=6
+thread_num=8
 
+#FAST TEST, NO BACKUP, FLY ON RAMDISK
+dstdir='M:\\'
+backdir='D:\\dts_dec_onfly_no_need_define\\'     # NOT USE. DEFINE ANYTHING YOU WANT.
+bRemvoeFileAfterCheck = True         
+bBackupFileAfterCheck = False           
+
+#FAST TEST, BACKUP OUTPUT FILES
+#dstdir='M:\\'                           # TEMP dir, set to RamDisk drive. 
+#backdir='D:\\dts_dec_bak\\testing\\'
+#bRemvoeFileAfterCheck = False          # bRemvoeFileAfterCheck be True for Ram Disk, because short of space.
+#bBackupFileAfterCheck = True           # 'MOVE' output files to 'backdir' if True. 
+
+#FAST TEST, OUTPUT TO DIRECTORY DIRECTLY
+#dstdir='D:\\dts_dec_bak\\directFinal03_direct\\'
+#backdir='D:\\dts_dec_bak\\testing\\'
+#bRemvoeFileAfterCheck = False
+#bBackupFileAfterCheck = False           
 
 def external_cmd(cmd, msg_in=''):
 #     print cmd
@@ -31,6 +43,7 @@ def external_cmd(cmd, msg_in=''):
                    stderr=subprocess.PIPE,
                   )
         stdout_value, stderr_value = proc.communicate(msg_in)
+        time.sleep(0.2)
         return stdout_value, stderr_value
     except ValueError as err:
         print ("ValueError: %s" % err)
@@ -58,7 +71,7 @@ def run_cmdline(line):
 #         print i, cmds[i]
 #     print '--'
 
-    if cmds[0].find('dts_decoder_dut') != -1:
+    if cmds[0].find('dts_decoder_dut') != -1 or cmds[0].find('zisimg3') != -1:
         dir2mk = ''
         for i in range(1, len(cmds)):
             if cmds[i].find('outputdir') != -1:
@@ -78,7 +91,7 @@ def run_cmdline(line):
 #        print 'Standard Output: %s' % stdout_val
 #        print 'Standard Error: %s' % stderr_val
     elif cmds[0].find('DTSTEnc_DUT') != -1:
-        dir2mk = dstdir + cmds[len(cmds)-1][2:]
+        dir2mk = dstdir + 'Encodes_DUT\\'+ cmds[len(cmds)-1][2:]
         cmdline = cygwin_dir +'mkdir --parents ' + dir2mk
         stdout_val, stderr_val = external_cmd(cmdline)
         cmds[len(cmds)-1] = cmds[len(cmds)-1][:2] + dir2mk +'\\' + cmds[len(cmds)-1][2:]
@@ -92,10 +105,12 @@ def run_cmdline(line):
 ##### verify #####
     cmdline = cygwin_dir +'find ' + dir2mk +  '| grep wav'
     stdout_val, stderr_val = external_cmd(cmdline)
-    print 'Standard Output: %s' % stdout_val
+#    print 'Standard Output: %s' % stdout_val
     filelist = stdout_val
     list = filelist.split()
     for line in list:
+        if len(line) < 5:
+            continue
         cmdline = cygwin_dir +'md5sum ' + line
         stdout_val, stderr_val = external_cmd(cmdline)
         line = stdout_val.strip()
@@ -121,14 +136,14 @@ class DoOneJob(workerpool.Job):
 #             print 'task ', self.taskid, 'start'
             run_cmdline(self.cmdline)
 #             print 'task ', self.taskid, 'stop'
-            time.sleep(0.1)
+            time.sleep(0.5)
         except:
             print 'DoOneJob failed.'
 
 def do_multithread(cmdlines):
     global thread_num
     # Initialize a pool, 5 threads in this case
-    pool = workerpool.WorkerPool(size=thread_num, maxjobs=20)
+    pool = workerpool.WorkerPool(size=thread_num, maxjobs=30)
     cnt = 0
     runcnt = 0
     for line in cmdlines:
@@ -141,13 +156,14 @@ def do_multithread(cmdlines):
                 runcnt += 1
                 print runcnt
                 if runcnt > nBackupFileNumEveryTime and bBackupFileAfterCheck == True:
-                    print 'Backuping ................ '
+                    print 'Wait for Backup start ................ '
                     pool.wait()
                     while(pool.unfinished_tasks>0):
                         time.sleep(5)
                         print 'wait.'
+                    print 'Doing Backup ........ '
                     do_backup()
-                    time.sleep(2)
+                    time.sleep(0.2)
                     runcnt = 0
 #                 print '-------------- put pool', cnt, pool.size(), pool.unfinished_tasks
                 time.sleep(0.1)        
@@ -193,7 +209,7 @@ def do_backup():
             stdout_val, stderr_val = external_cmd(cmdline)
 #             print stdout_val, stderr_val 
             cmdline = cygwin_dir +'rm -rf  ' + line 
-            print cmdline
+#            print cmdline
             stdout_val, stderr_val = external_cmd(cmdline)
 #             print stdout_val, stderr_val 
 
@@ -213,7 +229,10 @@ if __name__ == '__main__':
     print '\tbUseMultiCore = ', bUseMultiCore
     print '\tnBackupFileNumEveryTime = ', nBackupFileNumEveryTime
     print '\tthread_num = ', thread_num
-
+    
+    if len(sys.argv) > 1:
+        exit(0)
+    
     print '\n\nWait 10s to start ... Ctrl+C to cancle now !\n'
     time.sleep(10)
     
