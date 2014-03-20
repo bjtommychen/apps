@@ -57,7 +57,7 @@ def process_lines(lines):
                 #back 5 lines to search for 'return'
                 bFoundReturn = False
                 for index in range(idx-1, idx-5, -1):
-                    if outlines[index].find("return") != -1:
+                    if outlines[index].find("return") != -1 and found_string_prev5lines(outlines, "else") == False:
                         outlines.insert( index, func_exit+'\n')
                         bFoundReturn = True
                         break
