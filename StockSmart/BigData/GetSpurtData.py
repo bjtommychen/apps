@@ -6,6 +6,13 @@ import math
 import csv
 import stat,fnmatch
 import struct
+import workerpool
+import threading
+import profile
+import subprocess
+# import psyco
+# 
+# psyco.full()
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -14,8 +21,30 @@ reload(sys)
 # sys.setdefaultencoding('utf8')
 sys.setdefaultencoding('gbk')
 
-datapath = "output/"
-ext="csv"
+data_path = "output/"
+data_ext="csv"
+bUseMultiCore = True
+thread_num=4
+threads = []
+
+def external_cmd(cmd, msg_in=''):
+#     print cmd
+#     return None, None
+    try:
+        proc = subprocess.Popen(cmd,
+                   shell=True,
+                   stdin=subprocess.PIPE,
+                   stdout=subprocess.PIPE,
+                   stderr=subprocess.PIPE,
+                  )
+        stdout_value, stderr_value = proc.communicate(msg_in)
+        return stdout_value, stderr_value
+    except ValueError as err:
+        print ("ValueError: %s" % err)
+        return None, None
+    except IOError as err:
+        print("IOError: %s" % err)
+        return None, None
 
 def getFileList(path, ext, subdir = True ):
     if os.path.exists(path):
@@ -36,28 +65,22 @@ def getFileList(path, ext, subdir = True ):
     else:
         return [] 
     
-def Get_AllSpurtData():
-    dirlist = getFileList(datapath, '*.'+ext, subdir = False)
-    listall = []
-    fcsv = open("get_all_data.csv", 'wb')
-    csvWriter = csv.writer(fcsv)
-    
-    for filename in dirlist:
-        print 'Checking...', filename
-        line  = Get_OneSpurtData(filename)
-        print line
-#         listall.append(line) 
-        csvWriter.writerow(line)
-    fcsv.close()
-     
 
-index = 0
-def Get_OneDayData_Init():
-    global index
-    index = 0
+def Get_AllSpurtData():
+    dirlist = getFileList(data_path, '*.'+data_ext, subdir = False)
+    listall = []
+    i = 0
+    total = len(dirlist)
+    if bUseMultiCore == False:
+        for filename in dirlist:
+            i+=1
+            print 'No.', i, '/', total, ', Checking...', filename
+            Get_OneSpurtData(filename)
+#             csvWriter.writerow(line)
+    else:
+        Do_MultiThread(dirlist)
     
-def Get_OneDayData(lines):
-    global index
+def Get_OneDayData(lines, index):
     daylines = []
     i = index
     count = 0
@@ -78,7 +101,15 @@ def Get_OneDayData(lines):
             break;
     index = i
 #     print 'index', index
-    return daylines
+    return index, daylines
+    
+def Get_OneSpurtData_byCmd(filename):
+    cmdline = 'pypy ' +'GetSpurtData_One.py ' + filename
+#     print cmdline    
+    stdout_val, stderr_val = external_cmd(cmdline)
+#     print stdout_val
+    line = stdout_val.strip()
+    return line
     
 def Get_OneSpurtData(filename):
     reader = csv.reader(file(filename,'rb'))
@@ -86,13 +117,14 @@ def Get_OneSpurtData(filename):
     m_fLastClose = 0.0    
     for row in reader:
         alllines.append(row)
-    print 'line', len(alllines)    
+    print 'line', len(alllines)
+    code,name,cnt = alllines[0]    
     cnt_days=0
     cnt_boom=0
     cnt_boom_failed=0
-    Get_OneDayData_Init()            
+    index = 1   # skip 1st line.
     while(True):
-        daylines = Get_OneDayData(alllines)
+        index, daylines = Get_OneDayData(alllines, index)
         if (daylines == []):
             break;
         cnt_days += 1
@@ -105,7 +137,7 @@ def Get_OneSpurtData(filename):
         #chec Boom
         max_price = m_fLastClose *1.095
         bHit = False
-        for i in range(0, len(daylines)):
+        for i in xrange(0, len(daylines)):
             time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
             if m_fHigh > max_price and bHit == False:
 #                 print "Boom! at", time_str, m_fLastClose, m_fHigh, i
@@ -123,12 +155,97 @@ def Get_OneSpurtData(filename):
         cnt_days = 1
     if cnt_boom == 0:
         cnt_boom = 1               
-    line = filename, cnt_days, cnt_boom, cnt_boom_failed , float('%.2f' % (float(cnt_boom)*100/cnt_days)), float('%.2f' % (float(cnt_boom_failed)*100/cnt_boom))
-    return line                
+    line = code, name, cnt_days, cnt_boom, cnt_boom_failed , float('%.2f' % (float(cnt_boom)*100/cnt_days)), float('%.2f' % (float(cnt_boom_failed)*100/cnt_boom))
+    print line
+#     return line
+    csvWriter.writerow(line)                
+
+class DoOneThread (threading.Thread): 
+    def __init__(self, filename, taskid):
+        threading.Thread.__init__(self)
+        self.filename = filename
+        self.taskid = taskid
+    def run(self):                   
+        print "Starting " , self.taskid     #self.name
+        Get_OneSpurtData(self.filename)
+        print "Exiting " , self.taskid     #self.name
+        time.sleep(0.1)
+        
+class DoOneJob(workerpool.Job):
+    "Job for downloading a given URL."
+    def __init__(self, filename, taskid):
+        self.filename = filename
+        self.taskid = taskid
+    def run(self):
+        try:  
+            if False:
+                thread1 = DoOneThread(self.filename, self.taskid)
+                thread1.start()
+                thread1.join(timeout=100)
+            else:
+                str_lines = Get_OneSpurtData_byCmd(self.filename)
+                print str_lines
+                lines = str_lines.split('\r\n')
+                for line in lines:
+                    line = line.split()
+                    csvWriter.writerow(line)
+            print 'Job', self.taskid, 'done!'
+            time.sleep(0.1)
+        except:
+            print 'DoOneJob failed.'
+
+def Do_MultiThread(dirlist):
+    global thread_num
+    # Initialize a pool, 5 threads in this case
+    pool = workerpool.WorkerPool(size=thread_num, maxjobs=thread_num)
+    cnt = 0
+    runcnt = 0
+    total = len(dirlist)
+    for filename in dirlist:
+#         thread.start_new_thread(Get_OneSpurtData,(filename,))
+#         print 'thread start '
+        try:
+            try:
+                job = DoOneJob(filename, runcnt)
+                print 'Job', runcnt, '/', total
+                pool.put(job)    
+                runcnt += 1
+                time.sleep(0.5)
+            except:
+                print 'get  error'
+                break
+        except:
+            break
+    # Send shutdown jobs to all threads, and wait until all the jobs have been completed
+#     time.sleep(10)
+    pool.shutdown()
+    pool.wait()
+
+
         
 if  __name__ == '__main__':
+    print '#'*60
+    print '##### Get Spurt Data from csv files.'
+    print '#'*60
+    print 'Config:'
+    print '\tdata_path =', data_path
+    print '\tdata_ext =', data_ext
+    print '\tbUseMultiCore = ', bUseMultiCore
+    print '\tthread_num = ', thread_num
+        
+    if len(sys.argv) > 1:
+        exit(0)
+    print '\n\nWait 2s to start ... Ctrl+C to cancle now !\n'
+    time.sleep(2)    
     print 'Start !'
-#     Get_OneSpurtData('output/SZ002041_qm1.csv')
+    start = time.time()
+    fcsv = open("get_all_data.csv", 'wb')
+    csvWriter = csv.writer(fcsv)    
     Get_AllSpurtData()
+#     profile.run("Get_AllSpurtData()")
+    fcsv.close()    
+    end = time.time()
+    elapsed = float('%.2f' %(end - start))
+    print "Time taken: ", elapsed, "seconds."
     print 'Completed !'
     
