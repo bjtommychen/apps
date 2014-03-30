@@ -136,7 +136,7 @@ def Get_SpurtStartTime(filename):
             if (m_fClose < max_price):
 #                 print "Boom Failed !" ,m_fClose ,max_price
                 cnt_boom_failed += 1
-            print code, name, time_str, timeSpurt/60
+            print code, name, cnt_days, time_str, timeSpurt/60
 #     print cnt_days, cnt_boom, cnt_boom_failed, float('%.2f' % (float(cnt_boom)*100/cnt_days)), '%', float('%.2f' % (float(cnt_boom_failed)*100/cnt_boom)), '%'
 #     if cnt_days == 0:
 #         cnt_days = 1
