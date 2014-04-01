@@ -24,7 +24,7 @@ sys.setdefaultencoding('gbk')
 data_path = "output/"
 data_ext="csv"
 bUseMultiCore = True
-thread_num=4
+thread_num=8
 threads = []
 
 def external_cmd(cmd, msg_in=''):
@@ -66,7 +66,7 @@ def getFileList(path, ext, subdir = True ):
         return [] 
     
 
-def Get_AllSpurtData():
+def Get_AllSpurtData(jobid):
     dirlist = getFileList(data_path, '*.'+data_ext, subdir = False)
     listall = []
     i = 0
@@ -75,10 +75,10 @@ def Get_AllSpurtData():
         for filename in dirlist:
             i+=1
             print 'No.', i, '/', total, ', Checking...', filename
-            Get_OneSpurtData(filename)
+            Get_OneSpurtData(filename, jobid)
 #             csvWriter.writerow(line)
     else:
-        Do_MultiThread(dirlist)
+        Do_MultiThread(dirlist, jobid)
     
 def Get_OneDayData(lines, index):
     daylines = []
@@ -103,15 +103,15 @@ def Get_OneDayData(lines, index):
 #     print 'index', index
     return index, daylines
     
-def Get_OneSpurtData_byCmd(filename):
-    cmdline = 'pypy ' +'GetSpurtData_One.py ' + filename
-#     print cmdline    
+def Get_OneSpurtData_byCmd(filename, jobid):
+    cmdline = 'pypy ' +'GetSpurtData_One.py ' + filename + ' ' + str(jobid)
+#    print cmdline    
     stdout_val, stderr_val = external_cmd(cmdline)
 #     print stdout_val
     line = stdout_val.strip()
     return line
     
-def Get_OneSpurtData(filename):
+def Get_OneSpurtData(filename, jobid):
     reader = csv.reader(file(filename,'rb'))
     alllines = []
     m_fLastClose = 0.0    
@@ -173,8 +173,9 @@ class DoOneThread (threading.Thread):
         
 class DoOneJob(workerpool.Job):
     "Job for downloading a given URL."
-    def __init__(self, filename, taskid):
+    def __init__(self, filename, jobid, taskid):
         self.filename = filename
+        self.jobid = jobid
         self.taskid = taskid
     def run(self):
         try:  
@@ -183,7 +184,7 @@ class DoOneJob(workerpool.Job):
                 thread1.start()
                 thread1.join(timeout=100)
             else:
-                str_lines = Get_OneSpurtData_byCmd(self.filename)
+                str_lines = Get_OneSpurtData_byCmd(self.filename, self.jobid)
                 print str_lines
                 lines = str_lines.split('\r\n')
                 for line in lines:
@@ -194,19 +195,20 @@ class DoOneJob(workerpool.Job):
         except:
             print 'DoOneJob failed.'
 
-def Do_MultiThread(dirlist):
+def Do_MultiThread(dirlist, jobid):
     global thread_num
     # Initialize a pool, 5 threads in this case
     pool = workerpool.WorkerPool(size=thread_num, maxjobs=thread_num)
     cnt = 0
     runcnt = 0
     total = len(dirlist)
+    print 'Enter Do_MultiThread'
     for filename in dirlist:
 #         thread.start_new_thread(Get_OneSpurtData,(filename,))
 #         print 'thread start '
         try:
             try:
-                job = DoOneJob(filename, runcnt)
+                job = DoOneJob(filename, jobid, runcnt)
                 print 'Job', runcnt, '/', total
                 pool.put(job)    
                 runcnt += 1
@@ -233,15 +235,18 @@ if  __name__ == '__main__':
     print '\tbUseMultiCore = ', bUseMultiCore
     print '\tthread_num = ', thread_num
         
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         exit(0)
+    jobid = 0
+    if len(sys.argv) == 2:
+        jobid = int(sys.argv[1])
     print '\n\nWait 2s to start ... Ctrl+C to cancle now !\n'
     time.sleep(2)    
-    print 'Start !'
+    print 'Start !', jobid, type(jobid)
     start = time.time()
-    fcsv = open("get_all_data.csv", 'wb')
+    fcsv = open("get_all_data"+"_%03d"%jobid+".csv", 'wb')
     csvWriter = csv.writer(fcsv)    
-    Get_AllSpurtData()
+    Get_AllSpurtData(jobid)
 #     profile.run("Get_AllSpurtData()")
     fcsv.close()    
     end = time.time()
