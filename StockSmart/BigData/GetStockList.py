@@ -6,6 +6,7 @@ import math
 import csv
 import urllib2
 import urllib
+import string
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -46,6 +47,7 @@ def get_sh_list():
 #         name, price_current, price_diff, change_percent = get_price(codestr)
         name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price(codestr)
         if (name):
+            name = string.replace(name,' ','')
             line = codestr, name
 #             print line
             csvWriter.writerow(line)
@@ -71,6 +73,7 @@ def get_sz_list():
             print code
         codestr = 'sz' + "%06d" % int(code)
         name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price(codestr)
+        name = string.replace(name,' ','')
         if (name):
             line = codestr, name
             csvWriter.writerow(line)    
