@@ -71,14 +71,13 @@ def Get_SpurtDayCount(filename):
         bHit = False
         for i in xrange(0, len(daylines)):
             time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
-            if m_fHigh > max_price and bHit == False:
-#                 print "Boom! at", time_str, m_fLastClose, m_fHigh, i
+            if m_fHigh > max_price and bHit == False:   #Boom!
                 bHit = True
                 cnt_boom += 1
                 break
         if bHit ==True:
-            if (m_fClose < max_price):
-#                 print "Boom Failed !" ,m_fClose ,max_price
+            m_fClose = daylines[len(daylines)-1][5]
+            if (m_fClose < max_price):  #Boom Failed !
                 cnt_boom_failed += 1
         time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[len(daylines)-1]
         m_fLastClose = m_fClose
@@ -125,6 +124,7 @@ def Get_SpurtStartTime(filename):
                 cnt_boom += 1
                 break
         if bHit ==True:
+            m_fClose = daylines[len(daylines)-1][5]
             if (m_fClose < max_price):  #涨停失败
                 cnt_boom_failed += 1
             print code, name, cnt_days, time_str, timeSpurt/60
@@ -164,26 +164,155 @@ def Get_SpurtLowWhenFailed(filename):
                 idx_boom = i
                 break
         if bHit ==True:
+            m_fClose = daylines[len(daylines)-1][5]
             if (m_fClose < max_price):  #涨停失败
-                cnt_boom_failed += 1
-            print code, name, cnt_days, time_str, timeSpurt/60
+                low_price = max_price
+                for i in xrange(idx_boom, len(daylines)):
+                    time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
+                    if (m_fLow< low_price):
+                        low_price = m_fLow
+                        idx_lowest = i
+                print code, name,cnt_days, idx_boom,idx_lowest, daylines[idx_lowest][0], "%.2f" % float((low_price/m_fLastClose-1)*100.0)
+#                 cnt_boom_failed += 1
+#             print code, name, cnt_days, time_str, timeSpurt/60
         #save lastclose price    
         time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[len(daylines)-1]
         m_fLastClose = m_fClose
 
+#涨停第二天开盘多个时段卖出的收益.
+def Get_SpurtNextDayProfit(filename):
+    reader = csv.reader(file(filename,'rb'))
+    alllines = []
+    m_fLastClose = 0.0    
+    for row in reader:
+        alllines.append(row)
+    code,name,cnt = alllines[0]    
+    cnt_days=0
+    cnt_boom=0
+    cnt_boom_failed=0
+    index = 1   # skip 1st line. it's info line.
+    bLastDayBoom = False
+    while(True):
+        index, daylines = Get_OneDayData(alllines, index)
+        if (daylines == []):
+            break;
+        cnt_days += 1
+        #init last close
+        if m_fLastClose == 0.0:
+            time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[len(daylines)-1]
+            m_fLastClose = m_fClose
+            continue
+        if bLastDayBoom == True:    #昨日涨停
+            bLastDayBoom = False
+            for i in xrange(0, len(daylines), 10):
+                if i < len(daylines) and i <40 :
+                    time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
+                    print code, name,cnt_days, i, time_str, "%.2f" % float((m_fLow/m_fLastClose-1)*100.0)
+                
+        #check Boom
+        max_price = m_fLastClose *1.095
+        bHit = False
+        for i in xrange(0, len(daylines)):
+            time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
+            if m_fHigh > max_price and bHit == False:   #当日初次涨停
+                bHit = True
+                idx_boom = i
+                break
+        if bHit ==True:
+            m_fClose = daylines[len(daylines)-1][5]
+            if (m_fClose < max_price):  #涨停失败
+                low_price = max_price
+                for i in xrange(idx_boom, len(daylines)):
+                    time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
+                    if (m_fLow< low_price):
+                        low_price = m_fLow
+                        idx_lowest = i
+            else:
+                bLastDayBoom = True
+        #save last close price    
+        m_fLastClose = daylines[len(daylines)-1][5]
+     
+#涨停时, 2,4,6,8,10%的时间间隔, 成交量关系     
+def Get_SpurtSpeed(filename):
+    reader = csv.reader(file(filename,'rb'))
+    alllines = []
+    m_fLastClose = 0.0    
+    for row in reader:
+        alllines.append(row)
+    code,name,cnt = alllines[0]    
+    cnt_days=0
+    cnt_boom=0
+    cnt_boom_failed=0
+    index = 1   # skip 1st line. it's info line.
+    bLastDayBoom = False
+    while(True):
+        index, daylines = Get_OneDayData(alllines, index)
+        if (daylines == []):
+            break;
+        cnt_days += 1
+        #init last close
+        if m_fLastClose == 0.0:
+            time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[len(daylines)-1]
+            m_fLastClose = m_fClose
+            continue
+        #check Boom
+        max_price = m_fLastClose *1.095
+        bHit = False
+        bHitFailed = False
+        for i in xrange(0, len(daylines)):
+            time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
+            if m_fHigh > max_price and bHit == False:   #当日初次涨停
+                bHit = True
+                idx_boom = i
+                break
+        if bHit ==True:
+            m_fClose = daylines[len(daylines)-1][5]
+            if (m_fClose < max_price):  #涨停失败
+                bHitFailed = True
+            else:
+                bLastDayBoom = True
+                percent_check = 1.018
+                idx_array = []
+                for i in xrange(0, len(daylines)):
+                    time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
+                    if m_fHigh>m_fLastClose*percent_check:
+#                         print i, percent_check
+                        percent_check += 0.02
+                        idx_array.append(i)
+                    if percent_check > 1.11:
+                        break
+                if len(idx_array):
+                        print code, name, cnt_days, idx_array
 
-def Do_dataJob(filename):   #任务调度
-#     Get_SpurtDayCount(filename)
-    Get_SpurtStartTime(filename)
-#     Get_SpurtLowWhenFailed(filaname)
-        
+        #save last close price    
+        m_fLastClose = daylines[len(daylines)-1][5]
+                
+def Do_dataJob(filename, jobid):   #任务调度
+    if jobid == 0:
+        Get_SpurtDayCount(filename)
+    elif jobid == 1:
+        Get_SpurtStartTime(filename)
+    elif jobid == 2:
+        Get_SpurtLowWhenFailed(filename)
+    elif jobid == 3:
+        Get_SpurtNextDayProfit(filename)
+    elif jobid == 4:
+        Get_SpurtSpeed(filename)
+    elif jobid == 5:
+        Get_SpurtStartTime(filename)
+    elif jobid == 6:
+        Get_SpurtStartTime(filename)
+
 if  __name__ == '__main__':
     if len(sys.argv) < 2:
         exit(0)
+    jobid = 0
+    if len(sys.argv) == 3:
+        jobid = int(sys.argv[2])
 #     print 'Start !'
     start = time.time()
 #     print 'Checking ', sys.argv[1]
-    Do_dataJob(sys.argv[1])   
+    Do_dataJob(sys.argv[1], jobid)   
     end = time.time()
     elapsed = float('%.2f' %(end - start))
 #     print "Time taken: ", elapsed, "seconds."
