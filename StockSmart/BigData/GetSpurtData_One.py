@@ -298,10 +298,7 @@ def Do_dataJob(filename, jobid):   #任务调度
         Get_SpurtNextDayProfit(filename)
     elif jobid == 4:
         Get_SpurtSpeed(filename)
-    elif jobid == 5:
-        Get_SpurtStartTime(filename)
-    elif jobid == 6:
-        Get_SpurtStartTime(filename)
+
 
 if  __name__ == '__main__':
     if len(sys.argv) < 2:
