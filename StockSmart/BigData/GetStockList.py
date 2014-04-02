@@ -65,6 +65,7 @@ def get_sz_list():
 #         continue
         name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price(codestr)
         if (name):
+            name = string.replace(name,' ','')
             line = codestr, name
             csvWriter.writerow(line)
 
@@ -73,8 +74,8 @@ def get_sz_list():
             print code
         codestr = 'sz' + "%06d" % int(code)
         name, openprice, lastclose, curr, todayhigh, todaylow = get_rt_price(codestr)
-        name = string.replace(name,' ','')
         if (name):
+            name = string.replace(name,' ','')
             line = codestr, name
             csvWriter.writerow(line)    
     fcsv.close()    
