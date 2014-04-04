@@ -6,6 +6,7 @@ import math
 import csv
 import stat,fnmatch
 import struct
+import workerpool
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -19,6 +20,8 @@ data_ext = 'qm1'
 listfile_sh = 'sh_list.csv'
 listfile_sz = 'sz_list.csv'
 output_path = 'output/'
+bUseMultiCore = False
+thread_num=8
 
 def get_Long(fp):
     num = struct.unpack("L",fp.read(4))
@@ -94,11 +97,15 @@ def getFileList(path, ext, subdir = True ):
         return [] 
 
 def get_AllQMdata_for_one(datapath, ext, filter, sname):
-    dirlist = getFileList(datapath, '*.'+ext, subdir = False)
+    dirlist = getFileList(datapath, '*.'+ext, subdir = False)   
     listall = []
     for filename in dirlist:
         print filename  
         fp=open(filename,"rb")
+        while(fp == 0):
+            time.sleep(1)
+            print 'file open wait .............'
+            fp=open(filename,"rb")
         flag, version, total_num = get_QM_header(fp)
         print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
         code, name, list5min = get_OneRecordSpecified(fp, filter)
@@ -112,10 +119,40 @@ def get_AllQMdata_for_one(datapath, ext, filter, sname):
     print 'sorted.'
     code = filter
     if len(listall) > 100:
-        write_QM_data(output_path + filter + '.' + ext, code, sname, listall)
+#             write_QM_data(output_path + filter + '.' + ext, code, sname, listall)
         write_QM_data_to_csv(output_path + filter + '_' +ext +'.' + 'csv', code, sname, listall)
 
+job_cnt = 0
+class DoOneJob(workerpool.Job):
+    def __init__(self, datapath, ext, filter, sname):
+        self.datapath = datapath
+        self.ext = ext
+        self.filter = filter
+        self.sname = sname
+        global job_cnt
+        self.job_cnt = job_cnt
+        job_cnt += 1
+    def run(self):
+        try:  
+            print 'Job', self.job_cnt, 'start!'
+            get_AllQMdata_for_one(self.datapath, self.ext, self.filter, self.sname)
+            time.sleep(0.1)
+            print 'Job', self.job_cnt, 'done!'
+        except:
+            print 'DoOneJob failed.'
 
+def Get_OneQMData(pool,datapath, ext, filter, sname):
+    if bUseMultiCore == False:    
+        get_AllQMdata_for_one(datapath, ext, filter, sname)
+    else:
+        try:
+            print 'do job'
+            job = DoOneJob(datapath, ext, filter, sname)
+            pool.put(job)    
+            time.sleep(0.5)
+        except:
+            print 'get  error'
+        
 def write_QM_data(filename, code, name, listall):
     print 'write_QM_data', filename
     fp=open(filename,"wb")
@@ -157,20 +194,18 @@ def write_QM_data_to_csv(filename, code, name, listall):
 def get_AllQMdata():
     reader = csv.reader(file(listfile_sh,'rb'))    
     i = 0
+    pool = workerpool.WorkerPool(size=thread_num, maxjobs=thread_num)
     for row in reader:
         print row
-        get_AllQMdata_for_one(data_path,data_ext, row[0].upper(), row[1])
-#         get_AllQMdata_for_one('qm5/','qm5', row[0].upper())
-#         if i==0:
-#             break
+        Get_OneQMData(pool, data_path,data_ext, row[0].upper(), row[1])
 
     reader = csv.reader(file(listfile_sz,'rb'))  
     for row in reader:
         print row
-        get_AllQMdata_for_one(data_path,data_ext, row[0].upper(), row[1])
-#        get_AllQMdata_for_one('qm5/','qm5', row[0].upper())
-#         if i==0:
-#             break
+        Get_OneQMData(pool, data_path,data_ext, row[0].upper(), row[1])
+
+    pool.shutdown()
+    pool.wait()
     
 if  __name__ == '__main__':
     print '#'*60
@@ -182,10 +217,13 @@ if  __name__ == '__main__':
     print '\tlistfile_sh =', listfile_sh
     print '\tlistfile_sz =', listfile_sz
     print '\toutput_path =', output_path
+    print '\tbUseMultiCore = ', bUseMultiCore
+    print '\tthread_num = ', thread_num    
+
     if len(sys.argv) > 1:
         exit(0)
-    print '\n\nWait 5s to start ... Ctrl+C to cancle now !\n'
-    time.sleep(5)
+    print '\n\nWait 2s to start ... Ctrl+C to cancle now !\n'
+    time.sleep(2)    
     
     print 'Start !'
 #     get_AllQMdata_for_one('qm5/','qm5', 'SH600036')
