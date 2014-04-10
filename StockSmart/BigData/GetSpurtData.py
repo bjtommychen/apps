@@ -75,7 +75,7 @@ def Get_AllSpurtData(jobid):
             i+=1
             print 'No.', i, '/', total, ', Checking...', filename
             Get_OneSpurtData(filename, jobid)
-            if i > debug_maxcnt:
+            if  debug_maxcnt >0 and i > debug_maxcnt:
                 break
     else:
         Do_MultiThread(dirlist, jobid)
@@ -223,7 +223,7 @@ def Do_MultiThread(dirlist, jobid):
                 pool.put(job)    
                 runcnt += 1
                 time.sleep(0.5)
-                if runcnt >= debug_maxcnt:
+                if debug_maxcnt>0 and runcnt >= debug_maxcnt:
                     break
             except:
                 print 'get  error'
