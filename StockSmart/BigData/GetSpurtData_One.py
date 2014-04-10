@@ -5,6 +5,7 @@ import sys
 import os
 import math
 import csv
+import argparse
 
 # print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -282,12 +283,16 @@ def Get_SpurtSpeed(filename):
                     if percent_check > 1.11:
                         break
                 if len(idx_array):
-                        print code, name, cnt_days, idx_array
-
+                        print code, name, cnt_days, 
+                        for line in idx_array:
+                            print line,
+                        print
+                        
         #save last close price    
         m_fLastClose = daylines[len(daylines)-1][5]
                 
 def Do_dataJob(filename, jobid):   #任务调度
+#     print filename, jobid
     if jobid == 0:
         Get_SpurtDayCount(filename)
     elif jobid == 1:
@@ -299,17 +304,51 @@ def Do_dataJob(filename, jobid):   #任务调度
     elif jobid == 4:
         Get_SpurtSpeed(filename)
 
+def Do_printheader(jobid):   #头信息
+    if jobid == 0:
+        print '代码', '名字','总交易日','涨停数','涨停失败数','涨停百分比','涨停失败百分比'
+        print 'code', 'name', 'total_days', 'boom_days', 'boom_failed_days', 'success_pct', 'failed_pct'
+    elif jobid == 1:
+        print '代码', '名字','上市第N交易日', '涨停日期', '涨停时刻',  '相对开市分钟数'
+        print 'code', 'name', 'n_days', 'date','time','minutes_offset'
+    elif jobid == 2:
+        print '代码', '名字','上市第N交易日','当日初次涨停index','当日涨停后最低点index','最低点日期','最低点时刻','最低点相对于昨日收盘的涨幅'
+        print 'code', 'name', 'n_days','firsthit_index','afterhit_lowest_index', 'lowest_date','lowest_time', 'pct_lowest2lastclose'
+    elif jobid == 3:
+        print '代码', '名字','上市第N交易日','当日开始分钟数', '涨停日期', '涨停时刻','昨日涨停今日开盘收益'
+        print 'code', 'name', 'n_days', 'minutes_offset', 'date', 'time','pct_profit_todayopen2lastclose'
+    elif jobid == 4:
+        print '代码', '名字','上市第N交易日','2%','4%','6%','8%','10%','涨停当日到达各百分点的分钟数'
+        print 'code', 'name', 'n_days','pct2_min','pct4_min','pct6_min','pct8_min','pct10_min'
 
 if  __name__ == '__main__':
-    if len(sys.argv) < 2:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', action='store', dest='taskid', default='0', help='Specify the task id.')
+    parser.add_argument('-f', action='store', dest='filename', default='test.csv', help='Specify the data csv file to open.')
+    parser.add_argument('--show_header', action='store_true', default=False, dest='print_header', help='If true, print column header.')
+    parser.add_argument('--debug', action='store_const', dest='debug',default=0,const=1,help='enable debug mode.')
+#     parser.add_argument('-t', action='store_true', default=False,
+#             dest='boolean_switch',
+#             help='Set a switch to true')
+#     parser.add_argument('-f', action='store_false', default=False,
+#             dest='boolean_switch',
+#             help='Set a switch to false')    
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    args = parser.parse_args()
+#     print 'taskid     =', args.taskid, type(args.taskid)
+#     print 'filename     =', args.filename, type(args.filename)
+
+    jobid = int(args.taskid)
+    if args.print_header:
+        Do_printheader(jobid)
         exit(0)
-    jobid = 0
-    if len(sys.argv) == 3:
-        jobid = int(sys.argv[2])
-#     print 'Start !'
+    filename = args.filename
+    if not os.path.exists(filename):
+        print filename + ' not exist!'
+        exit(1)
     start = time.time()
 #     print 'Checking ', sys.argv[1]
-    Do_dataJob(sys.argv[1], jobid)   
+    Do_dataJob(filename, jobid)   
     end = time.time()
     elapsed = float('%.2f' %(end - start))
 #     print "Time taken: ", elapsed, "seconds."

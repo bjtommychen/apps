@@ -1,18 +1,16 @@
 import time
 import sys
 import os
-import socket
+# import socket
 import math
 import csv
 import stat,fnmatch
 import struct
 import workerpool
 import threading
-import profile
+# import profile
 import subprocess
-# import psyco
-# 
-# psyco.full()
+import argparse
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -26,6 +24,7 @@ data_ext="csv"
 bUseMultiCore = True
 thread_num=8
 threads = []
+debug_maxcnt = 0
 
 def external_cmd(cmd, msg_in=''):
 #     print cmd
@@ -76,7 +75,8 @@ def Get_AllSpurtData(jobid):
             i+=1
             print 'No.', i, '/', total, ', Checking...', filename
             Get_OneSpurtData(filename, jobid)
-#             csvWriter.writerow(line)
+            if i > debug_maxcnt:
+                break
     else:
         Do_MultiThread(dirlist, jobid)
     
@@ -103,8 +103,10 @@ def Get_OneDayData(lines, index):
 #     print 'index', index
     return index, daylines
     
-def Get_OneSpurtData_byCmd(filename, jobid):
-    cmdline = 'pypy ' +'GetSpurtData_One.py ' + filename + ' ' + str(jobid)
+def Get_OneSpurtData_byCmd(filename, jobid, taskid):
+    cmdline = 'pypy ' +'GetSpurtData_One.py ' + '-f '+filename + ' -t ' + str(jobid)
+    if taskid == -1:
+        cmdline += ' --show_header'
 #    print cmdline    
     stdout_val, stderr_val = external_cmd(cmdline)
 #     print stdout_val
@@ -184,7 +186,15 @@ class DoOneJob(workerpool.Job):
                 thread1.start()
                 thread1.join(timeout=100)
             else:
-                str_lines = Get_OneSpurtData_byCmd(self.filename, self.jobid)
+                if self.taskid == 0:    # show header first.
+                    str_lines = Get_OneSpurtData_byCmd(self.filename, self.jobid, -1)
+                    print str_lines
+                    lines = str_lines.split('\r\n')
+                    for line in lines:
+                        line = line.split()
+                        csvWriter.writerow(line)
+                    
+                str_lines = Get_OneSpurtData_byCmd(self.filename, self.jobid, self.taskid)
                 print str_lines
                 lines = str_lines.split('\r\n')
                 for line in lines:
@@ -213,6 +223,8 @@ def Do_MultiThread(dirlist, jobid):
                 pool.put(job)    
                 runcnt += 1
                 time.sleep(0.5)
+                if runcnt >= debug_maxcnt:
+                    break
             except:
                 print 'get  error'
                 break
@@ -234,20 +246,32 @@ if  __name__ == '__main__':
     print '\tdata_ext =', data_ext
     print '\tbUseMultiCore = ', bUseMultiCore
     print '\tthread_num = ', thread_num
-        
-    if len(sys.argv) > 2:
-        exit(0)
-    jobid = 0
-    if len(sys.argv) == 2:
-        jobid = int(sys.argv[1])
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', action='store', dest='taskid', default='-1', help='Specify the task id.')
+    parser.add_argument('-f', action='store', dest='filename', help='Specify the data csv file to write.')       
+    parser.add_argument('--debug', action='store_const', dest='debug',default=0,const=1,help='enable debug mode.') 
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    args = parser.parse_args()
+            
+    jobid = int(args.taskid)
+    if jobid == -1:
+        exit(1)
+    if args.debug == 1:
+        debug_maxcnt = 10
+        print 'debug mode on !'
     print '\n\nWait 2s to start ... Ctrl+C to cancle now !\n'
     time.sleep(2)    
     print 'Start !', jobid, type(jobid)
     start = time.time()
-    fcsv = open("get_all_data"+"_%03d"%jobid+".csv", 'wb')
+    fileout = "get_all_data"+"_%03d"%jobid+".csv"
+    if args.filename != None:
+        fileout = args.filename
+    fcsv = open(fileout, 'wb')
     csvWriter = csv.writer(fcsv)    
+    
     Get_AllSpurtData(jobid)
-#     profile.run("Get_AllSpurtData()")
+
     fcsv.close()    
     end = time.time()
     elapsed = float('%.2f' %(end - start))
