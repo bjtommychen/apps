@@ -53,14 +53,17 @@ def gearman_run_cmdline(client, function, line):
     job_request = client.submit_job(function, line, background=False, wait_until_complete=False)
     Jobs.append(job_request)
 
-def do_onethread(cmdlines):
-    print cmdlines
+def do_onethread(argv):
+    print argv
+    cmdlines = ''
     gm_client = gearman.GearmanClient([GearmanSrvIP])
     for i in range (0, 4):
-        if cmdlines != '':
-            gearman_run_cmdline(gm_client, 'runcmd', cmdlines)
-        else:
+        if len(argv) == 1:
             gearman_run_cmdline(gm_client, 'getsysinfo', cmdlines)
+        elif len(argv) == 2 and argv[1] == 'exit':
+            gearman_run_cmdline(gm_client, 'exit_workers', cmdlines)
+        elif len(argv) == 3 and argv[1] == 'runcmd':
+            gearman_run_cmdline(gm_client, 'runcmd', argv[2])
     gm_client.wait_until_jobs_completed(Jobs)
     for job in Jobs:
         check_request_status(job)
@@ -70,12 +73,14 @@ if __name__ == '__main__':
     print 50*'*'
     print 15*'*', 'GearmanCommander start!'
     print 50*'*'
+    print 'example: '
+    print 'GearmanCommander.py              #show system info'
+    print 'GearmanCommander.py  exit        #Exit workers'
+    print 'GearmanCommander.py  runcmd  cmd #Run command'
     
     print len(sys.argv)
-    if len(sys.argv) > 1:
-        do_onethread(sys.argv[1])
-    else:
-        do_onethread('')
+#    if len(sys.argv) > 1:
+    do_onethread(sys.argv)
 
     print 'done'
     exit()

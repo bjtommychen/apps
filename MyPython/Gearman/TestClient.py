@@ -43,8 +43,9 @@ Jobs = []
 def check_request_status(job_request):
     if job_request.complete:
         #print "Job %s finished!  Result: %s - \n%s" % (job_request.job.unique, job_request.state, job_request.result)
-        fw.write(job_request.result)
-        fw.flush()    
+        if job_request.result != '':
+            fw.write(job_request.result)
+            fw.flush()    
     elif job_request.timed_out:
         print "Job %s timed out!" % job_request.unique
     elif job_request.state == JOB_UNKNOWN:
@@ -97,7 +98,7 @@ def do_onethread(cmdlines):
         #statuses = gm_client.get_job_statuses(Jobs)
         #print statuses
         #print len(Jobs)
-        gm_client.wait_until_jobs_completed(Jobs, poll_timeout= 5)
+        gm_client.wait_until_jobs_completed(Jobs, poll_timeout= 1)
         cnt_completed = 0
         for job in Jobs:
             #wait_jobs = []
