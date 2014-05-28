@@ -10,7 +10,7 @@ import gearman
 import threading
 import socket
 import platform
-import wmi
+
 
 POLL_TIMEOUT_SECONDS = 30
 SCRIPT_VERSION = 'V1.0.1'
@@ -22,7 +22,7 @@ cygwin_dir='c:\\cygwin\\bin\\'
 nBackupFileNumEveryTime=10
 bUseMultiCore = True
 thread_num=8
-bSaveCmdOutput = False
+bSaveCmdOutput = True
 GearmanSrvIP = '10.10.32.93:4730'
 
 
@@ -231,6 +231,7 @@ def getcpuInfo():
     CPUINFO = "None"
     sys = getSYSTEM()
     if  sys == "Windows":
+        import wmi
         try:
             c = wmi.WMI()
         except wmi.x_wmi, x: # Py3+ except wmi.x_wmi as x:
@@ -345,7 +346,7 @@ def exit_workers():
         thread.join()
     threads = []
     time.sleep(5)
-    return 'run_exit_workers done\n'
+    return 'HOST: '+ socket.gethostname() + '\n'+'run_exit_workers done\n'
 
 def run_exit_workers(gearman_worker, gearman_job):
     return exit_workers()
@@ -413,6 +414,9 @@ if __name__ == '__main__':
     print '\tbSaveCmdOutput = ', bSaveCmdOutput
     print '\tGearmanSrvIP = ', GearmanSrvIP
 
+    fstdout = open('stdout.txt', 'w')
+    fstderr = open('stderr.txt', 'w')	
+	
     for index in range(0,thread_num):
         thread1 = CreatThread_DTS_Test(index)
         thread1.start()
@@ -432,8 +436,12 @@ if __name__ == '__main__':
     getcpuInfo()
     print get_sysinfo_string()
     print '\nRegister_task done! Waiting for commands... Ctrl+C to exit.\n'
-    
+
     check_exit_workers()
+	
+    fstdout.close()
+    fstderr.close()	
+	
     print 'All Exit! All Done!'
     time.sleep(5)
 
