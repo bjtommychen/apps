@@ -25,6 +25,7 @@ def Get_OneDayData(lines, index):
     daylines = []
     i = index
     count = 0
+    m_time_start = 0
     while (i < len(lines)):
         time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = lines[i]
         m_time = int(m_time)
@@ -34,14 +35,21 @@ def Get_OneDayData(lines, index):
         m_fClose = float(m_fClose)
         m_fVolume = int(m_fVolume)
         m_fAmount = int(m_fAmount)
+        if count == 0:
+            m_time_start = m_time
         wline = time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
         daylines.append(wline)
         count += 1
         i += 1
         if (count >= 240) or time_str.find('15:00:00') != -1:
             break;
+        # one day only 330 minutes.
+        if ((m_time - m_time_start)>=(330*60))  and m_time_start != 0:
+            #print 'error',  (m_time - m_time_start)
+            break;
     index = i
-#     print 'index', index
+    #print  m_time_start, m_time, (m_time - m_time_start)
+    #print 'index', index
     return index, daylines
 
 
@@ -206,7 +214,7 @@ def Get_SpurtNextDayProfit(filename):
         if bLastDayBoom == True:    #×òÈÕÕÇÍ£
             bLastDayBoom = False
             for i in xrange(0, len(daylines), 10):
-                if i < len(daylines) and i <40 :
+                if i < len(daylines) and i <70 :
                     time_str, m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = daylines[i]
                     print code, name,cnt_days, i, time_str, "%.2f" % float((m_fLow/m_fLastClose-1)*100.0)
                 
