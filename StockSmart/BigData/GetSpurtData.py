@@ -197,10 +197,11 @@ class DoOneJob(workerpool.Job):
                 str_lines = Get_OneSpurtData_byCmd(self.filename, self.jobid, self.taskid)
                 print str_lines
                 lines = str_lines.split('\r\n')
-                for line in lines:
-                    line = line.split()
-                    csvWriter.writerow(line)
-            print 'Job', self.taskid, 'done!'
+                if len(lines) > 0:  #skip empty line.
+                    for line in lines:
+                        line = line.split()
+                        csvWriter.writerow(line)
+            #print 'Job', self.taskid, 'done!'
             time.sleep(0.1)
         except:
             print 'DoOneJob failed.'
