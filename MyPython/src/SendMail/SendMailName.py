@@ -8,13 +8,12 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage  
 from email.mime.multipart import MIMEMultipart  
 
-MAIL_LIST = ["tommy.chen@verisilicon.com","chen.tao.tommy@gmail.com"]  
-MAIL_HOST = '10.10.0.81'
+MAIL_LIST = ["tommy.chen@aa.com","chen.tao.tommy@aa.com"]  
+MAIL_HOST = '10.10.0.0'
 MAIL_PORT = 25
-MAIL_USER = 'BEJBRS@verisilicon.com' 
-MAIL_PASS = 'Vs123456'
-MAIL_FROM = 'VSBJ ROBOT<BEJ.BRS@verisilicon.com>'
-#MAIL_FROM = 'tommy <tommy@bejn9014>'
+MAIL_USER = 'BEJBRS@aa.com' 
+MAIL_PASS = 'pass'
+MAIL_FROM = 'VSBJ ROBOT<BEJ.BRS@aa.com>'
 
 html = """\
 <html>
