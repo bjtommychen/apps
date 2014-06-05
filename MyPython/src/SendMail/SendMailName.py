@@ -37,11 +37,12 @@ html_sign = """\
 filelist = []
 
 def send_mail(subject, content, flist):
-    try_num = 2
+    try_num = 3
     while(try_num):
         if send_mail_local(subject, content, flist):
             return True
         print 'send mail failed. try again!'
+        time.sleep(5)
         try_num -= 1
     return False
   
