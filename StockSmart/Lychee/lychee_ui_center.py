@@ -5,11 +5,12 @@ import os
 
 from lychee_dev import *
 from lychee_sys import *
+from lychee_gtalk import *
 from lychee_gtalk_io import *
 
 ### constants
 ui_running = True
-ui_use_gtalk_io = True
+ui_use_gtalk_io = False
 ui_gtalk_newcmd_got = False
 ui_gtalk_newcmd = ''
 
@@ -80,7 +81,8 @@ def ui_dispatch_commands(cmds):
         output += dev_process_cmds(cmds[1:])
     if cmds[0] == 'sys':
         output += sys_process_cmds(cmds[1:])
-        
+    if cmds[0] == 'gtalk':
+        output += gtalk_process_cmds(cmds[1:])        
     return output
         
 def ui_put_str(string):
@@ -96,7 +98,8 @@ def ui_mainloop():
     if ui_use_gtalk_io:
         Gtalk_init(ui_gtalk_messageCB)
         Gtalk_run()
-    ui_put_str('ui_mainloop start.')
+    ui_put_str('Lychee Mainloop start.')
+    ui_put_str(time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n')
     while(ui_running):
         cmds = ui_get_commands()
         if len(cmds)>0:
