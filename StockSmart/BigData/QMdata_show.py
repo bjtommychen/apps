@@ -1,4 +1,4 @@
-ï»¿# -*- coding: utf-8 -*
+# -*- coding: utf-8 -*
 import time
 import sys
 import os
@@ -99,10 +99,10 @@ def QM5_parserAll(filename, code_filter, show_detail):
         num += 1
     print num  
 
-  
+#Ö÷º¯Êý  
 if  __name__ == '__main__':
     print '#'*60
-    print '##### List data from QM1 Data file. æµ‹è¯•ç‰ˆ' 
+    print '##### List data from QM1 Data file. ²âÊÔ°æ'
     print '#'*60
     print 'Config:'
 
