@@ -145,7 +145,48 @@ def Get_AllQMdata_for_AllInList():
         print row[0].upper()
         get_AllQMdata_for_one(row[0].upper())
         #get_AllQMdata_for_one('SH600086')
+
+def MergeAll_AddOne(fp, filter):
+    #skip if already created.
+    filename = output_path+filter+'.'+data_ext
+    if not os.path.exists(filename):
+        print 'Not exit', filename
+        return
+
+    fp1=open(filename,"rb")
+    flag, version, total_num = get_QM_header(fp1)
+    print 'Header *** flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
+    code = get_String12(fp1)
+    name = ('%s' % struct.unpack("12s",fp1.read(12))) #.decode('gbk')
+    items = get_Long(fp1)
+    print 'code:',code, 'name:',name, 'Items:',items
     
+    fp.write(struct.pack("12s",code))
+    fp.write(struct.pack("12s",name))
+    fp.write(struct.pack("L",items))    
+    fp.write(fp1.read(items*(8*4)))
+    fp1.close()
+    
+def MergeAllQMdata(filename):
+    print 'writing QM_data', filename
+    fp=open(filename,"wb")
+    flag = 0xffffffe1
+    version = 0x19730101
+    total_num = 0xdeef
+    fp.write(struct.pack("L",flag))
+    fp.write(struct.pack("L",version))
+    fp.write(struct.pack("L", 1))
+
+    i = 0
+    reader = csv.reader(file(listfile_sh,'rb'))    
+    for row in reader:
+        i += 1
+        #if i > 3:
+        #    break
+        print row[0].upper()
+        MergeAll_AddOne(fp, row[0].upper())
+    fp.close()          
+        
 if  __name__ == '__main__':
     print '#'*60
     print '##### Merge QM1 data for code in list. ≤‚ ‘∞Ê' 
@@ -167,3 +208,5 @@ if  __name__ == '__main__':
     args = parser.parse_args()
     
     Get_AllQMdata_for_AllInList()
+    MergeAllQMdata(output_path+'MergeAll.qm')
+    
