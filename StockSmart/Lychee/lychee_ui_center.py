@@ -7,6 +7,7 @@ from lychee_dev import *
 from lychee_sys import *
 from lychee_gtalk import *
 from lychee_gtalk_io import *
+from lychee_stockmon import *
 
 ### constants
 ui_running = True
@@ -19,7 +20,7 @@ ui_help_str = 'Main Menu:\n'+ \
             '\tui - control ui.\n'+ \
             '\tsys - system info.\n'+ \
             '\tgtalk - control gtalk.\n'+ \
-            '\tmore - print this help.\n'+ \
+            '\tstockmon - monitor stock price.\n'+ \
             '\tdev - for dev only.\n'
 
 
@@ -83,6 +84,9 @@ def ui_dispatch_commands(cmds):
         output += sys_process_cmds(cmds[1:])
     if cmds[0] == 'gtalk':
         output += gtalk_process_cmds(cmds[1:])        
+    if cmds[0] == 'stockmon':
+        output += stockmon_process_cmds(cmds[1:])        
+
     return output
         
 def ui_put_str(string):
@@ -107,6 +111,9 @@ def ui_mainloop():
             output = ui_dispatch_commands(cmds)
             ui_put_str(output)
         print '.',
+        if True:
+            output = stockmon_process()
+            ui_put_str(output)
         time.sleep(0.5)
     ui_put_str('ui_mainloop done.')
     if ui_use_gtalk_io:
