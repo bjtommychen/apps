@@ -12,6 +12,7 @@ sys.setdefaultencoding('utf8')
 
 stockmon_enable = True
 stockmon_debug = False
+stockmon_force = False
 start_time = time.time()
 #code_list = ['sh600036', 'sh601328']
 cn_market_open = False
@@ -33,6 +34,7 @@ def stockmon_process_cmds(cmds):
                 '\tadd [country] [code] [ppk] - add to list: cn sh60036 2 \n' +\
                 '\tremove [code] - remove item from list\n' +\
                 '\tsave - save list to disk\n' +\
+                '\tforceshow - force to show all list\n' +\
                 ''
         elif cmds[0] == 'on':
             stockmon_enable_send(True)
@@ -58,6 +60,10 @@ def stockmon_process_cmds(cmds):
         elif cmds[0] == 'save':
             wlist_save()
             strout += 'watch list save to disk\n'
+        elif cmds[0] == 'forceshow':
+            global stockmon_force
+            stockmon_force = True
+            strout += stockmon_process(stockmon_force)
         else:
             strout += 'invalid command'
     #print strout        
@@ -100,7 +106,8 @@ def get_cn_rt_price(code):
 
 #['market','code','name','price','ppk_limit']            
 def stockmon_check_cn_stock():
-    global cn_market_open      
+    global cn_market_open
+    global stockmon_force    
     strout = ''    
     if cn_market_open != check_cn_market_open():
         cn_market_open = check_cn_market_open()
@@ -121,6 +128,10 @@ def stockmon_check_cn_stock():
         name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(one[1])
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
+        if stockmon_force:
+            day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+            strout += '%s: %s, %s, %s%%\n' %(name,curr, (curr-lastclose), day_chg_pct)
+            need_printout = True
         if one[3] != curr and lastclose != 0:
             price_old = float(one[3])
             if price_old == 0.0:
@@ -140,17 +151,19 @@ def stockmon_check_cn_stock():
 def stockmon_init():
     wlist_load()
     
-def stockmon_process():
+def stockmon_process(force = False):
     global start_time
     global update_interval_in_seconds
     # update ?
     curr_time = time.time()
     if stockmon_debug:
         print (curr_time - start_time)
-    if (curr_time - start_time) < update_interval_in_seconds:    #update intervals
+    if not force and (curr_time - start_time) < update_interval_in_seconds:    #update intervals
         return ''
     start_time = curr_time
     # start to update
+    global stockmon_force
     strout = stockmon_check_cn_stock()
+    stockmon_force = False
     return strout
             
