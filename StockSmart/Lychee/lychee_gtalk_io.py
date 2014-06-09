@@ -13,6 +13,7 @@ conn = 0
 enable_send = True
 gtalk_inited = False
 start = time.time()
+gtalk_debug = False
 
 # Strings
 string_help = 'Help commands:\n Supported commands: on, off, info, uptime, exit, help.\n'
@@ -25,11 +26,11 @@ custom_cmd = ''
 
 # Debug
 def log_d(string):
-    if False:
+    if gtalk_debug:
         print string
 
 def log_i(string):
-    if False:
+    if gtalk_debug:
         print string
         
 # Msg call back
@@ -87,9 +88,10 @@ def Gtalk_GetCustomCmd(prefix):
 
 def presenceHandler(contex, presence):
     if presence:
-        print "-"*100
-        print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
-        print "~"*100
+        if gtalk_debug:
+            print "-"*100
+            print presence.getFrom(), ",", presence.getFrom().getResource(), ",", presence.getType(), ",", presence.getStatus(), ",", presence.getShow()
+            print "~"*100
         if presence.getType()=='subscribe':
             jid = presence.getFrom().getStripped()
             """ Authorise JID 'jid'. Works only if these JID requested auth previously. """
@@ -115,9 +117,9 @@ def Gtalk_send(msg):
         log_d('send msg:' + msg)
         try:    
             res = conn.send(xmpp.Message('chen.tao.tommy@gmail.com', msg, typ = 'chat'))
+            #print( 'send ' + res)
         except:
             print 'gtalk send msg failed.'
-        log_d( 'send ' + res)
     else:
         log_d(msg)
         
@@ -178,7 +180,7 @@ def Gtalk_run():
     print 'done'
     time.sleep(1)
     Gtalk_send('Gtalk robot v1.0 ---> online!')
-    Gtalk_send('Welcome Tommy:)')
+    #Gtalk_send('Welcome Tommy:)')
     
 def gtalk_mainloop():    
     global conn

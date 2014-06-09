@@ -11,51 +11,65 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 filepath=unicode("watchlist.csv",'utf8')
-watchlist_header = ['market','code','name','price','ppk_limit']
-df_watch = []
+wlist_header = ['market','code','name','price','ppk_limit']
+wlist_stock = []
 
-def list_show(df_watch):
-    print df_watch
+def wlist_show(wlist):
+    strout = ''
+    for line in wlist:
+        strout += str(line) + line[2].decode('gbk') + '\n'
+        #for one in line:
+        #    strout += str(one)
+        strout += ' '
+    return strout        
 
-def list_load():
-    global df_watch
+def wlist_getlist():
+    global wlist_stock    
+    return wlist_stock
+    
+def wlist_load():
+    global wlist_stock
     #check if need init
     if not os.path.exists(filepath):
         print 'watch list init.'
         lists = []
-        lists.append(['cn','sh600036','',0.0,2.0])
-        lists.append(['us','jd','',0.0,3.0])
-        list_write(lists)
+        lists.append(['cn','sh600036','x',1.0,2.0])
+        lists.append(['us','jd','x',0.1,5.0])
+        wlist_write(lists)
     df = pd.read_csv(filepath)
-    df_watch = []
+    wlist_stock = []
     for i in range(len(df)):
         line = df.loc[i].tolist()
-        df_watch.append(line)
-    return df_watch
+        wlist_stock.append(line)
+    return wlist_stock
 
-def list_add(addlist):
-    global df_watch
+def wlist_add(addlist):
+    global wlist_stock
     if len(addlist) != 3:
         return
-    items = [addlist[0], addlist[1], 'x', 0, addlist[2]]
-    df_watch.append(items)
-    list_write(df_watch)
+    items = [addlist[0], addlist[1], 'x', 1.0, addlist[2]]
+    wlist_stock.append(items)
+    wlist_write(wlist_stock)
     
-def list_remove(code):    
-    global df_watch
-    #print df_watch
-    for i in range(len(df_watch)):
-        line = df_watch[i]
+def wlist_remove(code):    
+    global wlist_stock
+    #print wlist_stock
+    for i in range(len(wlist_stock)):
+        line = wlist_stock[i]
         if line[1] == code:
-            df_watch.remove(line)
-            list_write(df_watch)
+            wlist_stock.remove(line)
+            wlist_write(wlist_stock)
             break
-    #print df_watch
+    #print wlist_stock
+
+def wlist_save():
+    global wlist_stock    
+    wlist_write(wlist_stock)
     
-def list_write(lists):
+def wlist_write(lists):
     global filepath
-    global watchlist_header
-    dataf = DataFrame(data=lists, columns =watchlist_header)
+    global wlist_header
+    dataf = DataFrame(data=lists, columns=wlist_header)
     dataf.to_csv(filepath, index=False)
     print 'list wrote:\n', dataf
 
@@ -65,14 +79,14 @@ if  __name__ == '__main__':
     print '#'*60
     print 'Config:'
     
-    wlist = list_load()
+    wlist = wlist_load()
     print wlist
     addlist = ['cn', 'sh61', 3.1]
-    list_add(addlist)
-    list_remove('sh333')
-    list_remove('sh61')
-    list_remove('sh61')
-    list_remove('sh61')
+    wlist_add(addlist)
+    wlist_remove('sh333')
+    wlist_remove('sh61')
+    wlist_remove('sh61')
+    wlist_remove('sh61')
     
     
     

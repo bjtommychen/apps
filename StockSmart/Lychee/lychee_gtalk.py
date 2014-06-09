@@ -6,21 +6,21 @@ from lychee_gtalk_io import *
 
 def gtalk_process_cmds(cmds):
     print 'gtalk_process_cmds', cmds
-    str = ''
+    strout = ''
     if (len(cmds) == 0):
-        str += 'gtalk help - for more.'
+        strout += 'gtalk help - for more.'
     else:    
         if cmds[0] == 'help' or cmds[0] == '?':
-            str += 'gtalk help:\n'+ \
+            strout += 'gtalk help:\n'+ \
                 '\thelp - print help \n'+\
                 '\ton - gtalk on \n' +\
                 '\toff - gtalk off \n' +\
                 ''
         if cmds[0] == 'on':
             Gtalk_enable_send(True)
-            str += 'Gtalk set on.'
+            strout += 'Gtalk set on.'
         if cmds[0] == 'off':
             Gtalk_enable_send(False)
-            str += 'Gtalk set off.'
+            strout += 'Gtalk set off.'
             
-    return str
+    return strout

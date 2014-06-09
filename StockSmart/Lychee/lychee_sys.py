@@ -69,7 +69,7 @@ def get_sysinfo_string():
     #print ret_line
     global cpu_infos
     ret_line += 'CPU INFO: ' + cpu_infos + '\n'
-    ret_line += 'CPU NUM: '+ str(psutil.cpu_count()) + '\n'
+    ret_line += 'CPU NUM: '+ str(psutil.NUM_CPUS) + '\n'
     ret_line += 'CPU PERCENT: '+ str(psutil.cpu_percent(interval=1, percpu=True)) + '\n'
     #print ret_line
     disks_after = psutil.disk_io_counters()
