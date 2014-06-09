@@ -20,7 +20,7 @@ def wlist_show(wlist):
         strout += str(line) + line[2].decode('gbk') + '\n'
         #for one in line:
         #    strout += str(one)
-        strout += ' '
+        #strout += ' '
     return strout        
 
 def wlist_getlist():
