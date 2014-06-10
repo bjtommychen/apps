@@ -89,7 +89,7 @@ def check_us_market_open():
     if (datetime.datetime.now().weekday() > 4):
         return False
     text = time.strftime("%H:%M", time.localtime())
-    if text > '21:00' and text <= '23:59':
+    if text > '21:30' and text <= '23:59':
         checkopen = True
 #    elif text >= '13:00' and text <= '15:00':
 #        checkopen = True
@@ -97,7 +97,7 @@ def check_us_market_open():
 #CN    
 def get_cn_rt_price(code):
     url = 'http://hq.sinajs.cn/?list=%s' % code
-    print url
+    #print url
     try:
         req = urllib2.Request(url)
         content = urllib2.urlopen(req).read()
@@ -123,7 +123,7 @@ def get_us_rt_price(code):
     else:
         url = 'http://quote.yahoo.com/d/quotes.csv?s=%s&f=nopl1hg' % code
     us_url_swap = (us_url_swap+1)%2
-    print url
+    #print url
     try:
         sock = urllib.urlopen(url)
         strs = sock.readline()
@@ -240,7 +240,7 @@ def stockmon_check_us_stock(force):
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             #print diff_ppk, day_chg_pct
-            print diff_ppk
+            #print diff_ppk
             if diff_ppk >= one[4] or stockmon_debug:
                 need_printout = True
                 one[2] = '%s'% name
