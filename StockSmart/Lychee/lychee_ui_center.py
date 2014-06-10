@@ -149,7 +149,7 @@ def ui_init():
     if ui_use_gtalk_io:
         Gtalk_init(ui_gtalk_messageCB)
         Gtalk_run()
-    ui_put_str('Lychee Mainloop start.')
+    ui_put_str('Lychee Mainloop start. v1.01')
     ui_put_str(time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n')
     
     
