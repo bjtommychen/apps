@@ -40,6 +40,8 @@ def wlist_load():
     wlist_stock = []
     for i in range(len(df)):
         line = df.loc[i].tolist()
+        if line[0] != 'us' and line[0] != 'cn':
+            continue
         wlist_stock.append(line)
     return wlist_stock
 
