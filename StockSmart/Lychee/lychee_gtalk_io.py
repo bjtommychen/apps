@@ -187,7 +187,11 @@ def gtalk_mainloop():
     global gtalk_running    
     log_i ('Enter Gtalk main loop ................................')
     while gtalk_running:
-        if conn.Process(1) == None:
+        try:
+            res = conn.Process(1)
+        except:
+            res = None
+        if res == None:
             log_d ('Lost connection.')
             conn.disconnect()
             conn = 0
