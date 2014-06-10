@@ -14,9 +14,10 @@ stockmon_enable = True
 stockmon_debug = False
 stockmon_force = False
 start_time = time.time()
-#code_list = ['sh600036', 'sh601328']
-cn_market_open = False
 update_interval_in_seconds = 10
+
+cn_market_open = False
+us_market_open = False
 
 def stockmon_process_cmds(cmds):
     print 'stockmon_process_cmds', cmds
@@ -81,11 +82,22 @@ def check_cn_market_open():
         checkopen = True
     elif text >= '13:00' and text <= '15:00':
         checkopen = True
-#    print text, checkopen,
     return checkopen
 
+def check_us_market_open():
+    checkopen = False
+    if (datetime.datetime.now().weekday() > 4):
+        return False
+    text = time.strftime("%H:%M", time.localtime())
+    if text > '21:00' and text <= '23:59':
+        checkopen = True
+#    elif text >= '13:00' and text <= '15:00':
+#        checkopen = True
+    return checkopen    
+#CN    
 def get_cn_rt_price(code):
     url = 'http://hq.sinajs.cn/?list=%s' % code
+    print url
     try:
         req = urllib2.Request(url)
         content = urllib2.urlopen(req).read()
@@ -97,22 +109,52 @@ def get_cn_rt_price(code):
         name = "%s" % data[0]
         name = string.replace(name,' ','')
         if (name):
-#            return (name, "%-5s" % float(data[1]), "%-5s" % float(data[2]), "%-5s" % float(data[3]), 
-#                    "%-5s" % float(data[4]), "%-5s" % float(data[5]))
             return (name, float(data[1]), float(data[2]), float(data[3]), 
                      float(data[4]), float(data[5]))
         else:
             return ('', 0, 0, 0, 0, 0)    
 
+#US
+us_url_swap = 1
+def get_us_rt_price(code):
+    global us_url_swap
+    if us_url_swap == 1:
+        url = 'http://finance.yahoo.com/d/quotes.csv?s=%s&f=nopl1hg' % code
+    else:
+        url = 'http://quote.yahoo.com/d/quotes.csv?s=%s&f=nopl1hg' % code
+    us_url_swap = (us_url_swap+1)%2
+    print url
+    try:
+        sock = urllib.urlopen(url)
+        strs = sock.readline()
+        sock.close()
+        if 'strict' in strs:
+            return ('', 0, 0, 0, 0, 0) 
+    except Exception, e:
+        return ('', 0, 0, 0, 0, 0) 
+    else:
+        strs = string.replace(strs,'\r\n','')
+        data = strs.split('"')[2].split(',')
+        name = strs.split('"')[1]
+        if (name):
+            return (name, float(data[1]), float(data[2]), float(data[3]), 
+                     float(data[4]), float(data[5]))
+        else:
+            return ('', 0, 0, 0, 0, 0)                
+
+            
 #['market','code','name','price','ppk_limit']            
-def stockmon_check_cn_stock():
+def stockmon_check_cn_stock(force):
     global cn_market_open
-    global stockmon_force    
-    strout = ''    
+    strout = ''
+    if not force and cn_market_open == check_cn_market_open() and cn_market_open == False:
+        return ''
     if cn_market_open != check_cn_market_open():
         cn_market_open = check_cn_market_open()
         if not cn_market_open:
             wlist_save()
+        else:
+            force = True
     #get time
     timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
     if not cn_market_open:
@@ -128,16 +170,21 @@ def stockmon_check_cn_stock():
         name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(one[1])
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
-        if stockmon_force:
+        if force:
             day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             strout += '%s: %s, %s, %s%%\n' %(name,curr, (curr-lastclose), day_chg_pct)
+            one[2] = '%s'% name.encode('gbk')
             need_printout = True
-        if one[3] != curr and lastclose != 0:
+        elif one[3] != curr and lastclose != 0:
             price_old = float(one[3])
             if price_old == 0.0:
                 price_old = 0.1
-            diff_ppk = abs((curr - price_old)*1000/price_old)
-            day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+            diff_ppk = 0
+            if price_old:
+                diff_ppk = abs((curr - price_old)*1000/price_old)
+            day_chg_pct = 0
+            if lastclose:
+                day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             #print diff_ppk, day_chg_pct
             if diff_ppk >= one[4] or stockmon_debug:
                 need_printout = True
@@ -147,7 +194,62 @@ def stockmon_check_cn_stock():
     if need_printout:
         strout += timetext
     return strout
-    
+
+#['market','code','name','price','ppk_limit']            
+def stockmon_check_us_stock(force):
+    global us_market_open
+    strout = ''    
+    if not force and us_market_open == check_us_market_open() and us_market_open == False:
+        return ''    
+    if us_market_open != check_us_market_open():
+        us_market_open = check_us_market_open()
+        if not us_market_open:
+            wlist_save()
+        else:
+            force = True
+    #get time
+    timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
+    if not us_market_open:
+        timetext += 'Close'
+    timetext += '\n'
+    #check list
+    wlist_stock  = wlist_getlist()
+    need_printout = False
+    for one in wlist_stock:
+        #print one
+        if one[0] != 'us':
+            continue
+        name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price(one[1])
+        if stockmon_debug:
+            strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
+        if force:
+            day_chg_pct = 0
+            if lastclose:
+                day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+            strout += '%s: %s, %s, %s%%\n' %(name,curr, (curr-lastclose), day_chg_pct)
+            one[2] = '%s'% name
+            need_printout = True
+        elif one[3] != curr and lastclose != 0:
+            price_old = float(one[3])
+            if price_old == 0.0:
+                price_old = 0.1
+            diff_ppk = 0
+            if price_old:
+                diff_ppk = abs((curr - price_old)*1000/price_old)
+            day_chg_pct = 0
+            if lastclose:
+                day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+            #print diff_ppk, day_chg_pct
+            print diff_ppk
+            if diff_ppk >= one[4] or stockmon_debug:
+                need_printout = True
+                one[2] = '%s'% name
+                one[3] = curr
+                strout += '%s: %s, %s, %s%%\n' %(name,curr, (curr-lastclose), day_chg_pct)
+    if need_printout:
+        strout += timetext
+    return strout    
+  
 def stockmon_init():
     wlist_load()
     
@@ -163,7 +265,13 @@ def stockmon_process(force = False):
     start_time = curr_time
     # start to update
     global stockmon_force
-    strout = stockmon_check_cn_stock()
+    strout = stockmon_check_cn_stock(stockmon_force)
+    strout += stockmon_check_us_stock(stockmon_force)
     stockmon_force = False
     return strout
             
+if  __name__ == '__main__':   
+    print get_cn_rt_price('sh600036')       
+    print get_us_rt_price('jd')       
+    print get_us_rt_price('jd')       
+    print get_us_rt_price('bidu')      
