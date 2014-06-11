@@ -41,28 +41,17 @@ def parse_hotlist(data):
     hotlist = []
     fcsv = open(xq_hotlist_file, 'wb')
     csvWriter = csv.writer(fcsv)
-    print r
-    for line in r:
-        print line
-        print line.decode('utf8').encode('gbk')
-        csvWriter.writerow(line.decode('utf8').encode('gbk'))
-        #print type(line), type(line.decode('utf8'))
-        #wline = line.encode('gbk')
-        #print wline
-        #csvWriter.writerow(wline)        
-        wline = line.decode('utf8').encode('gbk')
-        print wline
-        #print wline, str(wline).encode('gbk')
+    #print r
+    # 去除列表中重复的元素
+    sort_r = sorted(set(r),key=r.index)
+    #print sort_r
+    for line in sort_r:
+        # Notice below !!!
+        wline = [line.decode('utf8').encode('gbk')]
+        #print repr(wline)
         csvWriter.writerow(wline)
-        #wline = line.decode('utf8').encode('gbk')
-        #csvWriter.writerow(wline)
-        #hotlist.append(line.decode('utf8'))
-        #hotlist.append(line.decode('utf8').encode('gbk'))
-        #print line.decode('utf8')
     fcsv.close()
     return hotlist
-
-
     
 def crawler_xq_process():
     url = 'http://www.xueqiu.com/hq'
