@@ -37,8 +37,8 @@ def crawler_geturl(url):
     return data
 
 def parse_hotlist(data):   
-    if '热度排行榜' in data:
-        print 'find !'
+    #if '热度排行榜' in data:
+    #    print 'find !'
     pos1 = data.find(u'关注排行榜'.encode('utf8'))
     pos2 = data.find(u'分享交易排行榜'.encode('utf8'))
     #print pos1, pos2, len(data)
@@ -96,10 +96,11 @@ def crawler_xq_process(force = False):
     global xq_hotlist
     global run_1st
     
-    if not os.path.exists(xq_hotlist_file):
+    # because of codepage, sometimes load failed even on same system.
+    if xq_hotlist == []: #not os.path.exists(xq_hotlist_file):
         crawler_xq_init()
-    elif xq_hotlist == []:
-        xq_hotlist = crawler_xq_loadlist()
+    #elif xq_hotlist == []:
+    #    xq_hotlist = crawler_xq_loadlist()
     #print xq_hotlist    
     # update ?
     if not run_1st:
@@ -114,23 +115,26 @@ def crawler_xq_process(force = False):
     strout = '' #'--?--'
     data = crawler_geturl(xq_url)
     hotlist = parse_hotlist(data)
-    #print 'got hotlist', len(hotlist), len(xq_hotlist)
-    bNewbie = False
-    for one in hotlist:
-        #print 'checking', one, repr(one), repr(xq_hotlist[0])
-        if len(xq_hotlist) == 0:
-            bNewbie = True
-            strout += 'strange: xq_hotlist empty !'
-            break
-        if one in xq_hotlist:
-            continue
-        else:
-            bNewbie = True
-            strout += 'Newbie added:' + one + '\n'
-    if bNewbie:
-        crawler_xq_savelist(hotlist)
+    if len(hotlist) == 0:
+	str += 'GetHtml Failed!'
     else:
-        strout += '' # ------------- No change ! --------------'
+        #print 'got hotlist', len(hotlist), len(xq_hotlist)
+        bNewbie = False
+        for one in hotlist:
+            #print 'checking', one, repr(one), repr(xq_hotlist[0])
+            if len(xq_hotlist) == 0:
+                bNewbie = True
+                strout += 'strange: xq_hotlist empty !'
+                break
+            if one in xq_hotlist:
+                continue
+            else:
+                bNewbie = True
+                strout += 'Newbie added:' + one + '\n'
+        if bNewbie:
+            crawler_xq_savelist(hotlist)
+        else:
+            strout += ' ------------- No change ! --------------'
     return strout
    
 if  __name__ == '__main__':
