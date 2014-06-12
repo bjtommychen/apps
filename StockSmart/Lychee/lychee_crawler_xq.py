@@ -5,6 +5,7 @@ import urllib, urllib2
 from selenium import webdriver
 import re
 import csv
+from lychee_webdrv import *
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
@@ -18,17 +19,18 @@ xq_hotlist_file = 'xq_hotlist_file.csv'
 xq_url = 'http://xueqiu.com/hq'
 xq_hotlist = []
 run_1st = True
-wd = None
+#wd = None
 count = 100       # > heartbeat_interval_in_seconds to make it show when boot
     
 def crawler_geturl(url):
-    global wd
+    #global wd
     #fp = open('xq.html', 'rb')
     #data = fp.read()
     #fp.close()
     #return data
-    if wd == None:
-        wd = webdriver.Firefox()
+    #if wd == None:
+    #    wd = webdriver.Firefox()
+    wd = webdrv_get()
     wd.set_window_size(80,60)
     wd.get(url)
     if False:
@@ -101,8 +103,7 @@ def crawler_init():
     return banner
     
 def crawler_exit():
-    return ''
-    
+    return 'crawler_exit'
     
 def crawler_xq_process(force = False):
     global xq_url
@@ -150,7 +151,7 @@ def crawler_xq_process(force = False):
             crawler_xq_savelist(hotlist)
         else:
             count += 1
-            if count > (heartbeat_interval_in_seconds/update_interval_in_seconds):
+            if count >= (heartbeat_interval_in_seconds/update_interval_in_seconds):
                 count = 0
                 strout += ' -------------XQ Hottlist No change ! --------------\n' + timetext
             else:
