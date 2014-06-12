@@ -4,6 +4,8 @@ import string
 import urllib, urllib2
 from lychee_gtalk_io import *
 from lychee_utils_list import *
+from selenium import webdriver
+from lychee_webdrv import *
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
@@ -18,6 +20,9 @@ update_interval_in_seconds = 10
 
 cn_market_open = False
 us_market_open = False
+
+wd = None
+us_list = ['jd', 'amcn', 'dang']
 
 def stockmon_process_cmds(cmds):
     print 'stockmon_process_cmds', cmds
@@ -114,9 +119,9 @@ def get_cn_rt_price(code):
         else:
             return ('', 0, 0, 0, 0, 0)    
 
-#US
+#US, name, openprice, lastclose, curr, todayhigh, todaylow
 us_url_swap = 1
-def get_us_rt_price(code):
+def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
     global us_url_swap
     if us_url_swap == 1:
         url = 'http://finance.yahoo.com/d/quotes.csv?s=%s&f=nopl1hg' % code
@@ -142,6 +147,41 @@ def get_us_rt_price(code):
         else:
             return ('', 0, 0, 0, 0, 0)                
 
+def get_us_rt_price_sohu(code):
+    global wd
+    code = code.upper()
+    url = 'http://quotes.money.163.com/usstock/%s.html#2u01' % code
+    #print url
+    if wd == None:
+        wd = webdriver.Firefox()
+    #wd = webdrv_get()
+    wd.get(url)
+    print len(wd.page_source)
+    if len(wd.page_source) < 1000:
+        #print wd.page_source.encode('utf8')
+        return ('', 0, 0, 0, 0, 0) 
+    a = wd.find_elements_by_class_name('stock_info')
+    if a == []:
+        return ('', 0, 0, 0, 0, 0) 
+    c = a[0].find_element_by_class_name('price').text
+    d = c.split()
+    if len(d) != 3:
+        return ('', 0, 0, 0, 0, 0) 
+    #print d
+    name = code
+    curr = float(d[1])
+    lastclose = float(d[1]) - float(d[2])
+    #print curr, lastclose
+    a = wd.find_elements_by_class_name('stock_detail_info')
+    #print len(a)
+    d = a[0].text.split()
+    #print d, d[2:]
+    #for one in a:
+    #    print one.text
+    #print d, d[0][2:]
+    openprice = float(d[0][2:])
+    todayhigh = todaylow = 0
+    return (name, openprice, lastclose, curr, todayhigh, todaylow)
             
 #['market','code','name','price','ppk_limit']            
 def stockmon_check_cn_stock(force):
@@ -216,10 +256,11 @@ def stockmon_check_us_stock(force):
     wlist_stock  = wlist_getlist()
     need_printout = False
     for one in wlist_stock:
+        time.sleep(1)
         #print one
         if one[0] != 'us':
             continue
-        name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price(one[1])
+        name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_sohu(one[1])
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
@@ -250,16 +291,27 @@ def stockmon_check_us_stock(force):
         strout += timetext
     return strout    
   
-def stockmon_init():
+def stockmon_init(): 
     wlist_load()
-    banner = '*** Stockmon Daemon. v1.0.1. '
+    banner = '*** Stockmon Daemon. v1.0.1. ' 
     banner += '_us_cn_'
+    banner += '_sohu_quote_'
     banner += '\n'
     return banner    
+
+def stockmon_exit():
+    global webd
+    if webd != None:
+        webd.close()
+    return 'stockmon_exit'    
     
 def stockmon_process(force = False):
     global start_time
     global update_interval_in_seconds
+    global stockmon_force
+    if force:
+        stockmon_force = True
+    
     # update ?
     curr_time = time.time()
     if stockmon_debug:
@@ -268,14 +320,27 @@ def stockmon_process(force = False):
         return ''
     start_time = curr_time
     # start to update
-    global stockmon_force
+    #print 'stockmon_force', stockmon_force
     strout = stockmon_check_cn_stock(stockmon_force)
     strout += stockmon_check_us_stock(stockmon_force)
     stockmon_force = False
     return strout
             
 if  __name__ == '__main__':   
-    print get_cn_rt_price('sh600036')       
-    print get_us_rt_price('jd')       
-    print get_us_rt_price('jd')       
-    print get_us_rt_price('bidu')      
+    print get_cn_rt_price('sh600036')
+    while False:
+        for one in us_list:
+            print get_us_rt_price_sohu(one.upper())
+            time.sleep(1)
+        time.sleep(25)
+        print '------------------'
+    stockmon_init()
+    wlist_add(['us', 'amcn', 5])
+    wlist_add(['us', 'dang', 5])
+    while True:
+        str = stockmon_process(True)
+        if str != '':
+            print str
+        time.sleep(5)
+        print '.'
+        
