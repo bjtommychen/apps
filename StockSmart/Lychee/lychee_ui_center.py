@@ -9,6 +9,7 @@ from lychee_sys import *
 from lychee_gtalk import *
 from lychee_gtalk_io import *
 from lychee_stockmon import *
+from lychee_crawler_xq import *
 
 ### config
 ui_use_gtalk_io = True         # If False, use print, not gtalk.
@@ -144,14 +145,19 @@ def ui_put_str(string):
     return
 
 def ui_init():
-    stockmon_init()
     # choose IO 
     if ui_use_gtalk_io:
         Gtalk_init(ui_gtalk_messageCB)
         Gtalk_run()
-    ui_put_str('Lychee Mainloop start. v1.01')
+    ui_put_str('******  Lychee Mainloop start. v1.01')
     ui_put_str(time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n')
+    strout = ''
+    strout += stockmon_init()
+    strout += crawler_init()   
+    ui_put_str(strout)
     
+def ui_exit():   
+    return
     
 def ui_mainloop():
     ui_init()
@@ -164,8 +170,10 @@ def ui_mainloop():
         #print '.',
         if True:
             output = stockmon_process()
+            output += crawler_xq_process()
             ui_put_str(output)
         time.sleep(0.5)
     ui_put_str('ui_mainloop done.')
+    ui_exit()
     if ui_use_gtalk_io:
         Gtalk_exit()
