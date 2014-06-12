@@ -12,28 +12,33 @@ reload(sys)
 sys.setdefaultencoding('utf')
 
 start_time = time.time()
-update_interval_in_seconds = 300
+update_interval_in_seconds = 600
+heartbeat_interval_in_seconds = 3600
 xq_hotlist_file = 'xq_hotlist_file.csv'
-xq_url = 'http://www.xueqiu.com/hq'
+xq_url = 'http://xueqiu.com/hq'
 xq_hotlist = []
 run_1st = True
+wd = None
+count = 100       # > heartbeat_interval_in_seconds to make it show when boot
     
 def crawler_geturl(url):
+    global wd
     #fp = open('xq.html', 'rb')
     #data = fp.read()
     #fp.close()
     #return data
-    c = webdriver.Firefox()
-    c.set_window_size(80,60)
-    c.get(url)
+    if wd == None:
+        wd = webdriver.Firefox()
+    wd.set_window_size(80,60)
+    wd.get(url)
     if False:
         fp = open('xq.html', 'wb')
-        fp.write(c.page_source.encode('utf8'))
+        fp.write(wd.page_source.encode('utf8')) 
         fp.close()
     else:
-        data = c.page_source.encode('utf8')
+        data = wd.page_source.encode('utf8')
     #print parse_hotlist(data)
-    c.close()
+    #wd.close()
     return data
 
 def parse_hotlist(data):   
@@ -89,10 +94,20 @@ def crawler_xq_loadlist():
     print 'read', len(hotlist)
     return hotlist
     
+def crawler_init():
+    banner = '*** Crawler Daemon. v1.0.1. '
+    banner += '_xq_hotlist_'
+    banner += '\n'
+    return banner
+    
+def crawler_exit():
+    return ''
+    
+    
 def crawler_xq_process(force = False):
     global xq_url
     global start_time
-    global update_interval_in_seconds
+    global update_interval_in_seconds, heartbeat_interval_in_seconds, count
     global xq_hotlist
     global run_1st
     
@@ -111,12 +126,12 @@ def crawler_xq_process(force = False):
     else:
 	run_1st = False        
     # do
-    # print xq_hotlist
-    strout = '' #'--?--'
+    strout = ''
+    timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
     data = crawler_geturl(xq_url)
     hotlist = parse_hotlist(data)
     if len(hotlist) == 0:
-	str += 'GetHtml Failed!'
+        strout += 'crawler GetHtml Failed!'
     else:
         #print 'got hotlist', len(hotlist), len(xq_hotlist)
         bNewbie = False
@@ -130,11 +145,16 @@ def crawler_xq_process(force = False):
                 continue
             else:
                 bNewbie = True
-                strout += 'Newbie added:' + one + '\n'
+                strout += 'Newbie added:' + one + '\n' + timetext +'\n'
         if bNewbie:
             crawler_xq_savelist(hotlist)
         else:
-            strout += ' ------------- No change ! --------------'
+            count += 1
+            if count > (heartbeat_interval_in_seconds/update_interval_in_seconds):
+                count = 0
+                strout += ' -------------XQ Hottlist No change ! --------------\n' + timetext
+            else:
+                strout += ''
     return strout
    
 if  __name__ == '__main__':
