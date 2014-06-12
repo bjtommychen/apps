@@ -252,6 +252,10 @@ def stockmon_check_us_stock(force):
   
 def stockmon_init():
     wlist_load()
+    banner = '*** Stockmon Daemon. v1.0.1. '
+    banner += '_us_cn_'
+    banner += '\n'
+    return banner    
     
 def stockmon_process(force = False):
     global start_time
