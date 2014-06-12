@@ -10,6 +10,7 @@ from lychee_gtalk import *
 from lychee_gtalk_io import *
 from lychee_stockmon import *
 from lychee_crawler_xq import *
+from lychee_webdrv import *
 
 ### config
 ui_use_gtalk_io = True         # If False, use print, not gtalk.
@@ -152,12 +153,17 @@ def ui_init():
     ui_put_str('******  Lychee Mainloop start. v1.01')
     ui_put_str(time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + '\n')
     strout = ''
+    strout += webdrv_init()
     strout += stockmon_init()
     strout += crawler_init()   
     ui_put_str(strout)
     
 def ui_exit():   
-    return
+    strout = ''
+    strout += webdrv_exit()
+    strout += stockmon_exit()
+    strout += crawler_exit()   
+    ui_put_str(strout)
     
 def ui_mainloop():
     ui_init()
