@@ -237,7 +237,7 @@ def get_us_rt_price_SinaWeb(code):
     todayhigh = todaylow = 0
     return (name, openprice, lastclose, curr, todayhigh, todaylow)
     
-#SINA    
+#GOOGLE    
 def get_us_rt_price_GoogleWeb(code):
     global wd
     code = code.upper()
@@ -281,6 +281,53 @@ def get_us_rt_price_GoogleWeb(code):
     lastclose = curr - change
     todayhigh = todaylow = 0
     return (name, openprice, lastclose, curr, todayhigh, todaylow)    
+
+#YAHOO WEB    
+def get_us_rt_price_YahooWeb(code):
+    global wd
+    code = code.upper()
+    url = 'http://finance.yahoo.com/q?s=%s' % code
+    #print url, '---------------------------------------------'
+    if wd == None:
+        wd = webdriver.Firefox()
+        #wd.set_script_timeout(10)
+        wd.set_window_size(100,100)
+    wd.get(url)
+    print len(wd.page_source)
+    if len(wd.page_source) < 500:
+        print wd.page_source.encode('utf8')
+        return ('', 0, 0, 0, 0, 0) 
+    a = wd.find_elements_by_class_name('time_rtq_ticker')
+    #print len(a), a[0]
+    if a == []:
+        print 'error a', a
+        return ('', 0, 0, 0, 0, 0)
+    b = a[0].text.split()
+    #print b
+    if b == []:
+        print 'error b', b
+        return ('', 0, 0, 0, 0, 0)
+    #print b
+    curr = float(b[0])
+    d = wd.find_elements_by_class_name('time_rtq_content')[0].text.split('(')
+    if wd.find_elements_by_class_name('time_rtq_content') == wd.find_elements_by_class_name('down_r'):
+        change = 0-float(d[0])
+    elif wd.find_elements_by_class_name('time_rtq_content') == wd.find_elements_by_class_name('up_g'):
+        change = 0+float(d[0])
+    #print change
+    d = wd.find_elements_by_class_name('rtq_table')[0].text
+    index = d.find('Open')
+    d = d[index:].split()
+    #print len(d), d
+    if len(d) <= 40:
+        print 'error len a', len(d), d
+        return ('', 0, 0, 0, 0, 0)     
+    name = code
+    #print d
+    openprice = float(d[1])
+    lastclose = curr - change
+    todayhigh = todaylow = 0
+    return (name, openprice, lastclose, curr, todayhigh, todaylow)        
     
 #['market','code','name','price','ppk_limit']            
 def stockmon_check_cn_stock(force):
@@ -482,8 +529,9 @@ if  __name__ == '__main__':
     print get_cn_rt_price('sh600036')
     print get_us_rt_price_sohu_work('AMCN')
     print get_us_rt_price_sohu('AMCN')
-    print get_us_rt_price_GoogleWeb('AMCN')
+    print get_us_rt_price_YahooWeb('AMCN')
     print get_us_rt_price_SinaWeb('AMCN')
+    print get_us_rt_price_GoogleWeb('AMCN')
     #stockmon_exit()
     #exit(0)
     while True:
@@ -504,6 +552,11 @@ if  __name__ == '__main__':
             print get_us_rt_price_GoogleWeb(one)
             time.sleep(1)
 
+        print '---- yahoo webdriver ----'
+        for one in us_list:
+            print get_us_rt_price_YahooWeb(one)
+            time.sleep(1)            
+            
         print '---- sina webdriver ----'
         for one in us_list:
             print get_us_rt_price_SinaWeb(one)
