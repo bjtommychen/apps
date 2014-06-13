@@ -16,10 +16,11 @@ stockmon_enable = True
 stockmon_debug = False
 stockmon_force = False
 start_time = time.time()
-update_interval_in_seconds = 10
+update_interval_in_seconds = 60
 
 cn_market_open = False
 us_market_open = False
+run_1st = True
 
 wd = None
 us_list = ['jd', 'amcn', 'dang']
@@ -96,8 +97,8 @@ def check_us_market_open():
     text = time.strftime("%H:%M", time.localtime())
     if text > '21:30' and text <= '23:59':
         checkopen = True
-#    elif text >= '13:00' and text <= '15:00':
-#        checkopen = True
+    elif text >= '00:00' and text <= '01:00':
+        checkopen = True
     return checkopen    
 #CN    
 def get_cn_rt_price(code):
@@ -147,25 +148,34 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
         else:
             return ('', 0, 0, 0, 0, 0)                
 
+# SOHU
+def get_us_rt_price_sohu_done():
+    global wd
+    #if wd != None:
+    #    wd.close()
+    #wd =None
+    
 def get_us_rt_price_sohu(code):
     global wd
     code = code.upper()
     url = 'http://quotes.money.163.com/usstock/%s.html#2u01' % code
-    #print url
+    print url, '---------------------------------------------'
     if wd == None:
         wd = webdriver.Firefox()
     #wd = webdrv_get()
     wd.get(url)
     print len(wd.page_source)
     if len(wd.page_source) < 1000:
-        #print wd.page_source.encode('utf8')
+        print wd.page_source.encode('utf8')
         return ('', 0, 0, 0, 0, 0) 
     a = wd.find_elements_by_class_name('stock_info')
     if a == []:
+        print 'error a', a
         return ('', 0, 0, 0, 0, 0) 
     c = a[0].find_element_by_class_name('price').text
     d = c.split()
     if len(d) != 3:
+        print 'error len d', len(d), d
         return ('', 0, 0, 0, 0, 0) 
     #print d
     name = code
@@ -173,15 +183,25 @@ def get_us_rt_price_sohu(code):
     lastclose = float(d[1]) - float(d[2])
     #print curr, lastclose
     a = wd.find_elements_by_class_name('stock_detail_info')
+    #wd.close()
+    #wd = None
     #print len(a)
     d = a[0].text.split()
     #print d, d[2:]
     #for one in a:
     #    print one.text
-    #print d, d[0][2:]
-    openprice = float(d[0][2:])
-    todayhigh = todaylow = 0
-    return (name, openprice, lastclose, curr, todayhigh, todaylow)
+    #print 'Open price ', d[0], len(d[0]), d[0][2:], d[0][2:].isdigit()
+    if len(d[0]) > 2 and d[0][2].isdigit():
+        #for i in range(0, len(d[0])):
+        #    print d[0][i].isdigit()
+        openprice = float(d[0][2:])
+        todayhigh = todaylow = 0
+        print 'DONE!',(name, openprice, lastclose, curr, todayhigh, todaylow)
+        return (name, openprice, lastclose, curr, todayhigh, todaylow)
+    else:
+        print 'lenght less than 2'
+    print 'error! ', d[0], len(d[0]), d[0][2:], d[0][2:].isdigit()
+    return ('', 0, 0, 0, 0, 0)             
             
 #['market','code','name','price','ppk_limit']            
 def stockmon_check_cn_stock(force):
@@ -256,7 +276,7 @@ def stockmon_check_us_stock(force):
     wlist_stock  = wlist_getlist()
     need_printout = False
     for one in wlist_stock:
-        time.sleep(1)
+        time.sleep(2)
         #print one
         if one[0] != 'us':
             continue
@@ -289,6 +309,7 @@ def stockmon_check_us_stock(force):
                 strout += '%s: %s, %s, %s%%\n' %(name,curr, (curr-lastclose), day_chg_pct)
     if need_printout:
         strout += timetext
+    get_us_rt_price_sohu_done()
     return strout    
   
 def stockmon_init(): 
@@ -300,18 +321,22 @@ def stockmon_init():
     return banner    
 
 def stockmon_exit():
-    global webd
-    if webd != None:
-        webd.close()
+    global wd
+    if wd != None:
+        wd.close()
     return 'stockmon_exit'    
     
 def stockmon_process(force = False):
     global start_time
     global update_interval_in_seconds
     global stockmon_force
+    global run_1st
+    if run_1st:
+        force = True
+        run_1st = False
+    
     if force:
         stockmon_force = True
-    
     # update ?
     curr_time = time.time()
     if stockmon_debug:
@@ -335,12 +360,12 @@ if  __name__ == '__main__':
         time.sleep(25)
         print '------------------'
     stockmon_init()
-    wlist_add(['us', 'amcn', 5])
-    wlist_add(['us', 'dang', 5])
+    #wlist_add(['us', 'amcn', 5])
+    #wlist_add(['us', 'dang', 5])
     while True:
         str = stockmon_process(True)
         if str != '':
             print str
-        time.sleep(5)
+        time.sleep(60)
         print '.'
         
