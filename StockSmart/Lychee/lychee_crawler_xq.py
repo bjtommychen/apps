@@ -149,6 +149,7 @@ def crawler_xq_process(force = False):
                 strout += 'Newbie added:' + one + '\n' + timetext +'\n'
         if bNewbie:
             crawler_xq_savelist(hotlist)
+            xq_hotlist = hotlist
         else:
             count += 1
             if count >= (heartbeat_interval_in_seconds/update_interval_in_seconds):
