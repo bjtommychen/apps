@@ -6,6 +6,11 @@ from selenium import webdriver
 import re
 import csv
 
+
+#
+#  ps aux | grep 'firefox/firefox' | awk '{print $2}' | xargs sudo kill -9
+# 
+
 webd_allone = None
 
 def webdrv_init():
