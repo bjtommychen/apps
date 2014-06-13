@@ -163,6 +163,8 @@ def get_us_rt_price_sohu(code):
     if wd == None:
         wd = webdriver.Firefox()
         wd.set_window_size(100,100)
+        print 'Create webd'
+        
     #wd = webdrv_get()
     wd.get(url)
     print len(wd.page_source)
@@ -176,7 +178,7 @@ def get_us_rt_price_sohu(code):
     try: 
         c = a[0].find_element_by_class_name('price').text
     except:
-        print a[0].find_element_by_class_name('price'), a[0].find_element_by_class_name('price').text
+        return ('', 0, 0, 0, 0, 0)
     d = c.split()
     if len(d) != 3:
         print 'error len d', len(d), d
@@ -210,8 +212,9 @@ def get_us_rt_price_SinaWeb(code):
     #print url, '---------------------------------------------'
     if wd == None:
         wd = webdriver.Firefox()
-        wd.set_script_timeout(10)
         wd.set_window_size(100,100)
+        print 'Create webd'
+        
     wd.get(url)
     print len(wd.page_source)
     if len(wd.page_source) < 500:
@@ -245,8 +248,8 @@ def get_us_rt_price_GoogleWeb(code):
     #print url, '---------------------------------------------'
     if wd == None:
         wd = webdriver.Firefox()
-        #wd.set_script_timeout(10)
         wd.set_window_size(100,100)
+        print 'Create webd'
     wd.get(url)
     print len(wd.page_source)
     if len(wd.page_source) < 500:
@@ -290,8 +293,9 @@ def get_us_rt_price_YahooWeb(code):
     #print url, '---------------------------------------------'
     if wd == None:
         wd = webdriver.Firefox()
-        #wd.set_script_timeout(10)
         wd.set_window_size(100,100)
+        print 'Create webd'
+        
     wd.get(url)
     print len(wd.page_source)
     if len(wd.page_source) < 500:
@@ -483,7 +487,13 @@ def get_us_rt_price_sohu_work(code):
     url = 'http://quotes.money.163.com/usstock/%s.html#2u01' % code
     print url, '---------------------------------------------'
     if wd == None:
-        wd = webdriver.Firefox()
+        prof=webdriver.FirefoxProfile()
+        prof.set_preference("permissions.default.stylesheet", 2)
+        prof.set_preference("permissions.default.image", 2)
+        prof.set_preference("dom.ipc.plugins.enabled.libflashplayer.so", False)
+        wd = webdriver.Firefox(prof)
+        print 'wd using profile.'
+        
     #wd = webdrv_get()
     wd.get(url)
     print len(wd.page_source)
@@ -526,16 +536,26 @@ def get_us_rt_price_sohu_work(code):
     return ('', 0, 0, 0, 0, 0) 
         
 if  __name__ == '__main__':   
-    print get_cn_rt_price('sh600036')
+    
+    #prof=webdriver.FirefoxProfile()
+    #prof.set_preference("permissions.default.stylesheet", 2)
+    #prof.set_preference("permissions.default.image", 2)
+    #prof.set_preference("dom.ipc.plugins.enabled.libflashplayer.so", False)
+    # localwd = webdriver.Firefox()
+    # localwd.set_window_size(100,100)
+    # global wd
+    # wd = localwd
+
+    # print get_cn_rt_price('sh600036')
     print get_us_rt_price_sohu_work('AMCN')
-    print get_us_rt_price_sohu('AMCN')
-    print get_us_rt_price_YahooWeb('AMCN')
-    print get_us_rt_price_SinaWeb('AMCN')
-    print get_us_rt_price_GoogleWeb('AMCN')
+    # print get_us_rt_price_sohu('AMCN')
+    # print get_us_rt_price_YahooWeb('AMCN')
+    # print get_us_rt_price_SinaWeb('AMCN')
+    # print get_us_rt_price_GoogleWeb('AMCN')
     #stockmon_exit()
     #exit(0)
     while True:
-        print '------------------'
+        print '------------------' 
 
         print '---- yahoo url ----'
         for one in us_list:
