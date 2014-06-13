@@ -193,7 +193,10 @@ def gtalk_mainloop():
             res = None
         if res == None:
             log_d ('Lost connection.')
-            conn.disconnect()
+            try:
+                conn.disconnect()
+            except:
+                log_d('error')
             conn = 0
             break
         if not gtalk_running:
