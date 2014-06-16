@@ -142,7 +142,8 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
         strs = string.replace(strs,'\r\n','')
         data = strs.split('"')[2].split(',')
         name = strs.split('"')[1]
-        if (name):
+        #print name, data
+        if len(name) > 0 and data[1][0].isdigit():
             return (name, float(data[1]), float(data[2]), float(data[3]), 
                      float(data[4]), float(data[5]))
         else:
@@ -279,7 +280,7 @@ def get_us_rt_price_GoogleWeb(code):
         print 'error len a', len(d), d
         return ('', 0, 0, 0, 0, 0)     
     name = code
-    #print d
+    #print d[:5]
     openprice = float(d[1])
     lastclose = curr - change
     todayhigh = todaylow = 0
@@ -327,7 +328,9 @@ def get_us_rt_price_YahooWeb(code):
         print 'error len a', len(d), d
         return ('', 0, 0, 0, 0, 0)     
     name = code
-    #print d
+    if not d[1][0].isdigit():
+        #print d
+        return ('', 0, 0, 0, 0, 0)     
     openprice = float(d[1])
     lastclose = curr - change
     todayhigh = todaylow = 0
@@ -487,12 +490,12 @@ def get_us_rt_price_sohu_work(code):
     url = 'http://quotes.money.163.com/usstock/%s.html#2u01' % code
     print url, '---------------------------------------------'
     if wd == None:
-        prof=webdriver.FirefoxProfile()
-        prof.set_preference("permissions.default.stylesheet", 2)
-        prof.set_preference("permissions.default.image", 2)
-        prof.set_preference("dom.ipc.plugins.enabled.libflashplayer.so", False)
-        wd = webdriver.Firefox(prof)
-        print 'wd using profile.'
+        #prof=webdriver.FirefoxProfile()
+        #prof.set_preference("permissions.default.stylesheet", 2)
+        #prof.set_preference("permissions.default.image", 2)
+        #prof.set_preference("dom.ipc.plugins.enabled.libflashplayer.so", False)
+        wd = webdriver.Firefox()
+        #print 'wd using profile.'
         
     #wd = webdrv_get()
     wd.get(url)
@@ -564,7 +567,7 @@ if  __name__ == '__main__':
 
         print '---- sohu webdriver ----'
         for one in us_list:
-            print get_us_rt_price_sohu(one)
+            #print get_us_rt_price_sohu(one)
             time.sleep(1)
             
         print '---- google webdriver ----'
@@ -574,12 +577,12 @@ if  __name__ == '__main__':
 
         print '---- yahoo webdriver ----'
         for one in us_list:
-            print get_us_rt_price_YahooWeb(one)
+            #print get_us_rt_price_YahooWeb(one)
             time.sleep(1)            
             
         print '---- sina webdriver ----'
         for one in us_list:
-            print get_us_rt_price_SinaWeb(one)
+            #print get_us_rt_price_SinaWeb(one)
             time.sleep(1)
 
         time.sleep(2)
