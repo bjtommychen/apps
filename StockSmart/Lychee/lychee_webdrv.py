@@ -14,9 +14,9 @@ import csv
 webd_allone = None
 
 def webdrv_init():
-    global webd_allone
-    if webd_allone == None:
-        webd_allone = webdriver.Firefox()
+    #global webd_allone
+    #if webd_allone == None:
+    #    webd_allone = webdriver.Firefox()
     return 'webd_allonerv init\n'        
         
 def webdrv_exit():        
