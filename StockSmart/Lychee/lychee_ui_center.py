@@ -173,12 +173,13 @@ def ui_mainloop():
             #print '[INPUT]:', cmds
             output = ui_dispatch_commands(cmds)
             ui_put_str(output)
-        #print '.',
+        #print '.'
         if True:
             output = stockmon_process()
             output += crawler_xq_process()
             ui_put_str(output)
-        time.sleep(0.5)
+        time.sleep(1)
+        #print '.'
     ui_put_str('ui_mainloop done.')
     ui_exit()
     if ui_use_gtalk_io:
