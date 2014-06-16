@@ -16,7 +16,7 @@ stockmon_enable = True
 stockmon_debug = False
 stockmon_force = False
 start_time = time.time()
-update_interval_in_seconds = 60
+update_interval_in_seconds = 40
 
 cn_market_open = False
 us_market_open = False
@@ -154,14 +154,20 @@ def get_us_rt_price_sohu_done():
     #if wd != None:
     #    wd.close()
     #wd =None
+    return
     
 def get_us_rt_price_sohu(code):
     global wd
     code = code.upper()
     url = 'http://quotes.money.163.com/usstock/%s.html#2u01' % code
-    print url, '---------------------------------------------'
+    #print url, '---------------------------------------------'
     if wd == None:
-        wd = webdriver.Firefox()
+        prof=webdriver.FirefoxProfile()
+        prof.set_preference("permissions.default.stylesheet", 2)
+        prof.set_preference("permissions.default.image", 2)
+        prof.set_preference("dom.ipc.plugins.enabled.libflashplayer.so", False)        
+        wd = webdriver.Firefox(prof)
+        
     #wd = webdrv_get()
     wd.get(url)
     print len(wd.page_source)
@@ -196,13 +202,60 @@ def get_us_rt_price_sohu(code):
         #    print d[0][i].isdigit()
         openprice = float(d[0][2:])
         todayhigh = todaylow = 0
-        print 'DONE!',(name, openprice, lastclose, curr, todayhigh, todaylow)
+        print 'SOHU DONE!',(name, openprice, lastclose, curr, todayhigh, todaylow)
         return (name, openprice, lastclose, curr, todayhigh, todaylow)
     else:
         print 'lenght less than 2'
     print 'error! ', d[0], len(d[0]), d[0][2:], d[0][2:].isdigit()
     return ('', 0, 0, 0, 0, 0)             
-            
+   
+#GOOGLE    
+def get_us_rt_price_GoogleWeb(code):
+    global wd
+    code = code.upper()
+    url = 'http://www.google.com/finance?q=%s' % code
+    print url, '---------------------------------------------'
+    if wd == None:
+        wd = webdriver.Firefox()
+        print 'Create webd'
+    wd.get(url)
+    print len(wd.page_source)
+    if len(wd.page_source) < 500:
+        print wd.page_source.encode('utf8')
+        return ('', 0, 0, 0, 0, 0) 
+    a = wd.find_elements_by_class_name('pr')
+    #print len(a), a, a[0].text
+    if a == []:
+        print 'error a', a
+        return ('', 0, 0, 0, 0, 0)
+    b = a[0].text.split()
+    #print b
+    if b == []:
+        print 'error b', b
+        return ('', 0, 0, 0, 0, 0)
+    #print b
+    curr = float(b[0])
+    d = wd.find_elements_by_class_name('ch')[0].text.split()
+    change = float(d[0])
+    #print change
+    d = wd.find_elements_by_class_name('snap-data')[0].text
+    index = d.find('Open')
+    d = d[index:].split()
+    #print len(d), d
+    if len(d) != 11:
+        print 'error len a', len(d), d
+        return ('', 0, 0, 0, 0, 0)     
+    name = code
+    #print d[:5]
+    openprice = float(d[1])
+    lastclose = curr - change
+    todayhigh = todaylow = 0
+    print 'GOOGLE DONE!',(name, openprice, lastclose, curr, todayhigh, todaylow)
+    return (name, openprice, lastclose, curr, todayhigh, todaylow)  
+   
+def get_us_rt_price(code):
+    return get_us_rt_price_GoogleWeb(code)
+   
 #['market','code','name','price','ppk_limit']            
 def stockmon_check_cn_stock(force):
     global cn_market_open
@@ -280,7 +333,7 @@ def stockmon_check_us_stock(force):
         #print one
         if one[0] != 'us':
             continue
-        name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_sohu(one[1])
+        name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price(one[1])
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
@@ -355,7 +408,7 @@ if  __name__ == '__main__':
     print get_cn_rt_price('sh600036')
     while False:
         for one in us_list:
-            print get_us_rt_price_sohu(one.upper())
+            print get_us_rt_price(one.upper())
             time.sleep(1)
         time.sleep(25)
         print '------------------'
@@ -366,6 +419,6 @@ if  __name__ == '__main__':
         str = stockmon_process(True)
         if str != '':
             print str
-        time.sleep(60)
+        time.sleep(10)
         print '.'
         
