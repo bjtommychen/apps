@@ -29,8 +29,8 @@ def crawler_geturl(url):
     #fp.close()
     #return data
     #if wd == None:
-    #    wd = webdriver.Firefox()
-    wd = webdrv_get()
+    wd = webdriver.Firefox()
+    #wd = webdrv_get()
     wd.set_window_size(80,60)
     wd.get(url)
     if False:
@@ -40,7 +40,7 @@ def crawler_geturl(url):
     else:
         data = wd.page_source.encode('utf8')
     #print parse_hotlist(data)
-    #wd.close()
+    wd.close()
     return data
 
 def parse_hotlist(data):   
@@ -111,6 +111,8 @@ def crawler_xq_process(force = False):
     global update_interval_in_seconds, heartbeat_interval_in_seconds, count
     global xq_hotlist
     global run_1st
+    #debug
+    #return ''
     
     # because of codepage, sometimes load failed even on same system.
     if xq_hotlist == []: #not os.path.exists(xq_hotlist_file):
