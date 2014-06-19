@@ -266,6 +266,7 @@ def stockmon_check_cn_stock(force):
         cn_market_open = check_cn_market_open()
         if not cn_market_open:
             wlist_save()
+            force = True
         else:
             force = True
     #get time
@@ -318,6 +319,7 @@ def stockmon_check_us_stock(force):
         us_market_open = check_us_market_open()
         if not us_market_open:
             wlist_save()
+            force = True
         else:
             force = True
     #get time
@@ -376,7 +378,7 @@ def stockmon_init():
 def stockmon_exit():
     global wd
     if wd != None:
-        wd.close()
+        wd.quit()
     return 'stockmon_exit'    
     
 def stockmon_process(force = False):

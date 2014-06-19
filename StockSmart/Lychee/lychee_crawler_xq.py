@@ -13,7 +13,7 @@ reload(sys)
 sys.setdefaultencoding('utf')
 
 start_time = time.time()
-update_interval_in_seconds = 600
+update_interval_in_seconds = 1800
 heartbeat_interval_in_seconds = 3600
 xq_hotlist_file = 'xq_hotlist_file.csv'
 xq_url = 'http://xueqiu.com/hq'
@@ -40,7 +40,7 @@ def crawler_geturl(url):
     else:
         data = wd.page_source.encode('utf8')
     #print parse_hotlist(data)
-    wd.close()
+    wd.quit()
     return data
 
 def parse_hotlist(data):   
