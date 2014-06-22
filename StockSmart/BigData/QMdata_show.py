@@ -47,6 +47,8 @@ def get_OneRecord(fp, code_filter = ''):
         #print 'skip'
         fp.seek(items*(8*4), 1)
         return code, name, list5min
+    # fp.seek(items*(8*4), 1)
+    # return code, name, list5min
     for i in xrange(items):
         m_time = struct.unpack("L",fp.read(4))[0]
         m_fOpen = struct.unpack("f",fp.read(4))[0]
@@ -68,6 +70,7 @@ def get_OneRecord(fp, code_filter = ''):
         line = (m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull)
 #        print line
         list5min.append(line) 
+        
     #print 'done!'
     return code, name, list5min
     
