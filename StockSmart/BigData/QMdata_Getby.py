@@ -85,13 +85,13 @@ def get_QM_header(fp):
 
     
 def QM5_GetListByDate(filename, code_lists, time_string):    
-    print 'Reading ', filename, 'for lists:', code_lists
+    #print 'Reading ', filename, 'for lists:', code_lists
     if not os.path.exists(filename):
         print 'Open file', filename, 'failed.'
         return
     fp=open(filename,"rb")
     flag, version, total_num = get_QM_header(fp)
-    print 'Header *** flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
+    #print 'Header *** flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
     num = 0
     ret_lists = []
     check_time = get_TimeFromString(time_string)
@@ -102,15 +102,16 @@ def QM5_GetListByDate(filename, code_lists, time_string):
         #if len(lists) > 0:
         #    print 'Got', code, name, len(lists), type(code)            
         if len(lists) > 0 and code in code_lists:
-            print 'found', code, name, len(lists)
+            #print 'found', code, name, len(lists)
             #print type(check_time), check_time
             for line in lists:
                 m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line
                 #print type(m_time), m_time
                 if check_time == m_time:
-                    print get_DateString(m_time),'   ', m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
+                    #print get_DateString(m_time),'   ', m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
+                    ret_lists.append((code, name, line))
         num += 1
-    print num  
+    return ret_lists
 
     
 #Ö÷º¯Êý  
@@ -132,7 +133,9 @@ if  __name__ == '__main__':
     #QM5_parserAll(args.filename, args.filter, args.detail)
     
     code_lists = ['SH600036', 'SH601857', 'SH603993']
-    QM5_GetListByDate(args.filename, code_lists, '2014-03-03 09:31:00')
-    QM5_GetListByDate(args.filename, code_lists, '2014-03-03 09:35:00')
+    r=QM5_GetListByDate(args.filename, code_lists, '2014-03-03 09:31:00')
+    print r
+    r=QM5_GetListByDate(args.filename, code_lists, '2014-03-03 09:35:00')
+    print r
     
     print 'Completed !'    
