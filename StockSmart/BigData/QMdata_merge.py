@@ -139,13 +139,21 @@ def get_AllQMdata_for_one(filter = 'SH600036'):
         write_QM_data(output_path+filter+'.'+data_ext, code_write, name_write, listall)
 
 def Get_AllQMdata_for_AllInList():    
+    #sh
     reader = csv.reader(file(listfile_sh,'rb'))    
     i = 0
     for row in reader:
         print row[0].upper()
         get_AllQMdata_for_one(row[0].upper())
         #get_AllQMdata_for_one('SH600086')
+    #sz
+    reader = csv.reader(file(listfile_sz,'rb'))    
+    i = 0
+    for row in reader:
+        print row[0].upper()
+        get_AllQMdata_for_one(row[0].upper())
 
+        
 def MergeAll_AddOne(fp, filter):
     #skip if already created.
     filename = output_path+filter+'.'+data_ext
@@ -185,6 +193,16 @@ def MergeAllQMdata(filename):
         #    break
         print row[0].upper()
         MergeAll_AddOne(fp, row[0].upper())
+
+    i = 0
+    reader = csv.reader(file(listfile_sz,'rb'))    
+    for row in reader:
+        i += 1
+        #if i > 3:
+        #    break
+        print row[0].upper()
+        MergeAll_AddOne(fp, row[0].upper())        
+
     fp.close()          
         
 if  __name__ == '__main__':
