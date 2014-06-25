@@ -94,7 +94,7 @@ def myhold_sell(code, price, sell_amount, name = None):
     print 'sell failed.'  
 
 def DoSimulateCatchSpurt():   
-    code_lists = ['SH600036']#, 'SH601857', 'SH603993']
+    code_lists = ['SH600036','SH601012','SH601996','SH601519','SH601038','SH603128','SH603002','SH601789','SH601118','SH601901']
     filedata = 'bigdata_merge\MergeAll.qm'
     strStart = '2014-03-03 09:31:00'
     strStop  = '2014-06-03 09:31:00'
@@ -142,8 +142,8 @@ def DoSimulateCatchSpurt():
                     if code == code_close:
                         pct = ((m_fClose - m_fClose_close)*100.0/m_fClose_close)
                         #print pct
-                        if ((m_fClose - m_fClose_close)*100.0/m_fClose_close) >=0.9:
-                            print 'buy', code, name, pct
+                        if ((m_fClose - m_fClose_close)*100.0/m_fClose_close) >=3:
+                            print 'buy', code, name, 'change%', pct, 'at', get_DateString(m_time)
                             myhold_buy(code, m_fClose, int(10000/m_fClose), name)
                             lastclose.remove(one_close)
                             bBuyStock = True
