@@ -138,6 +138,7 @@ def ui_dispatch_commands(cmds):
     return strout
         
 def ui_put_str(string):
+    global ui_running
     if len(string) >0:
         if ui_use_gtalk_io:
             Gtalk_send(string)
@@ -165,21 +166,38 @@ def ui_exit():
     strout += crawler_exit()   
     ui_put_str(strout)
     
+def ui_reboot_to_refresh():
+    checkopen = False
+#    if (datetime.datetime.now().weekday() > 4):
+#        return False
+    text = time.strftime("%H:%M", time.localtime())
+    if text == '09:00' or text == '21:25' or text == '19:50':
+        checkopen = True
+    return checkopen    
+    
 def ui_mainloop():
+    global ui_running
     ui_init()
     while(ui_running):
+        print '@1'
+        if ui_reboot_to_refresh():
+            time.sleep(60)
+            ui_running = False
         cmds = ui_get_commands()
+        print '@2'
         if len(cmds)>0:
             #print '[INPUT]:', cmds
             output = ui_dispatch_commands(cmds)
             ui_put_str(output)
-        #print '.'
-        if True:
+        print '@3'
+        try:
             output = stockmon_process()
             output += crawler_xq_process()
             ui_put_str(output)
-        time.sleep(1)
-        #print '.'
+            time.sleep(1)
+        except:
+            print 'ui main loop except!'
+            ui_running = False         
     ui_put_str('ui_mainloop done.')
     ui_exit()
     if ui_use_gtalk_io:
