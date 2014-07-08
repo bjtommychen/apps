@@ -16,7 +16,7 @@ stockmon_enable = True
 stockmon_debug = False
 stockmon_force = False
 start_time = time.time()
-update_interval_in_seconds = 40
+update_interval_in_seconds = 60
 
 cn_market_open = False
 us_market_open = False
@@ -95,7 +95,7 @@ def check_us_market_open():
     if (datetime.datetime.now().weekday() > 4):
         return False
     text = time.strftime("%H:%M", time.localtime())
-    if text > '21:30' and text <= '23:59':
+    if text >= '21:30' and text <= '23:59':
         checkopen = True
     elif text >= '00:00' and text <= '01:00':
         checkopen = True
@@ -250,7 +250,7 @@ def get_us_rt_price_GoogleWeb(code):
     openprice = float(d[1])
     lastclose = curr - change
     todayhigh = todaylow = 0
-    print 'GOOGLE DONE!',(name, openprice, lastclose, curr, todayhigh, todaylow)
+    print 'GOOGLE Quote!',(name, openprice, lastclose, curr, todayhigh, todaylow)
     return (name, openprice, lastclose, curr, todayhigh, todaylow)  
    
 def get_us_rt_price(code):
@@ -371,7 +371,7 @@ def stockmon_init():
     wlist_load()
     banner = '*** Stockmon Daemon. v1.0.1. ' 
     banner += '_us_cn_'
-    banner += '_sohu_quote_'
+    banner += '_google_quote_'
     banner += '\n'
     return banner    
 
@@ -401,8 +401,14 @@ def stockmon_process(force = False):
     start_time = curr_time
     # start to update
     #print 'stockmon_force', stockmon_force
-    strout = stockmon_check_cn_stock(stockmon_force)
-    strout += stockmon_check_us_stock(stockmon_force)
+    try:
+        strout = stockmon_check_cn_stock(stockmon_force)
+    except:
+        strout = 'check cn stock except!'
+    try:
+        strout += stockmon_check_us_stock(stockmon_force)
+    except:
+        strout += 'check us stock except!'
     stockmon_force = False
     return strout
             
