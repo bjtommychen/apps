@@ -47,7 +47,7 @@ def parse_hotlist(data):
     #if '热度排行榜' in data:
     #    print 'find !'
     pos1 = data.find(u'关注排行榜'.encode('utf8'))
-    pos2 = data.find(u'分享交易排行榜'.encode('utf8'))
+    pos2 = data.find(u'讨论排行榜'.encode('utf8'))
     #print pos1, pos2, len(data)
     data = data[pos1:pos2]
     #print data
@@ -156,22 +156,32 @@ def crawler_xq_process(force = False):
             count += 1
             if count >= (heartbeat_interval_in_seconds/update_interval_in_seconds):
                 count = 0
-                strout += ' -------------XQ Hottlist No change ! --------------\n' + timetext
+                strout += ' -------------XQ Hottlist ' + str(len(xq_hotlist)) +' No change ! --------------\n' + timetext
             else:
                 strout += ''
     return strout
    
 if  __name__ == '__main__':
-#    crawler_xq_init()
-#    exit(0)	
-#    crawler_geturl('http://www.xueqiu.com/hq')
-#    fp = open('xq.html', 'rb')
-#    data = fp.read()
-#    fp.close()
-#    print parse_hotlist(data)
-    while True:
-        strout = crawler_xq_process()
-        if strout != '':
-            print strout
-        time.sleep(1)
+    if False:
+        crawler_xq_init()
+        data = crawler_geturl('http://www.xueqiu.com/hq')
+        print data
+        fp = open('xq.html', 'wb')
+        fp.write(data)
+        fp.close()
+        print parse_hotlist(data)
+    elif False:
+        fp = open('xq.html', 'rb')
+        data=fp.read()
+        fp.close()
+        hotlist=parse_hotlist(data)
+        for line in hotlist:
+            wline = [line.decode('utf8').encode('gbk')]
+            print repr(wline)
+    if True:            
+        while True:
+            strout = crawler_xq_process()
+            if strout != '':
+                print strout
+            time.sleep(1)
 
