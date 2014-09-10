@@ -7,6 +7,8 @@ import csv
 import stat,fnmatch
 import struct
 import argparse  
+from pandas import DataFrame, Series
+import pandas as pd
 
 from QMdata_Getby import *
 
@@ -93,8 +95,11 @@ def myhold_sell(code, price, sell_amount, name = None):
                 return
     print 'sell failed.'  
 
-def DoSimulateCatchSpurt():   
-    code_lists = ['SH600036','SH601012','SH601996','SH601519','SH601038','SH603128','SH603002','SH601789','SH601118','SH601901']
+def DoSimulateCatchSpurt():
+    df = pd.read_csv('top100.csv')#, skiprows=[0])
+    code_lists = list(df['code'])
+    #code_lists = ['SH600036','SH601012','SH601996','SH601519','SH601038','SH603128','SH603002','SH601789','SH601118','SH601901']
+    print code_lists
     filedata = 'bigdata_merge\MergeAll.qm'
     strStart = '2014-03-03 09:31:00'
     strStop  = '2014-06-03 09:31:00'
@@ -116,19 +121,26 @@ def DoSimulateCatchSpurt():
         if myhold_getsize():
             global myhold
             timeMin = timeDayStart + ((25-1)*60)
-            for code,price,amount, codename in myhold:
-                print get_DateString(timeMin)
-                r=QM5_GetListByDate(args.filename, [code], get_DateString(timeMin))
-                if r != []:
-                    one = r[0]; code, name, line = one
-                    m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line                
-                    myhold_sell(code, m_fClose, amount, codename)
+            print 'Prepare sell at', get_DateString(timeMin)
+            myhold_copy = myhold[:]
+            for code,price,amount, codename in myhold_copy:
+                if (code and price and amount):
+                    print code,price,amount
+                    r=QM5_GetListByDate(args.filename, [code], get_DateString(timeMin))
+                    if r != []:
+                        one = r[0]; code, name, line = one
+                        m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line                
+                        myhold_sell(code, m_fClose, amount, codename)
             myhold_listall()
+            print 'Sell done.'
             
         #Get Day minutes
         bBuyStock = False
+        BuyCount = 0
         for m in range(5, 35):
             if lastclose == []:
+                break
+            if BuyCount > 10:
                 break
             timeMin = timeDayStart + ((m-1)*60)
             #print '\t', m, get_DateString(timeMin)
@@ -142,11 +154,12 @@ def DoSimulateCatchSpurt():
                     if code == code_close:
                         pct = ((m_fClose - m_fClose_close)*100.0/m_fClose_close)
                         #print pct
-                        if ((m_fClose - m_fClose_close)*100.0/m_fClose_close) >=3:
+                        if pct>=3 and pct<4.5:
                             print 'buy', code, name, 'change%', pct, 'at', get_DateString(m_time)
                             myhold_buy(code, m_fClose, int(10000/m_fClose), name)
                             lastclose.remove(one_close)
                             bBuyStock = True
+                            BuyCount += 1
                         
         #Get close
         timeMin = timeDayStart + ((330-1)*60)
@@ -167,7 +180,7 @@ def DoSimulateCatchSpurt():
         #str = raw_input('Press to continue .... ')
 
 def DoSimulateTest():
-    myhold_init(100000)
+    myhold_init(500000)
     myhold_buy('SH600036', 10, 1000, '36')
     myhold_buy('SH600016', 8, 1000, '16')
     myhold_buy('SH600026', 10, 1000)
