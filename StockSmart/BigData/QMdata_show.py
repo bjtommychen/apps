@@ -6,7 +6,8 @@ import math
 import csv
 import stat,fnmatch
 import struct
-import argparse  
+import argparse
+  
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
