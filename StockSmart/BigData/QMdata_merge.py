@@ -7,6 +7,8 @@ import csv
 import stat,fnmatch
 import struct
 import argparse  
+from pandas import DataFrame, Series
+import pandas as pd
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
@@ -18,7 +20,7 @@ data_path = 'qm1_88158cn/'
 data_ext = 'qm1'
 listfile_sh = 'sh_list.csv'
 listfile_sz = 'sz_list.csv'
-output_path = 'output_tmp/'
+output_path = 'bigdata_merge/'
 
 def get_Long(fp):
     num = struct.unpack("L",fp.read(4))
@@ -185,6 +187,20 @@ def MergeAllQMdata(filename):
     fp.write(struct.pack("L",version))
     fp.write(struct.pack("L", 1))
 
+    if True:
+        df = pd.read_csv('top100.csv')#, skiprows=[0])
+        code_lists = list(df['code'])
+        i = 0
+        for row in code_lists:
+            print row
+            i += 1
+            #if i > 3:
+            #    break
+            print row[0].upper()
+            MergeAll_AddOne(fp, row.upper())
+        fp.close()
+        return
+    
     i = 0
     reader = csv.reader(file(listfile_sh,'rb'))    
     for row in reader:
@@ -225,6 +241,6 @@ if  __name__ == '__main__':
     parser.add_argument('--version', action='version', version='%(prog)s v1.0')
     args = parser.parse_args()
     
-    Get_AllQMdata_for_AllInList()
+    #Get_AllQMdata_for_AllInList()
     MergeAllQMdata(output_path+'MergeAll.qm')
     
