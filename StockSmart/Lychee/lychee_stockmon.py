@@ -6,6 +6,7 @@ from lychee_gtalk_io import *
 from lychee_utils_list import *
 from selenium import webdriver
 from lychee_webdrv import *
+import requests
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
@@ -252,6 +253,19 @@ def get_us_rt_price_GoogleWeb(code):
     todayhigh = todaylow = 0
     print 'GOOGLE Quote!',(name, openprice, lastclose, curr, todayhigh, todaylow)
     return (name, openprice, lastclose, curr, todayhigh, todaylow)  
+   
+   
+def get_us_rt_price_GoogleWeb_Requests(code):
+    url = 'http://www.google.com/finance?q=%s' % code
+    print url, '---------------------------------------------'
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
+        r = requests.get(url,timeout=15,headers=headers)
+        data = r.content
+        print r.encoding
+        r.close()
+    except Exception, e:
+        return []   
    
 def get_us_rt_price(code):
     return get_us_rt_price_GoogleWeb(code)
