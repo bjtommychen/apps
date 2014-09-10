@@ -76,7 +76,7 @@ def get_stock_list():
     for code in (range(0, 4000) + range(300000, 301000)):
         if (code%100 == 0):
             print code
-        codestr = 'sh' + "%06d" % int(code)
+        codestr = 'sz' + "%06d" % int(code)
         infostr = get_StockInfo(codestr)
         if len(infostr) > 0:
             csvWriter.writerow(infostr)
