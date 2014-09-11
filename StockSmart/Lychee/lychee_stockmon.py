@@ -295,8 +295,9 @@ class parseGoogleFinanceText(HTMLParser.HTMLParser):
         # print("Decl     :", data)
         
 def get_us_rt_price_GoogleWeb_Requests(code):
+    code = code.upper()
     url = 'http://www.google.com/finance?q=%s' % code
-    # print url, '---------------------------------------------'
+    print url, '---------------------------------------------'
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
         r = requests.get(url,timeout=15,headers=headers)
@@ -317,7 +318,7 @@ def get_us_rt_price_GoogleWeb_Requests(code):
     lastclose = curr - lParser.price_change
     todayhigh = todaylow = 0    
     name = code
-    
+    print 'GOOGLE Requests!',(name, openprice, lastclose, curr, todayhigh, todaylow)
     return (name, openprice, lastclose, curr, todayhigh, todaylow)
    
 def get_us_rt_price(code):
