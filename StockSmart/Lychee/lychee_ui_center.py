@@ -179,12 +179,12 @@ def ui_mainloop():
     global ui_running
     ui_init()
     while(ui_running):
-        print '@1'
+        print '@1',
         if ui_reboot_to_refresh():
             time.sleep(60)
             ui_running = False
         cmds = ui_get_commands()
-        print '@2'
+        print '@2',
         if len(cmds)>0:
             #print '[INPUT]:', cmds
             output = ui_dispatch_commands(cmds)
