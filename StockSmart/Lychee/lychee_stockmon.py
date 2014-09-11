@@ -7,11 +7,12 @@ from lychee_utils_list import *
 from selenium import webdriver
 from lychee_webdrv import *
 import requests
+import HTMLParser
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
-sys.setdefaultencoding('utf8')
+sys.setdefaultencoding('utf')
 
 stockmon_enable = True
 stockmon_debug = False
@@ -253,22 +254,74 @@ def get_us_rt_price_GoogleWeb(code):
     todayhigh = todaylow = 0
     print 'GOOGLE Quote!',(name, openprice, lastclose, curr, todayhigh, todaylow)
     return (name, openprice, lastclose, curr, todayhigh, todaylow)  
-   
-   
+
+
+class parseGoogleFinanceText(HTMLParser.HTMLParser):
+    def __init__(self):  
+        HTMLParser.HTMLParser.__init__(self)  
+        self.price_curr = 0.
+        self.price_change = 0.
+        self.price_open = 0.
+        self.data=[]
+    def handle_data(self, data):
+        # print("Data     :", data)
+        if data != '\n':
+            self.data.append(string.replace(data,'\n',''))
+    def MyProcess(self):
+        self.price_curr = float(self.data[1])
+        self.price_change = float(self.data[2])
+        for i in range(0, len(self.data)):
+            if self.data[i] == 'Open':
+                self.price_open = float(self.data[i+1])
+                break
+    # def handle_starttag(self, tag, attrs):
+        # print("Start tag:", tag)
+        # for attr in attrs:
+            # print("     attr:", attr)
+    # def handle_endtag(self, tag):
+        # print("End tag  :", tag)
+    # def handle_comment(self, data):
+        # print("Comment  :", data)
+    # def handle_entityref(self, name):
+        # c = chr(name2codepoint[name])
+        # print("Named ent:", c)
+    # def handle_charref(self, name):
+        # if name.startswith('x'):
+            # c = chr(int(name[1:], 16))
+        # else:
+            # c = chr(int(name))
+        # print("Num ent  :", c)
+    # def handle_decl(self, data):
+        # print("Decl     :", data)
+        
 def get_us_rt_price_GoogleWeb_Requests(code):
     url = 'http://www.google.com/finance?q=%s' % code
-    print url, '---------------------------------------------'
+    # print url, '---------------------------------------------'
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
         r = requests.get(url,timeout=15,headers=headers)
         data = r.content
-        print r.encoding
+        # print r.encoding
         r.close()
     except Exception, e:
         return []   
+    pos1 = data.find('span class="pr"')        
+    pos2 = data.find('class="plusone-box"', pos1)
+    lParser = parseGoogleFinanceText()
+    lParser.feed(data[pos1:pos2])
+    # print lParser.data
+    lParser.MyProcess()
+    # print lParser.price_open, lParser.price_curr
+    openprice = lParser.price_open
+    curr = lParser.price_curr
+    lastclose = curr - lParser.price_change
+    todayhigh = todaylow = 0    
+    name = code
+    
+    return (name, openprice, lastclose, curr, todayhigh, todaylow)
    
 def get_us_rt_price(code):
-    return get_us_rt_price_GoogleWeb(code)
+    return get_us_rt_price_GoogleWeb_Requests(code)
    
 #['market','code','name','price','ppk_limit']            
 def stockmon_check_cn_stock(force):
@@ -345,7 +398,7 @@ def stockmon_check_us_stock(force):
     wlist_stock  = wlist_getlist()
     need_printout = False
     for one in wlist_stock:
-        time.sleep(2)
+        time.sleep(0.2)
         #print one
         if one[0] != 'us':
             continue
@@ -427,16 +480,19 @@ def stockmon_process(force = False):
     return strout
             
 if  __name__ == '__main__':   
-    print get_cn_rt_price('sh600036')
+    # print get_us_rt_price('amcn')
+    # print get_cn_rt_price('sh600036')
     while False:
         for one in us_list:
             print get_us_rt_price(one.upper())
             time.sleep(1)
-        time.sleep(25)
+        time.sleep(5)
         print '------------------'
+    # return 1;
     stockmon_init()
-    #wlist_add(['us', 'amcn', 5])
-    #wlist_add(['us', 'dang', 5])
+    # wlist_add(['us', 'amcn', 5])
+    # wlist_add(['us', 'dang', 5])
+    # wlist_add(['cn', 'sh600036', 5])
     while True:
         str = stockmon_process(True)
         if str != '':
