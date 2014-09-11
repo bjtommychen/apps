@@ -20,7 +20,7 @@ sys.setdefaultencoding('utf')
 def convert_num(string):
     return str(string)
 
-def get_StockInfo(code):
+def get_StockFollows(code):
     url = 'http://xueqiu.com/S/%s/follows' % code
     # print url
     try:
@@ -37,24 +37,27 @@ def get_StockInfo(code):
     # print pos1, pos2
     if pos1 == -1 and pos2 == -1:
         return []
+    data = data[pos1:pos2]    
     match = re.compile(r'(?<=a href=).*?(?=<\/a>)')
-    r_name = re.findall(match, data[pos1:pos2].encode('gbk'))
+    r_name = re.findall(match, data.encode('gbk'))
     pos1 = r_name[0].find('>') 
-    name = r_name[0][pos1+1:]
+    pos2 = r_name[0].find('(', pos1) 
+    name = r_name[0][pos1+1:pos2]
+    codename = r_name[0][pos2:]
     match = re.compile(r'(?<=<span>).*?(?=<\/span>)')
-    r = re.findall(match, data[pos1:pos2].encode('gbk'))
+    r = re.findall(match, data.encode('gbk'))
     # print len(r), r
     pos1 = r[0].find('(')        
     pos2 = r[0].find(')', pos1)      
     if pos1 == -1 and pos2 == -1:
         return []
-    return (name, r[0][pos1+1:pos2])
+    return (name, codename, r[0][pos1+1:pos2])
         
 def get_stock_follows():
-    timetext = time.strftime("%Y-%m-%d", time.localtime()) 
+    timetext = time.strftime("%Y-%m-%d-%H:%M", time.localtime()) 
     fcsv = open('stock_follows-'+timetext+'.csv', 'wb')
     csvWriter = csv.writer(fcsv)
-    titles = 'Name','粉丝数'
+    titles = 'Name', '代码', '粉丝数'
     title = []
     for one in titles:
         title.append(one.encode('gbk'))
@@ -65,7 +68,7 @@ def get_stock_follows():
         if (code%100 == 0):
             print code
         codestr = 'sz' + "%06d" % int(code)
-        infostr = get_StockInfo(codestr)
+        infostr = get_StockFollows(codestr)
         if len(infostr) > 0:
             csvWriter.writerow(infostr)
         count += 1
@@ -76,7 +79,7 @@ def get_stock_follows():
         if (code%100 == 0):
             print code
         codestr = 'sh' + "%06d" % int(code)
-        infostr = get_StockInfo(codestr)
+        infostr = get_StockFollows(codestr)
         if len(infostr) > 0:
             csvWriter.writerow(infostr)
         count += 1
@@ -87,6 +90,9 @@ def get_stock_follows():
 if  __name__ == '__main__':
     print 'Start !'
     # print get_StockFollows('sz002183')
-    get_stock_follows()
+    while True:
+        time.sleep(1)
+        get_stock_follows()
+        time.sleep(3600)
     print 'Completed !'
     
