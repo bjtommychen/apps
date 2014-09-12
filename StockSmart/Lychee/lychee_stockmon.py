@@ -437,7 +437,7 @@ def stockmon_check_us_stock(force):
   
 def stockmon_init(): 
     wlist_load()
-    banner = '*** Stockmon Daemon. v1.0.1. ' 
+    banner = '*** Stockmon Daemon. v1.0.2 ' 
     banner += '_us_cn_'
     banner += '_google_quote_'
     banner += '\n'
