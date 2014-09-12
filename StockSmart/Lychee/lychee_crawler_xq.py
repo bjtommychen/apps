@@ -6,6 +6,7 @@ from selenium import webdriver
 import re
 import csv
 from lychee_webdrv import *
+import subprocess
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
@@ -21,6 +22,26 @@ xq_hotlist = []
 run_1st = True
 #wd = None
 count = 100       # > heartbeat_interval_in_seconds to make it show when boot
+    
+def external_cmd(cmd, msg_in=''):
+#    print cmd
+#     return None, None
+    try:
+        proc = subprocess.Popen(cmd,
+                   shell=True,
+                   stdin=subprocess.PIPE,
+                   stdout=subprocess.PIPE,
+                   stderr=subprocess.PIPE,
+                  )
+        stdout_value, stderr_value = proc.communicate(msg_in)
+        time.sleep(0.2)
+        return stdout_value, stderr_value
+    except ValueError as err:
+        print ("ValueError: %s" % err)
+        return None, None
+    except IOError as err:
+        print("IOError: %s" % err)
+        return None, None    
     
 def crawler_geturl(url):
     #global wd
@@ -39,25 +60,36 @@ def crawler_geturl(url):
         fp.close()
     else:
         data = wd.page_source.encode('utf8')
-    #print parse_hotlist(data)
+    # print parse_hotlist(data)
     wd.quit()
     return data
 
+def crawler_geturl_phantomjs(url):
+    # print url
+    cmdline = 'phantomjs snap_webpage.js ' + url + ' capture.png > xq_hotlist.html'
+    stdout_val, stderr_val = external_cmd(cmdline)
+    fp = open('xq_hotlist.html', 'rb')
+    data = fp.read()
+    fp.close()
+    print 'crawler_geturl_phantomjs got bytes:', len(data)
+    return data
+    
 def parse_hotlist(data):   
     #if '热度排行榜' in data:
     #    print 'find !'
     pos1 = data.find(u'关注排行榜'.encode('utf8'))
     pos2 = data.find(u'讨论排行榜'.encode('utf8'))
-    #print pos1, pos2, len(data)
+    print pos1, pos2, len(data)
+    if pos1 == -1 and pos2 == -1:
+        return []
     data = data[pos1:pos2]
-    #print data
-    #match = re.compile(r'(?<=target=["]_blank["] title=["]).*?(?=["])')  #for Chrome
-    match = re.compile(r'(?<=a title=["]).*?(?=["])')  #for Firefox
+    # print data
+    match = re.compile(r'(?<=target=["]_blank["] title=["]).*?(?=["])')  #for Chrome
+    # match = re.compile(r'(?<=a title=["]).*?(?=["])')  #for Firefox
     r = re.findall(match, data)
     print type(r), len(r)
     # 去除列表中重复的元素
     sort_r = sorted(set(r),key=r.index)
-    #print sort_r
     return sort_r
     
 def crawler_xq_init():
@@ -65,7 +97,7 @@ def crawler_xq_init():
     global xq_hotlist_file
     global xq_hotlist
     print 'init'
-    data = crawler_geturl(xq_url)
+    data = crawler_geturl_phantomjs(xq_url)
     print 'get data', len(data)
     hotlist = parse_hotlist(data)            
     print len(hotlist)
@@ -97,7 +129,7 @@ def crawler_xq_loadlist():
     return hotlist
     
 def crawler_init():
-    banner = '*** Crawler Daemon. v1.0.1. '
+    banner = '*** Crawler Daemon. v1.0.2 '
     banner += '_xq_hotlist_'
     banner += '\n'
     return banner
@@ -131,7 +163,7 @@ def crawler_xq_process(force = False):
     # do
     strout = ''
     timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
-    data = crawler_geturl(xq_url)
+    data = crawler_geturl_phantomjs(xq_url)
     hotlist = parse_hotlist(data)
     if len(hotlist) == 0:
         strout += 'crawler GetHtml Failed!'
@@ -156,7 +188,7 @@ def crawler_xq_process(force = False):
             count += 1
             if count >= (heartbeat_interval_in_seconds/update_interval_in_seconds):
                 count = 0
-                strout += ' -------------XQ Hottlist ' + str(len(xq_hotlist)) +' No change ! --------------\n' + timetext
+                strout += ' -------------XQ Hottlist ' + str(len(xq_hotlist)) +' No change ! phantomjs --------------\n' + timetext
             else:
                 strout += ''
     return strout
@@ -164,8 +196,8 @@ def crawler_xq_process(force = False):
 if  __name__ == '__main__':
     if False:
         crawler_xq_init()
-        data = crawler_geturl('http://www.xueqiu.com/hq')
-        print data
+        data = crawler_geturl_request('http://www.xueqiu.com/hq')
+        print len(data)
         fp = open('xq.html', 'wb')
         fp.write(data)
         fp.close()
@@ -178,10 +210,14 @@ if  __name__ == '__main__':
         for line in hotlist:
             wline = [line.decode('utf8').encode('gbk')]
             print repr(wline)
-    if True:            
+    if True:       
+        crawler_xq_init()
         while True:
-            strout = crawler_xq_process()
+            strout = crawler_xq_process(True)
             if strout != '':
                 print strout
-            time.sleep(1)
-
+            time.sleep(10)
+    data = crawler_geturl_phantomjs(xq_url)
+    hotlist = parse_hotlist(data)
+    for one in hotlist:
+        print one.encode('gbk')
