@@ -30,6 +30,7 @@ def get_StockFollows(code):
         # print r.encoding
         r.close()
     except Exception, e:
+        print 'Exception!'
         return []
 
     pos1 = data.find('div class="stockInfo"')        
@@ -93,6 +94,12 @@ if  __name__ == '__main__':
     while True:
         time.sleep(1)
         get_stock_follows()
-        time.sleep(3600)
+        print 'done.'
+        wait_hour = 12
+        while wait_hour > 0:
+            time.sleep(3600)
+            print '.h.',
+            wait_hour -= 1
+        print 'wait done'
     print 'Completed !'
     
