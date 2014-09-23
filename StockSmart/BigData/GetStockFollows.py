@@ -55,7 +55,7 @@ def get_StockFollows(code):
     return (name, codename, r[0][pos1+1:pos2])
         
 def get_stock_follows():
-    timetext = time.strftime("%Y-%m-%d-%H:%M", time.localtime()) 
+    timetext = time.strftime("%Y-%m-%d-%H-%M", time.localtime()) 
     fcsv = open('stock_follows-'+timetext+'.csv', 'wb')
     csvWriter = csv.writer(fcsv)
     titles = 'Name', '代码', '粉丝数'
@@ -66,9 +66,9 @@ def get_stock_follows():
     
     count = 0
     for code in (range(0, 4000) + range(300000, 301000)):
-        if (code%100 == 0):
-            print code
         codestr = 'sz' + "%06d" % int(code)
+        if (code%100 == 0):
+            print codestr
         infostr = get_StockFollows(codestr)
         if len(infostr) > 0:
             csvWriter.writerow(infostr)
@@ -76,10 +76,11 @@ def get_stock_follows():
         # if count > 10:
             # break    
     count = 0
+    fcsv.flush()
     for code in range(600000, 605005):
-        if (code%100 == 0):
-            print code
         codestr = 'sh' + "%06d" % int(code)
+        if (code%100 == 0):
+            print codestr
         infostr = get_StockFollows(codestr)
         if len(infostr) > 0:
             csvWriter.writerow(infostr)
@@ -95,11 +96,6 @@ if  __name__ == '__main__':
         time.sleep(1)
         get_stock_follows()
         print 'done.'
-        wait_hour = 12
-        while wait_hour > 0:
-            time.sleep(3600)
-            print '.h.',
-            wait_hour -= 1
-        print 'wait done'
+        time.sleep(3600)
     print 'Completed !'
     
