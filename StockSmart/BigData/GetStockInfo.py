@@ -95,8 +95,35 @@ def get_stock_list():
 
     fcsv.close()    
     
+
+def convert_stock_list():
+    reader = csv.reader(file('stock_info.csv','rb'))
+    fcsv = open('stock_info_converted.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    i = 0
+    for line in reader:
+        if i==0:
+            i+=1
+            csvWriter.writerow(line)
+            continue
+        writeline = []
+        for one in line:
+            one = one.decode('gbk')
+            if one.find(u'万') != -1 :
+                one = one.replace(u'万', '')
+            elif one.find(u'亿') != -1 :
+                one = str(float(one.replace(u'亿', ''))*10000)
+                # print type(one), one
+            writeline.append(one)
+        # print writeline
+        csvWriter.writerow(writeline)
+        i += 1
+    fcsv.close()    
+
+    
 if  __name__ == '__main__':
     print 'Start !'
-    get_stock_list()
+    # get_stock_list()
+    convert_stock_list()
     print 'Completed !'
     
