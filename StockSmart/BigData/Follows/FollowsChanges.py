@@ -9,7 +9,6 @@ import struct
 from pandas import DataFrame, Series
 import pandas as pd
 
-print 'System Default Encoding:',sys.getdefaultencoding()
 reload(sys) 
 sys.setdefaultencoding('utf')
 
@@ -69,7 +68,6 @@ def GetFollowChangesByName(df1, df2, name, startidx = 0):
     return 0                    
 
 # 流通股本
- 
 def GetLiuTong_fromInfos(df1, name):
     name = name.replace('(','').replace(')','').replace(':','').lower()
     for i in xrange(0, len(df1)):
@@ -78,7 +76,7 @@ def GetLiuTong_fromInfos(df1, name):
     return 0.
     
 def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
-    if chg_p1 > 200 and pct_chg > 10 and LiuTongYi < 40:
+    if chg_p1 > 100 and pct_chg > 5 and LiuTongYi < 80:
         return True
     else:
         return False
