@@ -96,6 +96,7 @@ if  __name__ == '__main__':
         time.sleep(1)
         get_stock_follows()
         print 'done.'
+        break
         time.sleep(3600)
     print 'Completed !'
     
