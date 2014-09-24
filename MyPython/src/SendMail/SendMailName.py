@@ -1,4 +1,3 @@
-
 import time
 import sys
 import os, smtplib, mimetypes  
@@ -7,6 +6,10 @@ import socket
 from email.mime.text import MIMEText  
 from email.mime.image import MIMEImage  
 from email.mime.multipart import MIMEMultipart  
+from email.Header import Header   
+
+reload(sys) 
+sys.setdefaultencoding('gbk')
 
 MAIL_LIST = ["tommy.chen@aa.com","chen.tao.tommy@aa.com"]  
 MAIL_HOST = '10.10.0.0'
@@ -49,10 +52,10 @@ def send_mail_local(subject, content, flist = None):
     print 'start to send mail.'
     try:  
         message = MIMEMultipart()  
-        message.attach(MIMEText(content, 'plain'))  
+        message.attach(MIMEText(content, 'plain', 'utf-8'))  
 #         message.attach(MIMEText(html, 'html'))  
 #         message.attach(MIMEText(html_sign, 'html'))  
-        message["Subject"] = subject  
+        message["Subject"] = Header(subject.decode('gbk'), 'utf-8')
         message["From"] = MAIL_FROM  
         message["To"] = ";".join(MAIL_LIST)
         message.preamble = 'You will not see this in a MIME-aware mail reader.\n'
