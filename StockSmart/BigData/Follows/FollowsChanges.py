@@ -72,11 +72,17 @@ def GetLiuTong_fromInfos(df1, name):
     name = name.replace('(','').replace(')','').replace(':','').lower()
     for i in xrange(0, len(df1)):
         if df1['A'][i] == name:
-            return (float)(df1['K'][i])
+            num = (df1['K'][i])
+            num = num.strip()
+            if len(num) > 1:
+                return (float)(df1['K'][i])
+            else:
+                return 0.0
     return 0.
     
 def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
-    if chg_p1 > 100 and pct_chg > 2 and LiuTongYi < 80:
+    # print type(pct_chg), pct_chg, chg_p1, LiuTongYi
+    if chg_p1 > 100 and pct_chg > 2.0 and LiuTongYi < 80:
         return True
     else:
         return False
