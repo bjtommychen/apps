@@ -106,8 +106,8 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         chg_p1 = GetFollowChangesByName(df, dfp1, name, i)
         chg_p2 = GetFollowChangesByName(dfp1, dfp2, name, i)
         chg_p3 = GetFollowChangesByName(dfp2, dfp3, name, i)
-        pct_chg = chg_p1*100./(follows-chg_p1)
-        line = name, code, chg_p1, '%.2f' % pct_chg, chg_p2, chg_p3
+        pct_chg = round(chg_p1*100./(follows-chg_p1), 2)
+        line = name, code, chg_p1, pct_chg, chg_p2, chg_p3        
         list.append(line)
     print "*** Result ***"
     print len(list), len(list[0])
