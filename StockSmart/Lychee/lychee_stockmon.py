@@ -271,7 +271,7 @@ class parseGoogleFinanceText(HTMLParser.HTMLParser):
         self.price_curr = float(self.data[1])
         self.price_change = float(self.data[2])
         for i in range(0, len(self.data)):
-            if self.data[i] == 'Open':
+            if self.data[i] == 'Open' and self.data[i+1].isdigit():
                 self.price_open = float(self.data[i+1])
                 break
     # def handle_starttag(self, tag, attrs):
@@ -481,8 +481,8 @@ def stockmon_process(force = False):
     return strout
             
 if  __name__ == '__main__':   
-    # print get_us_rt_price('amcn')
-    # print get_cn_rt_price('sh600036')
+    print get_cn_rt_price('sh600036')
+    print get_us_rt_price('amcn')
     while False:
         for one in us_list:
             print get_us_rt_price(one.upper())
@@ -491,8 +491,8 @@ if  __name__ == '__main__':
         print '------------------'
     # return 1;
     stockmon_init()
-    # wlist_add(['us', 'amcn', 5])
-    # wlist_add(['us', 'dang', 5])
+    wlist_add(['us', 'amcn', 5])
+    wlist_add(['us', 'dang', 5])
     # wlist_add(['cn', 'sh600036', 5])
     while True:
         str = stockmon_process(True)
