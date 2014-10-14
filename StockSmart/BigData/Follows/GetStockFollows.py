@@ -67,7 +67,7 @@ def get_stock_follows():
     count = 0
     for code in (range(0, 4000) + range(300000, 301000)):
         codestr = 'sz' + "%06d" % int(code)
-        if (code%100 == 0):
+        if (code%10 == 0):
             print codestr
         infostr = get_StockFollows(codestr)
         if len(infostr) > 0:
@@ -79,7 +79,7 @@ def get_stock_follows():
     fcsv.flush()
     for code in range(600000, 605005):
         codestr = 'sh' + "%06d" % int(code)
-        if (code%100 == 0):
+        if (code%10 == 0):
             print codestr
         infostr = get_StockFollows(codestr)
         if len(infostr) > 0:
