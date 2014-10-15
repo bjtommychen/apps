@@ -1,14 +1,19 @@
 .\GetStockFollows.py 
-FollowsChanges.py  > body.txt
+echo '[ China Market ]' > body.txt
+FollowsChanges.py  >> body.txt
 
 .\GetStockFollows_us.py 
+echo '[ US Market ]' >> body.txt
 FollowsChanges_us.py  >> body.txt
 
 .\GetStockFollows_hk.py 
+echo '[ HK Market ]' >> body.txt
 FollowsChanges_hk.py  >> body.txt
 
 cat body.txt
 xq_follows_sendmail.py "Ñ©Çò¹Ø×¢¸ú×Ù@xueqiu#" body.txt
 
 cp *.csv f:\KuaiDisk\StockSmart\follows\ -n
-pause
+echo 'wait 600s...'
+sleep 60
+rem pause
