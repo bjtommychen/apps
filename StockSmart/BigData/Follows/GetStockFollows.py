@@ -91,7 +91,8 @@ def get_stock_follows():
     
 if  __name__ == '__main__':
     print 'Start !'
-    # print get_StockFollows('sz002183')
+    print get_StockFollows('sz002183')
+    print get_StockFollows('sh600036')
     while True:
         time.sleep(1)
         get_stock_follows()
