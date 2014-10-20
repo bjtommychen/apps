@@ -11,10 +11,11 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
 sys.setdefaultencoding('utf')
+active_cnt = 0
 
 def beep_sos(): 
     #sys.stdout.write('\a')
-    print '\a'*2
+    print '\a'*2, 'beep !'
 
 def external_cmd(cmd, msg_in=''):
     print cmd
@@ -37,16 +38,32 @@ def external_cmd(cmd, msg_in=''):
         return None, None
 
 def SendInfo_ReActive():
-    external_cmd("echo ReActived. > body1.txt")
+    global active_cnt
+    active_cnt += 1
+    text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
+    external_cmd("echo ReActived " + str(active_cnt) + " at " + text +" > body1.txt")
     external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()    
 
 def Run_XQdailyFollowsChg():
+    text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
+    external_cmd("echo Run_XQdailyFollowsChg at " + text +" > body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
     external_cmd("XQdailyFollowsChg.bat")
+    # print 'test XQdailyFollowsChg'
+    # while True:
+        # text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
+        # print text
+        # time.sleep(30)
+        
+    beep_sos()
     beep_sos()
     
 def PowerState_Standby():
+    text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
+    external_cmd("echo Sleep at " + text +" > body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState 0,1,0')
     
@@ -56,8 +73,10 @@ def Check_NeedWork():
         # return False
     text = time.strftime("%H:%M", time.localtime())
     # print text
-    if text >= '06:30' and text <= '06:31': 
-    # if text >= '00:07' and text <= '00:08': #TEST    
+    print 'check', text
+    if text >= '06:16' and text <= '06:18': 
+        checkopen = True
+    if text >= '08:47' and text <= '08:59': #TEST    
         checkopen = True
     return checkopen
 
@@ -67,7 +86,7 @@ def Check_NeedSleep():
         # return False
     text = time.strftime("%H:%M", time.localtime())
     # print text
-    if text >= '07:30' and text <= '07:31': 
+    if text >= '07:40' and text <= '07:51': 
     # if text >= '00:10' and text <= '00:16': #TEST
         checkopen = True
     return checkopen
@@ -86,8 +105,10 @@ if  __name__ == '__main__':
             SendInfo_ReActive()
         # Process Cmds
         if Check_NeedSleep():
+            print 'Sleep now.'
             PowerState_Standby()
         if Check_NeedWork():
+            print 'Work for Money!'
             Run_XQdailyFollowsChg()
         # reset timer
         start = time.time()
