@@ -48,7 +48,7 @@ def SendInfo_ReActive():
 def Run_XQdailyFollowsChg():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo Run_XQdailyFollowsChg at " + text +" > body1.txt")
-    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    # external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
     external_cmd("XQdailyFollowsChg.bat")
     # print 'test XQdailyFollowsChg'
@@ -63,7 +63,7 @@ def Run_XQdailyFollowsChg():
 def PowerState_Standby():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo Sleep at " + text +" > body1.txt")
-    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    # external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState 0,1,0')
     
@@ -76,8 +76,8 @@ def Check_NeedWork():
     print 'check', text
     if text >= '06:16' and text <= '06:18': 
         checkopen = True
-    if text >= '08:47' and text <= '08:59': #TEST    
-        checkopen = True
+    # if text >= '08:47' and text <= '08:59': #TEST    
+        # checkopen = True
     return checkopen
 
 def Check_NeedSleep():   
@@ -86,7 +86,7 @@ def Check_NeedSleep():
         # return False
     text = time.strftime("%H:%M", time.localtime())
     # print text
-    if text >= '07:40' and text <= '07:51': 
+    if text >= '07:00' and text <= '07:02': 
     # if text >= '00:10' and text <= '00:16': #TEST
         checkopen = True
     return checkopen
