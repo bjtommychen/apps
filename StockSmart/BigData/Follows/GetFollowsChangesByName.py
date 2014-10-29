@@ -106,7 +106,7 @@ def GetPriceByDate(list, date):
         # print date, mDate, type(date), type(mDate)
         if date == mDate:
             # print date, mClose
-            return float(mClose)
+            return float(mOpen)
     return 0
     
 def GetFollows_ProcessList(followslist, filename_pricehistory):
@@ -137,24 +137,33 @@ def GetFollows_ProcessList(followslist, filename_pricehistory):
         list.append(line)
     return list
     
+def yahoo_name_convert(code):
+    if code.find('SH') != -1:
+        new = code.replace('SH','') + '.ss'
+    elif code.find('SZ') != -1:
+        new = code.replace('SZ','') + '.sz'
+    return new
+    
 def get_stock_history_csv(code, name):
-    url = 'http://ichart.finance.yahoo.com/table.csv?s=' + str(code) +'.ss'
+    url = 'http://ichart.finance.yahoo.com/table.csv?s=' + yahoo_name_convert(code)+'&a=8&b=1&c=2014'
     local = 'stock_history_price.csv'
-    if os.path.exists(local):
+    if False: #os.path.exists(local):
         print local, 'exist! skip!'
     else:  
         print 'get stock_history_csv for', name, ', url:', url
         socket.setdefaulttimeout(2)  
         urllib.urlretrieve(url, local, 0)
-        print 'got csv file, size:', os.path.getsize(local), 'bytes!'    
+        print 'got csv file, size:', os.path.getsize(local), 'bytes!'
     
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     # print filelist
     code = code.upper()
+    code = code.replace(':','')
     name, follows_list = GetFollows_InFiles(filelist, code)   
+    print name.decode('gbk')
+    get_stock_history_csv(code, name.decode('gbk'))
     # print follows_list
     follows_chg_list = GetFollows_ProcessList(follows_list, './stock_history_price.csv')
-    print name.decode('gbk')
     xdata = zip(*follows_chg_list)[0]   #get DataFrame from List
     df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT', 'PRICE'])
     print df
