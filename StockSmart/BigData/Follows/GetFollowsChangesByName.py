@@ -95,22 +95,29 @@ def GetFollows_InFiles(rawlist, code):
 
 def GetPriceByDate(list, date):
     # print len(list), len(list[0])
-    # print type(list[0]), type(list[1])    
+    # print type(list[0]), type(list[1])
+    # print 'GetPriceByDate', date    
     for row in list:
         if (len(row) != 7):
+            print len(row), 'must be 7!!!'
             continue
         mDate, mOpen, mHigh, mLow, mClose, mVolume, mAdj = row
+        # print mDate, mClose
         # print date, mDate, type(date), type(mDate)
         if date == mDate:
-            print mClose, type(mClose)
-            return mClose
-    return 0.0
+            # print date, mClose
+            return float(mClose)
+    return 0
     
 def GetFollows_ProcessList(followslist, filename_pricehistory):
     list = []
     init_run = True
+    last_day_price = 0
     print 'open', filename_pricehistory
-    pricehistory = csv.reader(file(filename_pricehistory,'rb'))
+    reader = csv.reader(file(filename_pricehistory,'rb'))
+    pricehistory = []
+    for row in reader:
+        pricehistory.append(row)
     for one in followslist:
         filename, name, code, follows = one
         if init_run:
@@ -122,7 +129,11 @@ def GetFollows_ProcessList(followslist, filename_pricehistory):
         follows_chgpct = round((follows - follows_prev)*100./follows_prev, 2)
         follows_prev = follows
         day_price = GetPriceByDate(pricehistory, filename)
-        line = filename, follows_chg, follows_chgpct
+        if day_price == 0:
+            day_price = last_day_price
+        else:
+            last_day_price = day_price
+        line = filename, follows_chg, follows_chgpct, day_price
         list.append(line)
     return list
     
@@ -145,14 +156,14 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     follows_chg_list = GetFollows_ProcessList(follows_list, './stock_history_price.csv')
     print name.decode('gbk')
     xdata = zip(*follows_chg_list)[0]   #get DataFrame from List
-    df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT'])
+    df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT', 'PRICE'])
     print df
-    return  #####
+    # return  #####
     fig = plt.figure()
     ax_left = df.CHG.plot(kind='bar')
     ax_left.set_ylabel('Follows Change')
-    ax_right = df.CHG_PCT.plot(secondary_y=True, style='R')
-    ax_right.set_ylabel('Follows Change %')
+    ax_right = df.PRICE.plot(secondary_y=True, style='R')
+    ax_right.set_ylabel('PRICE')
     plt.title(name.decode('gbk')+code)
     plt.xlabel('Date')
     plt.show()
