@@ -93,33 +93,61 @@ def GetFollows_InFiles(rawlist, code):
         # print follows
     return name, list
 
-def GetFollows_ProcessList(followslist):
+def GetPriceByDate(list, date):
+    # print len(list), len(list[0])
+    # print type(list[0]), type(list[1])    
+    for row in list:
+        if (len(row) != 7):
+            continue
+        mDate, mOpen, mHigh, mLow, mClose, mVolume, mAdj = row
+        # print date, mDate, type(date), type(mDate)
+        if date == mDate:
+            print mClose, type(mClose)
+            return mClose
+    return 0.0
+    
+def GetFollows_ProcessList(followslist, filename_pricehistory):
     list = []
     init_run = True
+    print 'open', filename_pricehistory
+    pricehistory = csv.reader(file(filename_pricehistory,'rb'))
     for one in followslist:
-        file, name, code, follows = one
+        filename, name, code, follows = one
         if init_run:
             init_run = False
             follows_prev = follows
             continue
-        file = file.replace('./stock_follows-','')[:10]
+        filename = filename.replace('./stock_follows-','')[:10]
         follows_chg = follows - follows_prev
         follows_chgpct = round((follows - follows_prev)*100./follows_prev, 2)
         follows_prev = follows
-        line = file, follows_chg, follows_chgpct
+        day_price = GetPriceByDate(pricehistory, filename)
+        line = filename, follows_chg, follows_chgpct
         list.append(line)
     return list
     
+def get_stock_history_csv(code, name):
+    url = 'http://ichart.finance.yahoo.com/table.csv?s=' + str(code) +'.ss'
+    local = 'stock_history_price.csv'
+    if os.path.exists(local):
+        print local, 'exist! skip!'
+    else:  
+        print 'get stock_history_csv for', name, ', url:', url
+        socket.setdefaulttimeout(2)  
+        urllib.urlretrieve(url, local, 0)
+        print 'got csv file, size:', os.path.getsize(local), 'bytes!'    
+    
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
-    print filelist
+    # print filelist
     code = code.upper()
     name, follows_list = GetFollows_InFiles(filelist, code)   
     # print follows_list
-    follows_chg_list = GetFollows_ProcessList(follows_list)
+    follows_chg_list = GetFollows_ProcessList(follows_list, './stock_history_price.csv')
     print name.decode('gbk')
-    xdata = zip(*follows_chg_list)[0]
+    xdata = zip(*follows_chg_list)[0]   #get DataFrame from List
     df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT'])
     print df
+    return  #####
     fig = plt.figure()
     ax_left = df.CHG.plot(kind='bar')
     ax_left.set_ylabel('Follows Change')
