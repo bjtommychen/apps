@@ -151,9 +151,13 @@ def get_stock_history_csv(code, name):
         print local, 'exist! skip!'
     else:  
         print 'get stock_history_csv for', name, ', url:', url
-        socket.setdefaulttimeout(2)  
-        urllib.urlretrieve(url, local, 0)
+        socket.setdefaulttimeout(4)
+        try: 
+            urllib.urlretrieve(url, local, 0)
+        except:
+            exit(1)
         print 'got csv file, size:', os.path.getsize(local), 'bytes!'
+        
     
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     # print filelist
@@ -184,9 +188,10 @@ if  __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', action='store', dest='codename', default='SH600036', help='Specify the stock code name, Example:SH600036.')
+    parser.add_argument('-path', action='store', dest='datapath', default='./', help='Specify the path contains the follows-csv files')
     parser.add_argument('--debug', action='store_const', dest='debug',default=0,const=1,help='enable debug mode.') 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()    
     
     print args.codename
-    GetFollowsByCode_InFiles(getFileList('./', '*.csv', False), args.codename)
+    GetFollowsByCode_InFiles(getFileList(args.datapath, '*.csv', False), args.codename)
