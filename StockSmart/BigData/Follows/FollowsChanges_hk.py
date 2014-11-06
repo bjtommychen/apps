@@ -110,8 +110,37 @@ def get_cn_rt_price(code):
         else:
             return ('', 0, 0, 0, 0, 0)
 
+us_url_swap = 1            
+def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
+    global us_url_swap
+    code = code.replace('(','').replace(')','').upper()
+    code = code.replace(':','').replace('HK0','') + '.hk'
+    # print code
+    if us_url_swap == 1:
+        url = 'http://finance.yahoo.com/d/quotes.csv?s=%s&f=nopl1hg' % code
+    else:
+        url = 'http://quote.yahoo.com/d/quotes.csv?s=%s&f=nopl1hg' % code
+    us_url_swap = (us_url_swap+1)%2
+    # print url
+    try:
+        sock = urllib.urlopen(url)
+        strs = sock.readline()
+        sock.close()
+        if 'strict' in strs:
+            return ('', 0, 0, 0, 0, 0) 
+    except Exception, e:
+        return ('', 0, 0, 0, 0, 0) 
+    else:
+        strs = string.replace(strs,'\r\n','')
+        data = strs.split('"')[2].split(',')
+        name = strs.split('"')[1]
+        if (name):
+            return (name, float(data[1]), float(data[2]), float(data[3]), 
+                     float(data[4]), float(data[5]))
+        else:
+            return ('', 0, 0, 0, 0, 0)                 
 def get_stock_lastday_status(code):
-    name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(code)
+    name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_yahoo(code)
     diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
     return lastclose, curr, diff_pct    
         
@@ -121,14 +150,16 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         if 'hk-' in one:
             dirfilelist.append(one)
             
-    filelist = dirfilelist[-6:]
+    filelist = dirfilelist[-8:]
     # print filelist
-    dfp5 = pd.read_csv(filelist[0], names = ['name', 'code', 'follows'], skiprows=[0])
-    dfp4 = pd.read_csv(filelist[1], names = ['name', 'code', 'follows'], skiprows=[0])
-    dfp3 = pd.read_csv(filelist[2], names = ['name', 'code', 'follows'], skiprows=[0])
-    dfp2 = pd.read_csv(filelist[3], names = ['name', 'code', 'follows'], skiprows=[0])
-    dfp1 = pd.read_csv(filelist[4], names = ['name', 'code', 'follows'], skiprows=[0])
-    df   = pd.read_csv(filelist[5], names = ['name', 'code', 'follows'], skiprows=[0])
+    dfp7 = pd.read_csv(filelist[0], names = ['name', 'code', 'follows'], skiprows=[0])
+    dfp6 = pd.read_csv(filelist[1], names = ['name', 'code', 'follows'], skiprows=[0])
+    dfp5 = pd.read_csv(filelist[2], names = ['name', 'code', 'follows'], skiprows=[0])
+    dfp4 = pd.read_csv(filelist[3], names = ['name', 'code', 'follows'], skiprows=[0])
+    dfp3 = pd.read_csv(filelist[4], names = ['name', 'code', 'follows'], skiprows=[0])
+    dfp2 = pd.read_csv(filelist[5], names = ['name', 'code', 'follows'], skiprows=[0])
+    dfp1 = pd.read_csv(filelist[6], names = ['name', 'code', 'follows'], skiprows=[0])
+    df   = pd.read_csv(filelist[7], names = ['name', 'code', 'follows'], skiprows=[0])
     df_stockinfo   = pd.read_csv('stock_info_converted.csv', names = ['A','B','C','D','E','F','G','H','I','J','K','L','M'], skiprows=[0])
 
     list = []
@@ -144,8 +175,10 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         chg_p3 = GetFollowChangesByName(dfp2, dfp3, name, i)
         chg_p4 = GetFollowChangesByName(dfp3, dfp4, name, i)
         chg_p5 = GetFollowChangesByName(dfp4, dfp5, name, i)
+        chg_p6 = GetFollowChangesByName(dfp5, dfp6, name, i)
+        chg_p7 = GetFollowChangesByName(dfp6, dfp7, name, i)
         pct_chg = round(chg_p1*100./(follows-chg_p1), 2)
-        line = name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5
+        line = name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7
         list.append(line)
     print "*** Result ***",
     print len(list), len(list[0]),
@@ -153,11 +186,11 @@ def GetFollowsChanges_InRecentFiles(rawlist):
     print 'sorted.'
     rlist = list[:100]
     for one in rlist:
-        name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5 = one
+        name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
         # LiuTongYi= GetLiuTong_fromInfos(df_stockinfo, one[1])/10000
         LiuTongYi = 0
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
-            print  '%-10s'%one[0].decode('gbk'), one[1], one[2], str(one[3])+'%', one[4:] 
+            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',', str(one[3])+'%', ',', one[4:], str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
             # , str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
     print filelist
     

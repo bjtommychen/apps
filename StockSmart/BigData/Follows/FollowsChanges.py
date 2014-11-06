@@ -84,7 +84,7 @@ def GetLiuTong_fromInfos(df1, name):
     
 def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
     # print type(pct_chg), pct_chg, chg_p1, LiuTongYi
-    if chg_p1 > 100 and pct_chg > 2.0 and LiuTongYi < 180:
+    if chg_p1 > 120 and pct_chg > 2.0 and LiuTongYi < 180:
         return True
     else:
         return False
