@@ -181,9 +181,22 @@ def get_stock_history_csv(code, name):
             exit(1)
         print 'Got csv file, size:', os.path.getsize(local), 'bytes!'
         
+def CodeName_AutoCompleted(code):
+    if len(code) == 6:      #SH,SZ
+        if code.isdigit():
+            if code[0] == '6':
+                code = 'SH:' + code
+            elif code[0] == '3' or code[0] == '0':
+                code = 'SZ:' + code
+    elif len(code) == 5:    #HK
+        if code.isdigit():
+            code = 'HK:' + code
+    return code
+    
 def CodeName_process(code):
     global codemarket
     global nameprefix    
+    code = CodeName_AutoCompleted(code)
     code = code.upper()
     code = code.replace(':','')
     if code.find('SH') != -1:
