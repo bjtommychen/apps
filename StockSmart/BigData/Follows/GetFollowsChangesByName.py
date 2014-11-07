@@ -124,14 +124,15 @@ def GetPriceByDate(list, date):
         # print date, mDate, type(date), type(mDate)
         if date == mDate:
             # print date, mClose
-            return float(mOpen)
-    return 0
+            return float(mOpen), float(mClose) 
+    return 0, 0
     
 def GetFollows_ProcessList(followslist, filename_pricehistory):
     global nameprefix  
     list = []
     init_run = True
     last_day_price = 0
+    day_price = 0
     print 'Open', filename_pricehistory
     reader = csv.reader(file(filename_pricehistory,'rb'))
     pricehistory = []
@@ -147,11 +148,12 @@ def GetFollows_ProcessList(followslist, filename_pricehistory):
         follows_chg = follows - follows_prev
         follows_chgpct = round((follows - follows_prev)*100./follows_prev, 2)
         follows_prev = follows
-        day_price = GetPriceByDate(pricehistory, filename)
-        if day_price == 0:
+        price_open, price_close = GetPriceByDate(pricehistory, filename)
+        if price_open == 0: #invalid
             day_price = last_day_price
         else:
-            last_day_price = day_price
+            day_price = price_open
+            last_day_price = price_close
         line = filename, follows_chg, follows_chgpct, day_price
         list.append(line)
     return list
@@ -225,9 +227,15 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     xdata = zip(*follows_chg_list)[0]   #get DataFrame from List
     df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT', 'PRICE'])
     print df
+    # print len(df)
+    # print df.CHG.describe()
+    CHG_mean = df.CHG.mean()
+    print 'CHG_mean', CHG_mean
+    # print [CHG_mean for x in range(10)]
     # return  #####
     fig = plt.figure()
     ax_left = df.CHG.plot(kind='bar', alpha=0.5, align='center', linewidth=2)
+    plt.plot([CHG_mean for x in range(len(df))], 'g--')
     ax_left.set_ylabel('Follows Change')
     ax_right = df.PRICE.plot(secondary_y=True, color='red', marker='v', linewidth=2, alpha=0.7)
     ax_right.set_ylabel('PRICE')
