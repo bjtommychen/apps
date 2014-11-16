@@ -203,16 +203,16 @@ def CodeName_process(code):
     code = code.replace(':','')
     if code.find('SH') != -1:
         codemarket = 0
-        nameprefix = './stock_follows-'
+        nameprefix = 'data/stock_follows-'
     elif code.find('SZ') != -1:
         codemarket = 0
-        nameprefix = './stock_follows-'
+        nameprefix = 'data/stock_follows-'
     elif code.find('HK') != -1:
         codemarket = 1
-        nameprefix = './hk-'
+        nameprefix = 'data/hk-'
     else:
         codemarket = 2
-        nameprefix = './nasdaq-'
+        nameprefix = 'data/nasdaq-'
     return code
     
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
@@ -252,7 +252,7 @@ if  __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', action='store', dest='codename', default='SH600036', help='Specify the stock code name, Example:SH600036.')
-    parser.add_argument('-path', action='store', dest='datapath', default='./', help='Specify the path contains the follows-csv files')
+    parser.add_argument('-path', action='store', dest='datapath', default='data/', help='Specify the path contains the follows-csv files')
     parser.add_argument('--debug', action='store_const', dest='debug',default=0,const=1,help='enable debug mode.') 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()    
