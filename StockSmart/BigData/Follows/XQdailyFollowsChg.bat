@@ -1,3 +1,4 @@
+chcp 936
 .\GetStockFollows.py 
 echo '[ China Market ]' > body.txt
 FollowsChanges.py  >> body.txt
@@ -13,6 +14,7 @@ echo '[ HK Market ]' >> body.txt
 FollowsChanges_hk.py  >> body.txt
 echo '' >> body.txt
 
+chcp 936
 cat body.txt
 xq_follows_sendmail.py "Ñ©Çò¹Ø×¢¸ú×Ù@xueqiu#" body.txt
 
