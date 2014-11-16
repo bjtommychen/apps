@@ -1,5 +1,4 @@
-﻿import time
-import sys
+﻿import sys
 import os
 import socket
 import math
@@ -10,12 +9,15 @@ import string
 import re
 import csv
 import requests
+import time
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
 sys.setdefaultencoding('utf')
+
+DebugMode = False
 
 def convert_num(string):
     return str(string)
@@ -55,8 +57,11 @@ def get_StockFollows(code):
     return (name, codename, r[0][pos1+1:pos2])
         
 def get_stock_follows_fromlist(stocklist):
+    global DebugMode
+    if os.environ.get('TOMMYDEBUG') == 'True':
+        DebugMode = True
     timetext = time.strftime("%Y-%m-%d-%H-%M", time.localtime()) 
-    fcsv = open('nasdaq-'+timetext+'.csv', 'wb')
+    fcsv = open('data/nasdaq-'+timetext+'.csv', 'wb')
     csvWriter = csv.writer(fcsv)
     titles = 'Name', '代码', '粉丝数'
     title = []
@@ -72,8 +77,8 @@ def get_stock_follows_fromlist(stocklist):
         if len(infostr) > 0:
             csvWriter.writerow(infostr)
         count += 1
-        # if count > 10:
-            # break    
+        if DebugMode and count > 10:
+            break    
 
     fcsv.close()    
 
