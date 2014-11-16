@@ -144,6 +144,46 @@ def get_stock_lastday_status(code):
     diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
     return lastclose, curr, diff_pct    
         
+def GetFollowsByCode(df1, code, startidx = 0):
+    codemarket = 0 
+    if startidx > 10:
+        startidx -= 10
+    # print code
+    if codemarket == 2:
+        code2 = code
+        # print code2
+        for i in xrange(startidx, len(df1)):
+            if df1['code'][i].find(code2) == -1:
+                continue
+            return df1['name'][i], df1['follows'][i]
+    else:
+        # code2 = '('+code[:2]+':'+code[2:]+')'
+        code2 = code
+        # print code2
+        for i in xrange(startidx, len(df1)):
+            if df1['code'][i] != code2:
+                continue
+            return df1['name'][i], df1['follows'][i]
+    return '',0  
+        
+def GetFollowsMeanByCode(dirfilelist, code = '(SH:600036)'):
+    follows_chg_list = []
+    last_follows = 0
+    for one in dirfilelist:
+        # print one
+        df_curr = pd.read_csv(one, names = ['name', 'code', 'follows'], skiprows=[0])
+        name, follows = GetFollowsByCode(df_curr, code)
+        if follows > 0:
+            if last_follows == 0:
+                last_follows = follows
+            else:
+                diff = abs(follows - last_follows)
+                last_follows = follows
+                follows_chg_list.append(diff)
+    # print follows_chg_list
+    df = Series(follows_chg_list)
+    # print df.mean()   
+    return (df.mean())
 def GetFollowsChanges_InRecentFiles(rawlist):
     dirfilelist = []
     for one in rawlist:
@@ -190,7 +230,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         # LiuTongYi= GetLiuTong_fromInfos(df_stockinfo, one[1])/10000
         LiuTongYi = 0
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
-            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',', str(one[3])+'%', ',', one[4:], str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
+            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
             # , str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
     print filelist
     
