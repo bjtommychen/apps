@@ -14,13 +14,15 @@ import string
 reload(sys) 
 sys.setdefaultencoding('utf')
 
+DebugMode = False
+
 def getFileList(path, ext, subdir = True ):
     if os.path.exists(path):
         dirlist = []
     
         for name in os.listdir(path):
             fullname = os.path.join(path, name)
-#            print fullname
+            # print fullname
             st = os.lstat(fullname)
             if stat.S_ISDIR(st.st_mode) and subdir:
                 dirlist += getFileList(fullname,ext)
@@ -195,6 +197,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         list.append(line)
     print "*** Result ***",
     print len(list), len(list[0]),
+    # print list
     list.sort(key=lambda data : data[2], reverse=True)
     print 'sorted.'
     rlist = list[:100]
@@ -210,5 +213,5 @@ if  __name__ == '__main__':
     print '##### Get Follows changes in csv file list.'
     print '#'*60      
     # GetFollowsChanges_InFileList(getFileList('./', 'stock_follows*.csv', False))
-    GetFollowsChanges_InRecentFiles(getFileList('./', '*.csv', False))
+    GetFollowsChanges_InRecentFiles(getFileList('data/', '*.csv', False))
     # print get_stock_lastday_status('sh600036')

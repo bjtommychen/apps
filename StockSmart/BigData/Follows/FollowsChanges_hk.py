@@ -239,5 +239,5 @@ if  __name__ == '__main__':
     print '##### Get Follows changes in csv file list.'
     print '#'*60      
     # GetFollowsChanges_InFileList(getFileList('./', 'stock_follows*.csv', False))
-    GetFollowsChanges_InRecentFiles(getFileList('./', '*.csv', False))
+    GetFollowsChanges_InRecentFiles(getFileList('data/', '*.csv', False))
     # print get_stock_lastday_status('sh600036')
