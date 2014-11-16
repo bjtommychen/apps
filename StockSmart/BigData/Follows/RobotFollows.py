@@ -86,7 +86,7 @@ def Check_NeedSleep():
         # return False
     text = time.strftime("%H:%M", time.localtime())
     # print text
-    if text >= '07:00' and text <= '07:02': 
+    if text >= '07:00' and text <= '07:22': 
     # if text >= '00:10' and text <= '00:16': #TEST
         checkopen = True
     return checkopen
