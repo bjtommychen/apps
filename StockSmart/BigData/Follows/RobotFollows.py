@@ -80,12 +80,12 @@ def Check_NeedWork():
     text = time.strftime("%H:%M", time.localtime())
     # print text
     # print 'check', text
-    if text >= '06:16' and text <= '06:18': 
+    if text >= '06:00' and text <= '06:10': 
         run_mode = 1
         checkopen = True
     # if text >= '08:47' and text <= '08:59': #TEST    
         # checkopen = True
-    if text >= '20:00' and text <= '20:05':
+    if text >= '20:00' and text <= '20:10':
         run_mode = 2
         checkopen = True
     return checkopen
