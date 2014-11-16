@@ -13,6 +13,8 @@ reload(sys)
 sys.setdefaultencoding('utf')
 active_cnt = 0
 
+run_mode = 0
+
 def beep_sos(): 
     #sys.stdout.write('\a')
     print '\a'*2, 'beep !'
@@ -46,17 +48,20 @@ def SendInfo_ReActive():
     beep_sos()    
 
 def Run_XQdailyFollowsChg():
+    global run_mode
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo Run_XQdailyFollowsChg at " + text +" > body1.txt")
     # external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
-    external_cmd("XQdailyFollowsChg.bat")
+    if mode == 1:
+        external_cmd("XQdailyFollowsChg_6AM.bat")
+    if mode == 2:
+        external_cmd("XQdailyFollowsChg_8PM.bat")
     # print 'test XQdailyFollowsChg'
     # while True:
         # text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
         # print text
         # time.sleep(30)
-        
     beep_sos()
     beep_sos()
     
@@ -68,6 +73,7 @@ def PowerState_Standby():
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState 0,1,0')
     
 def Check_NeedWork():
+    global run_mode
     checkopen = False
     # if (datetime.datetime.now().weekday() > 4):
         # return False
@@ -75,21 +81,28 @@ def Check_NeedWork():
     # print text
     # print 'check', text
     if text >= '06:16' and text <= '06:18': 
+        run_mode = 1
         checkopen = True
     # if text >= '08:47' and text <= '08:59': #TEST    
         # checkopen = True
+    if text >= '20:00' and text <= '20:05':
+        run_mode = 2
+        checkopen = True
     return checkopen
 
 def Check_NeedSleep():   
-    checkopen = False
+    checkclose = False
     # if (datetime.datetime.now().weekday() > 4):
         # return False
     text = time.strftime("%H:%M", time.localtime())
     # print text
-    if text >= '07:00' and text <= '07:22': 
+    if text >= '07:00' and text <= '07:30': 
     # if text >= '00:10' and text <= '00:16': #TEST
-        checkopen = True
-    return checkopen
+        checkclose = True
+    # night
+    if text >= '21:00' and text <= '21:01': 
+        checkclose = True
+    return checkclose
     
 if  __name__ == '__main__':
     print 'Start !'
