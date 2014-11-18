@@ -50,12 +50,12 @@ def SendInfo_ReActive():
 def Run_XQdailyFollowsChg():
     global run_mode
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
-    external_cmd("echo Run_XQdailyFollowsChg at " + text +" > body1.txt")
+    # external_cmd("echo Run_XQdailyFollowsChg at " + text +" > body1.txt")
     # external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
-    if mode == 1:
+    if run_mode == 1:
         external_cmd("XQdailyFollowsChg_6AM.bat")
-    if mode == 2:
+    if run_mode == 2:
         external_cmd("XQdailyFollowsChg_8PM.bat")
     # print 'test XQdailyFollowsChg'
     # while True:
@@ -68,7 +68,7 @@ def Run_XQdailyFollowsChg():
 def PowerState_Standby():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo Sleep at " + text +" > body1.txt")
-    # external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState 0,1,0')
     
@@ -80,12 +80,10 @@ def Check_NeedWork():
     text = time.strftime("%H:%M", time.localtime())
     # print text
     # print 'check', text
-    if text >= '06:00' and text <= '06:10': 
+    if text >= '06:05' and text <= '06:07': 
         run_mode = 1
         checkopen = True
-    # if text >= '08:47' and text <= '08:59': #TEST    
-        # checkopen = True
-    if text >= '20:00' and text <= '20:10':
+    if text >= '20:05' and text <= '20:07':
         run_mode = 2
         checkopen = True
     return checkopen
@@ -102,6 +100,12 @@ def Check_NeedSleep():
     # night
     if text >= '21:00' and text <= '21:01': 
         checkclose = True
+
+    if text >= '10:15' and text <= '10:20': 
+        checkclose = True
+    if text >= '16:15' and text <= '16:20': 
+        checkclose = True        
+        
     return checkclose
     
 if  __name__ == '__main__':
@@ -117,13 +121,13 @@ if  __name__ == '__main__':
         if elapsed > 40:
             SendInfo_ReActive()
         # Process Cmds
+        if Check_NeedWork():
+            print '\n*** Work for Money! ***'
+            Run_XQdailyFollowsChg()
+        # reset timer, Must before Sleep.
+        start = time.time()
         if Check_NeedSleep():
             print 'Sleep now.'
             PowerState_Standby()
-        if Check_NeedWork():
-            print 'Work for Money!'
-            Run_XQdailyFollowsChg()
-        # reset timer
-        start = time.time()
     print 'Completed !'
     
