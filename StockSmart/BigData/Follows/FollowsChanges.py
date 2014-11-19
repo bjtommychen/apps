@@ -114,7 +114,7 @@ def get_StockInfo(code):
     # for line in r:
         # print line.decode('gbk')
     if len(r) < 19:
-        return []
+        return ''
     # 52周最高, 52周最低, 总市值, 每股净资产, 市盈率, 总股本, 每股收益, 市净率, 30日均量, 流通股本, 股息率, 市销率
     infoline = ''
     # infoline.append(code)
