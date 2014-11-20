@@ -11,7 +11,6 @@ import pandas as pd
 import urllib, urllib2
 import string
 import re
-import csv
 import requests
 
 reload(sys) 
@@ -100,13 +99,13 @@ def get_StockInfo(code):
         # print r.encoding
         r.close()
     except Exception, e:
-        return []
+        return 'Error'
 
     pos1 = data.find('span class="stockName"')        
     pos2 = data.find('</table>', pos1)  
     # print pos1, pos2
     if pos1 == -1 and pos2 == -1:
-        return []
+        return 'Error'
     # print data[pos1:pos2].encode('gbk')
     match = re.compile(r'(?<=<span>).*?(?=<\/span>)')
     r = re.findall(match, data[pos1:pos2].encode('gbk'))
@@ -114,7 +113,7 @@ def get_StockInfo(code):
     # for line in r:
         # print line.decode('gbk')
     if len(r) < 19:
-        return ''
+        return 'Error'
     # 52周最高, 52周最低, 总市值, 每股净资产, 市盈率, 总股本, 每股收益, 市净率, 30日均量, 流通股本, 股息率, 市销率
     infoline = ''
     # infoline.append(code)
