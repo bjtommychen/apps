@@ -138,8 +138,13 @@ def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
     else:
         return False
 
-def get_cn_rt_price(code):
-    code = code.replace('(','').replace(')','').replace(':','').lower()
+# SINA API FOR HK, DELAY 15MIN        
+def get_hk_rt_price(code='hk00390'):
+    code = code.replace('(','').replace(')','').upper()
+    code = code.replace(':','').replace('HK0','') 
+    if len(code) == 4:
+        code = '0'+code
+    code = 'hk'+code
     url = 'http://hq.sinajs.cn/?list=%s' % code
     # print url
     try:
@@ -154,8 +159,8 @@ def get_cn_rt_price(code):
         name = "%s" % data[0]
         name = string.replace(name,' ','')
         if (name):
-            return (name, float(data[1]), float(data[2]), float(data[3]), 
-                     float(data[4]), float(data[5]))
+            return (name, float(data[1+1]), float(data[2+1]), float(data[3+1]), 
+                     float(data[4+1]), float(data[5+1]))
         else:
             return ('', 0, 0, 0, 0, 0)
 
@@ -187,10 +192,13 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
             return (name, float(data[1]), float(data[2]), float(data[3]), 
                      float(data[4]), float(data[5]))
         else:
-            return ('', 0, 0, 0, 0, 0)                 
+            return ('', 0, 0, 0, 0, 0)    
+            
 def get_stock_lastday_status(code):
-    name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_yahoo(code)
-    diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
+    name, openprice, lastclose, curr, todayhigh, todaylow = get_hk_rt_price(code)
+    diff_pct = '%Error'
+    if lastclose != 0:
+        diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
     return lastclose, curr, diff_pct    
         
 def GetFollowsByCode(df1, code, startidx = 0):
@@ -249,7 +257,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
     dfp2 = pd.read_csv(filelist[5], names = ['name', 'code', 'follows'], skiprows=[0])
     dfp1 = pd.read_csv(filelist[6], names = ['name', 'code', 'follows'], skiprows=[0])
     df   = pd.read_csv(filelist[7], names = ['name', 'code', 'follows'], skiprows=[0])
-    df_stockinfo   = pd.read_csv('stock_info_converted.csv', names = ['A','B','C','D','E','F','G','H','I','J','K','L','M'], skiprows=[0])
+    # df_stockinfo   = pd.read_csv('stock_info_converted.csv', names = ['A','B','C','D','E','F','G','H','I','J','K','L','M'], skiprows=[0])
 
     list = []
     for i in xrange(len(df)):
