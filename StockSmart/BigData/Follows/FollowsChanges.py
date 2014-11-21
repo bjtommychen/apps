@@ -140,7 +140,7 @@ def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
     else:
         return False
 
-def get_cn_rt_price(code):
+def get_cn_rt_price(code='SH600036'):
     code = code.replace('(','').replace(')','').replace(':','').lower()
     url = 'http://hq.sinajs.cn/?list=%s' % code
     # print url
@@ -163,7 +163,11 @@ def get_cn_rt_price(code):
 
 def get_stock_lastday_status(code):
     name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(code)
-    diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
+    if lastclose == 0:
+        name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(code)
+    diff_pct = '%Error'
+    if lastclose != 0:
+        diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
     return lastclose, curr, diff_pct    
         
 def GetFollowsByCode(df1, code, startidx = 0):
@@ -224,7 +228,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
     dfp2 = pd.read_csv(filelist[5], names = ['name', 'code', 'follows'], skiprows=[0])
     dfp1 = pd.read_csv(filelist[6], names = ['name', 'code', 'follows'], skiprows=[0])
     df   = pd.read_csv(filelist[7], names = ['name', 'code', 'follows'], skiprows=[0])
-    df_stockinfo   = pd.read_csv('stock_info_converted.csv', names = ['A','B','C','D','E','F','G','H','I','J','K','L','M'], skiprows=[0])
+    # df_stockinfo   = pd.read_csv('stock_info_converted.csv', names = ['A','B','C','D','E','F','G','H','I','J','K','L','M'], skiprows=[0])
 
     list = []
     for i in xrange(len(df)):
