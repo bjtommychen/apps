@@ -61,17 +61,29 @@ def GetFollowsChanges_InFileList(filelist):
             df2 = df.copy()
 
 def GetFollowChangesByName(df1, df2, name, startidx = 0):
-    if startidx > 10:
-        startidx -= 10
+    # if startidx > 10:
+        # startidx -= 10
+    # print startidx
+    range = 50
     for i in xrange(startidx, len(df1)):
         if df1['name'][i] != name:
             continue
-        for j in xrange(startidx, len(df2)):
+        # try fast mode first.
+        if startidx > range:
+            startidx -= range
+        for j in xrange(startidx, min(startidx+range*2, len(df2))):
             if name == df2['name'][j]:
                 follow_chg = df1['follows'][i] - df2['follows'][j]
                 # print type(follow_chg)
-                return follow_chg
-    return 0                    
+                return follow_chg, j
+        # use normal way
+        for j in xrange(0, len(df2)):
+            if name == df2['name'][j]:
+                follow_chg = df1['follows'][i] - df2['follows'][j]
+                return follow_chg, j
+        break        
+                
+    return 0, 0
 
 # 流通股本
 def GetLiuTong_fromInfos(df1, name):
@@ -232,22 +244,23 @@ def GetFollowsChanges_InRecentFiles(rawlist):
 
     list = []
     for i in xrange(len(df)):
-        # if i%100 == 0:
-            # print '...',i,'...'
+        if i%100 == 0:
+            print '.',
         name = df['name'][i]
         code = df['code'][i]
         # print name, code, GetLiuTong_fromInfos(df_stockinfo,code)
         follows = df['follows'][i]
-        chg_p1 = GetFollowChangesByName(df, dfp1, name, i)
-        chg_p2 = GetFollowChangesByName(dfp1, dfp2, name, i)
-        chg_p3 = GetFollowChangesByName(dfp2, dfp3, name, i)
-        chg_p4 = GetFollowChangesByName(dfp3, dfp4, name, i)
-        chg_p5 = GetFollowChangesByName(dfp4, dfp5, name, i)
-        chg_p6 = GetFollowChangesByName(dfp5, dfp6, name, i)
-        chg_p7 = GetFollowChangesByName(dfp6, dfp7, name, i)
+        chg_p1,idx = GetFollowChangesByName(df, dfp1, name, i)
+        chg_p2,idx = GetFollowChangesByName(dfp1, dfp2, name, idx)
+        chg_p3,idx = GetFollowChangesByName(dfp2, dfp3, name, idx)
+        chg_p4,idx = GetFollowChangesByName(dfp3, dfp4, name, idx)
+        chg_p5,idx = GetFollowChangesByName(dfp4, dfp5, name, idx)
+        chg_p6,idx = GetFollowChangesByName(dfp5, dfp6, name, idx)
+        chg_p7,idx = GetFollowChangesByName(dfp6, dfp7, name, idx)
         pct_chg = round(chg_p1*100./(follows-chg_p1), 2)
         line = name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7
         list.append(line)
+        # print line
     print "*** Result ***",
     print len(list), len(list[0]),
     # print list
@@ -258,12 +271,12 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
         xq_code = code.replace('(','').replace(')','').replace(':','').lower()
         # print name, code, xq_code
-        stock_info_str = get_StockInfo(xq_code)
         LiuTongYi = 0
         # LiuTongYi= GetLiuTong_fromInfos(df_stockinfo, one[1])/10000
         # if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
             # print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], u'流通股本'+str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
+            stock_info_str = get_StockInfo(xq_code)
             print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], u'流通股本'+stock_info_str, get_stock_lastday_status(one[1])
 
     print filelist
