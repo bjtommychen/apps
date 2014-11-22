@@ -72,6 +72,13 @@ def PowerState_Standby():
     beep_sos()
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState 0,1,0')
     
+def PowerState_Hibernate():
+    text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
+    external_cmd("echo Hibernate at " + text +" > body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    beep_sos()
+    external_cmd('rundll32.exe powrprof.dll,SetSuspendState')
+    
 def Check_NeedWork():
     global run_mode
     checkopen = False
@@ -94,7 +101,7 @@ def Check_NeedSleep():
         # return False
     text = time.strftime("%H:%M", time.localtime())
     # print text
-    if text >= '07:00' and text <= '07:30': 
+    if text >= '07:20' and text <= '07:30': 
     # if text >= '00:10' and text <= '00:16': #TEST
         checkclose = True
     # night
@@ -109,6 +116,7 @@ def Check_NeedSleep():
     return checkclose
     
 if  __name__ == '__main__':
+    force_sleep = False
     print 'Start !'
     SendInfo_ReActive()
     start = time.time()    
@@ -124,10 +132,12 @@ if  __name__ == '__main__':
         if Check_NeedWork():
             print '\n*** Work for Money! ***'
             Run_XQdailyFollowsChg()
+            force_sleep = True
         # reset timer, Must before Sleep.
         start = time.time()
-        if Check_NeedSleep():
+        if Check_NeedSleep() or force_sleep:
             print 'Sleep now.'
-            PowerState_Standby()
+            force_sleep = False
+            PowerState_Hibernate()
     print 'Completed !'
     
