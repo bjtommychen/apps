@@ -13,6 +13,8 @@ import string
 import re
 import requests
 
+from ParseWebPrice import *
+
 reload(sys) 
 sys.setdefaultencoding('utf')
 
@@ -58,18 +60,54 @@ def GetFollowsChanges_InFileList(filelist):
             print 'chg', chg
             df2 = df.copy()
 
+def GetFollowChangesByName_Assembled(list, name, startidx = 0):
+    # print len(list)
+    ff = []
+    lastone = 0
+    for i in xrange(0, len(list)):
+        df = list[i]
+        for j in xrange(0, len(df)):
+            if df['code'][j] != name:
+                continue
+            lastone = df['follows'][j]
+            ff.append(lastone)
+            # print j, lastone
+            break
+        if j == len(df)-1:
+            ff.append(lastone)
+    # print len(ff),ff
+    if len(ff) != len(list):
+        print len(ff), len(list)
+        exit(0)
+    ff_chg = []
+    for i in range(0, len(ff)-1):
+        ff_chg.append(ff[i]-ff[i+1])
+    return ff_chg
+    
 def GetFollowChangesByName(df1, df2, name, startidx = 0):
-    if startidx > 10:
-        startidx -= 10
+    # if startidx > 10:
+        # startidx -= 10
+    # print startidx
+    range = 50
     for i in xrange(startidx, len(df1)):
-        if df1['name'][i] != name:
+        if df1['code'][i] != name:
             continue
-        for j in xrange(startidx, len(df2)):
-            if name == df2['name'][j]:
+        # try fast mode first.
+        if startidx > range:
+            startidx -= range
+        for j in xrange(startidx, min(startidx+range*2, len(df2))):
+            if name == df2['code'][j]:
                 follow_chg = df1['follows'][i] - df2['follows'][j]
                 # print type(follow_chg)
-                return follow_chg
-    return 0                    
+                return follow_chg, j
+        # use normal way
+        for j in xrange(0, len(df2)):
+            if name == df2['code'][j]:
+                follow_chg = df1['follows'][i] - df2['follows'][j]
+                return follow_chg, j
+        break        
+                
+    return 0, 0
 
 # 流通股本
 def GetLiuTong_fromInfos(df1, name):
@@ -139,11 +177,7 @@ def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
         return False
 
 # SINA API FOR HK, DELAY 15MIN        
-def get_hk_rt_price(code='hk00390'):
-    code = code.replace('(','').replace(')','').upper()
-    code = code.replace(':','').replace('HK0','') 
-    if len(code) == 4:
-        code = '0'+code
+def get_hk_rt_price_sinaapi(code='hk00390'):
     code = 'hk'+code
     url = 'http://hq.sinajs.cn/?list=%s' % code
     # print url
@@ -164,6 +198,17 @@ def get_hk_rt_price(code='hk00390'):
         else:
             return ('', 0, 0, 0, 0, 0)
 
+def get_hk_rt_price(code='hk00390'):
+    code = code.replace('(','').replace(')','').upper()
+    code = code.replace(':','').replace('HK0','') 
+    if len(code) == 4:
+        code = '0'+code
+    # print code
+    if False:
+        return get_hk_rt_price_sinaapi(code)
+    else:
+        return get_hk_rt_price_SinaWeb_Requests(code)
+            
 us_url_swap = 1            
 def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
     global us_url_swap
@@ -195,6 +240,7 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
             return ('', 0, 0, 0, 0, 0)    
             
 def get_stock_lastday_status(code):
+    # return 0, 0, 0
     name, openprice, lastclose, curr, todayhigh, todaylow = get_hk_rt_price(code)
     diff_pct = '%Error'
     if lastclose != 0:
@@ -261,22 +307,26 @@ def GetFollowsChanges_InRecentFiles(rawlist):
 
     list = []
     for i in xrange(len(df)):
-        # if i%100 == 0:
-            # print '...',i,'...'
+        if i%100 == 0:
+            print '.',
         name = df['name'][i]
         code = df['code'][i]
-        # print name, code, GetLiuTong_fromInfos(df_stockinfo,code)
+        # print name, code
         follows = df['follows'][i]
-        chg_p1 = GetFollowChangesByName(df, dfp1, name, i)
-        chg_p2 = GetFollowChangesByName(dfp1, dfp2, name, i)
-        chg_p3 = GetFollowChangesByName(dfp2, dfp3, name, i)
-        chg_p4 = GetFollowChangesByName(dfp3, dfp4, name, i)
-        chg_p5 = GetFollowChangesByName(dfp4, dfp5, name, i)
-        chg_p6 = GetFollowChangesByName(dfp5, dfp6, name, i)
-        chg_p7 = GetFollowChangesByName(dfp6, dfp7, name, i)
+        if False:
+            chg_p1, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = GetFollowChangesByName_Assembled([df,dfp1, dfp2, dfp3, dfp4, dfp5, dfp6, dfp7], code, i)
+        else:
+            chg_p1,idx = GetFollowChangesByName(df, dfp1, code, i)
+            chg_p2,idx = GetFollowChangesByName(dfp1, dfp2, code, idx)
+            chg_p3,idx = GetFollowChangesByName(dfp2, dfp3, code, idx)
+            chg_p4,idx = GetFollowChangesByName(dfp3, dfp4, code, idx)
+            chg_p5,idx = GetFollowChangesByName(dfp4, dfp5, code, idx)
+            chg_p6,idx = GetFollowChangesByName(dfp5, dfp6, code, idx)
+            chg_p7,idx = GetFollowChangesByName(dfp6, dfp7, code, idx)
         pct_chg = round(chg_p1*100./(follows-chg_p1), 2)
         line = name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7
         list.append(line)
+        # print line
     print "*** Result ***",
     print len(list), len(list[0]),
     list.sort(key=lambda data : data[2], reverse=True)
@@ -288,9 +338,10 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         # print name, code, xq_code
         # LiuTongYi= GetLiuTong_fromInfos(df_stockinfo, one[1])/10000
         LiuTongYi = 0
-        stock_info_str = get_StockInfo(xq_code)
+        # stock_info_str = get_StockInfo(xq_code)
         # print stock_info_str
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
+            stock_info_str = get_StockInfo(xq_code)
             print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], u'港股市值'+stock_info_str, get_stock_lastday_status(one[1])
             # , str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
     print filelist
