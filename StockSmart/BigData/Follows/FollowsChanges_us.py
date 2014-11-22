@@ -192,7 +192,9 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
             
 def get_stock_lastday_status(code):
     name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_yahoo(code)
-    diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
+    diff_pct = '%Error'
+    if lastclose != 0:
+        diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
     return lastclose, curr, diff_pct    
         
 def GetFollowsByCode(df1, code, startidx = 0):
@@ -255,8 +257,8 @@ def GetFollowsChanges_InRecentFiles(rawlist):
 
     list = []
     for i in xrange(len(df)):
-        # if i%100 == 0:
-            # print '...',i,'...'
+        if i%100 == 0:
+            print '.',
         name = df['name'][i]
         code = df['code'][i]
         # print name, code, GetLiuTong_fromInfos(df_stockinfo,code)
@@ -282,9 +284,10 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         # print name, code, xq_code
         # LiuTongYi= GetLiuTong_fromInfos(df_stockinfo, one[1])/10000
         LiuTongYi = 0
-        stock_info_str = get_StockInfo(xq_code)
+        # stock_info_str = get_StockInfo(xq_code)
         # print stock_info_str
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
+            stock_info_str = get_StockInfo(xq_code)
             print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], u'总市值'+stock_info_str, get_stock_lastday_status(one[1])
             # , str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
     print filelist
