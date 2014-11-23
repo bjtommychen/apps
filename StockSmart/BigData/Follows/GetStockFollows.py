@@ -70,28 +70,48 @@ def get_stock_follows():
     csvWriter.writerow(title)
     
     count = 0
-    for code in (range(0, 4000) + range(300000, 301000)):
-        codestr = 'sz' + "%06d" % int(code)
-        if (code%10 == 0):
-            print codestr
-        infostr = get_StockFollows(codestr)
-        if len(infostr) > 0:
-            csvWriter.writerow(infostr)
-        count += 1
-        if DebugMode and count > 10:
-            break    
-    count = 0
-    fcsv.flush()
-    for code in range(600000, 605005):
-        codestr = 'sh' + "%06d" % int(code)
-        if (code%10 == 0):
-            print codestr
-        infostr = get_StockFollows(codestr)
-        if len(infostr) > 0:
-            csvWriter.writerow(infostr)
-        count += 1
-        if DebugMode and count > 10:
-            break    
+    if True: # from list
+        reader = csv.reader(file('stocklist_cn.csv','rb')) 
+        print 'Got list from csv'
+        for one in reader:   
+            code, name = one
+            # print code, name
+            if code[0] == '6':
+                codestr = 'sh' + code
+            else:
+                codestr = 'sz' + code
+            if (count%100 == 0):
+                print codestr
+                fcsv.flush()
+            infostr = get_StockFollows(codestr)
+            if len(infostr) > 0:
+                csvWriter.writerow(infostr)
+            count += 1
+            if DebugMode and count > 10:
+                break                
+    else:
+        for code in (range(0, 4000) + range(300000, 301000)):
+            codestr = 'sz' + "%06d" % int(code)
+            if (code%10 == 0):
+                print codestr
+            infostr = get_StockFollows(codestr)
+            if len(infostr) > 0:
+                csvWriter.writerow(infostr)
+            count += 1
+            if DebugMode and count > 10:
+                break    
+        count = 0
+        fcsv.flush()
+        for code in range(600000, 605005):
+            codestr = 'sh' + "%06d" % int(code)
+            if (code%10 == 0):
+                print codestr
+            infostr = get_StockFollows(codestr)
+            if len(infostr) > 0:
+                csvWriter.writerow(infostr)
+            count += 1
+            if DebugMode and count > 10:
+                break    
     fcsv.close()    
     
 if  __name__ == '__main__':
