@@ -25,6 +25,7 @@ def convert_num(string):
 def get_StockFollows_HK(code):
     url = 'http://xueqiu.com/S/%s/follows' % code
     # print url
+    # return []
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
         r = requests.get(url,timeout=5,headers=headers)
@@ -70,21 +71,38 @@ def get_stock_follows():
     csvWriter.writerow(title)
     
     count = 0
-    for code in (range(1, 4000) + range(6800, 6900) + range(8000, 8400)):
-        codestr = '' + "%05d" % int(code)
-        if (code%10 == 0):
-            print codestr
-        infostr = get_StockFollows_HK(codestr)
-        if len(infostr) > 0:
-            csvWriter.writerow(infostr)
-        count += 1
-        if DebugMode and count > 10:
-            break    
+    if True: # from list
+        reader = csv.reader(file('stocklist_hk.csv','rb')) 
+        print 'Got list from csv'
+        for one in reader:   
+            code, name = one
+            # print code, name
+            codestr = code
+            if (count%100 == 0):
+                print codestr
+                fcsv.flush()
+            infostr = get_StockFollows_HK(codestr)
+            if len(infostr) > 0:
+                csvWriter.writerow(infostr)
+            count += 1
+            if DebugMode and count > 10:
+                break                
+    else:
+        for code in (range(1, 4000) + range(6800, 6900) + range(8000, 8400)):
+            codestr = '' + "%05d" % int(code)
+            if (code%10 == 0):
+                print codestr
+            infostr = get_StockFollows_HK(codestr)
+            if len(infostr) > 0:
+                csvWriter.writerow(infostr)
+            count += 1
+            if DebugMode and count > 10:
+                break    
     fcsv.close()    
     
 if  __name__ == '__main__':
     print 'Start !'
-    # print get_StockFollows_HK('00218')
+    print get_StockFollows_HK('00218')
     while True:
         time.sleep(1)
         get_stock_follows()
