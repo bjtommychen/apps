@@ -137,7 +137,9 @@ if  __name__ == '__main__':
         start = time.time()
         if Check_NeedSleep() or force_sleep:
             print 'Sleep now.'
-            force_sleep = False
+            if force_sleep:
+                force_sleep = False
+                time.sleep(60*10)
             PowerState_Hibernate()
     print 'Completed !'
     
