@@ -1,4 +1,5 @@
-﻿import sys
+﻿import time
+import sys
 import os
 import socket
 import math
@@ -25,6 +26,7 @@ def convert_num(string):
 def get_StockFollows(code):
     url = 'http://xueqiu.com/S/%s/follows' % code
     # print url
+    # return []
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
         r = requests.get(url,timeout=5,headers=headers)
@@ -70,15 +72,32 @@ def get_stock_follows_fromlist(stocklist):
     csvWriter.writerow(title)
     
     count = 0
-    for symbol,fullname in stocklist:
-        if (count%100 == 0):
-            print count
-        infostr = get_StockFollows(symbol)
-        if len(infostr) > 0:
-            csvWriter.writerow(infostr)
-        count += 1
-        if DebugMode and count > 10:
-            break    
+    if True: # from list
+        reader = csv.reader(file('stocklist_us.csv','rb')) 
+        print 'Got list from csv'
+        for one in reader:   
+            code, name = one
+            # print code, name
+            codestr = code
+            if (count%100 == 0):
+                print codestr
+                fcsv.flush()
+            infostr = get_StockFollows(codestr)
+            if len(infostr) > 0:
+                csvWriter.writerow(infostr)
+            count += 1
+            if DebugMode and count > 10:
+                break                
+    else:
+        for symbol,fullname in stocklist:
+            if (count%100 == 0):
+                print count
+            infostr = get_StockFollows(symbol)
+            if len(infostr) > 0:
+                csvWriter.writerow(infostr)
+            count += 1
+            if DebugMode and count > 10:
+                break    
 
     fcsv.close()    
 
