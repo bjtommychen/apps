@@ -30,15 +30,15 @@ def external_cmd(cmd, msg_in=''):
 def crawler_geturl_phantomjs(url):
     # print url
     if True:
-        cmdline = 'phantomjs snap_webpage.js ' + url + ' capture.png > sinaweb.html'
+        cmdline = 'phantomjs snap_webpage.js ' + url + ' capture.png > parsewebprice.html'
         stdout_val, stderr_val = external_cmd(cmdline)
-    fp = open('sinaweb.html', 'rb')
+    fp = open('parsewebprice.html', 'rb')
     data = fp.read()
     fp.close()
     # print 'crawler_geturl_phantomjs got bytes:', len(data)
     return data
 
-class parseSinaWebFinanceText(HTMLParser.HTMLParser):
+class parseSinaWebFinanceText_hkstock(HTMLParser.HTMLParser):
     def __init__(self):  
         HTMLParser.HTMLParser.__init__(self)  
         self.price_curr = 0.
@@ -67,7 +67,6 @@ class parseSinaWebFinanceText(HTMLParser.HTMLParser):
                 # self.price_open = float(self.data[i+1])
                 # break    
 
-
 def get_hk_rt_price_SinaWeb_Requests(code):
     code = code.upper()
     url = 'http://stock.finance.sina.com.cn/hkstock/quotes/%s.html' % code
@@ -77,7 +76,7 @@ def get_hk_rt_price_SinaWeb_Requests(code):
     
     pos1 = data.find('class="deta01 clearfix')        
     pos2 = data.find('class="deta04 auction', pos1)
-    lParser = parseSinaWebFinanceText()
+    lParser = parseSinaWebFinanceText_hkstock()
     lParser.feed(data[pos1:pos2])
     # print lParser.data
     lParser.MyProcess()
@@ -94,8 +93,53 @@ def get_hk_rt_price_SinaWeb_Requests(code):
     # print 'SinaWeb',
     return (name, openprice, lastclose, curr, todayhigh, todaylow)
     
+class parseSinaWebFinanceText_usstock(HTMLParser.HTMLParser):
+    def __init__(self):  
+        HTMLParser.HTMLParser.__init__(self)  
+        self.price_curr = 0.
+        self.price_change = 0.
+        self.price_open = 0.
+        self.data=[]
+        self.idx = 0
+    def handle_data(self, data):
+        if data != '\n':
+            self.data.append(string.replace(data,'\n',''))
+            # print 'No.', self.idx, "Data     :", data
+            self.idx += 1
+    def MyProcess(self):
+        if self.data[1].find('.') != -1:
+            self.price_curr = float(self.data[1])
+        pos = self.data[5].find('(')
+        if self.data[5][:pos].find('.') != -1:
+            self.price_change = float(self.data[5][:pos])
+        if self.data[64].find('.') != -1:                
+            self.price_open = float(self.data[64])
+    
+def get_us_rt_price_SinaWeb_Requests(code):
+    code = code.upper()
+    url = 'http://stock.finance.sina.com.cn/usstock/quotes/%s.html?showhtml5' % code
+    # print url
+    data = crawler_geturl_phantomjs(url)
+    # print 'get data', len(data)
+    
+    pos1 = data.find('<div class="hq_summary" id="hqSummary">')        
+    pos2 = data.find('<th>前收盘', pos1)
+    lParser = parseSinaWebFinanceText_usstock()
+    lParser.feed(data[pos1:pos2])
+    lParser.MyProcess()
+    openprice = lParser.price_open
+    curr = lParser.price_curr
+    lastclose = curr - lParser.price_change
+    if lastclose < 0:
+        lastclose = 0
+    todayhigh = todaylow = 0    
+    name = code
+    return (name, openprice, lastclose, curr, todayhigh, todaylow)    
+    
 if  __name__ == '__main__':   
-    # print get_hk_rt_price_SinaWeb_Requests('00393')
+    print get_hk_rt_price_SinaWeb_Requests('00358')
     print get_hk_rt_price_SinaWeb_Requests('08201')
+    print get_us_rt_price_SinaWeb_Requests('sina')
+    print get_us_rt_price_SinaWeb_Requests('amcn')
     
     
