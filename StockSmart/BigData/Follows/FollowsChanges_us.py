@@ -136,7 +136,7 @@ def get_StockInfo(code):
 
 def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
     # print type(pct_chg), pct_chg, chg_p1, LiuTongYi
-    if chg_p1 > 30 and pct_chg > .20:# and LiuTongYi < 80:
+    if chg_p1 > 10 and pct_chg > .20:# and LiuTongYi < 80:
         return True
     else:
         return False
