@@ -13,6 +13,8 @@ import string
 import re
 import requests
 
+from ParseWebPrice import *
+
 reload(sys) 
 sys.setdefaultencoding('utf')
 
@@ -163,8 +165,7 @@ us_url_swap = 1
 def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
     global us_url_swap
     # print code.find(':')
-    code = code[code.find(':'):]
-    code = code.replace('(','').replace(')','').replace(':','').upper()
+
     # print code
     if us_url_swap == 1:
         url = 'http://finance.yahoo.com/d/quotes.csv?s=%s&f=nopl1hg' % code
@@ -191,7 +192,9 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
             return ('', 0, 0, 0, 0, 0)                 
             
 def get_stock_lastday_status(code):
-    name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_yahoo(code)
+    code = code[code.find(':'):]
+    code = code.replace('(','').replace(')','').replace(':','').upper()    
+    name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_SinaWeb_Requests(code)
     diff_pct = '%Error'
     if lastclose != 0:
         diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
