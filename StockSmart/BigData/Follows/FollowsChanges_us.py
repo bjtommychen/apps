@@ -63,11 +63,12 @@ def GetFollowsChanges_InFileList(filelist):
 def GetFollowChangesByName(df1, df2, name, startidx = 0):
     if startidx > 10:
         startidx -= 10
+    startidx = 0
     for i in xrange(startidx, len(df1)):
-        if df1['name'][i] != name:
+        if df1['code'][i] != name:
             continue
         for j in xrange(startidx, len(df2)):
-            if name == df2['name'][j]:
+            if name == df2['code'][j]:
                 follow_chg = df1['follows'][i] - df2['follows'][j]
                 # print type(follow_chg)
                 return follow_chg
@@ -266,13 +267,13 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         code = df['code'][i]
         # print name, code, GetLiuTong_fromInfos(df_stockinfo,code)
         follows = df['follows'][i]
-        chg_p1 = GetFollowChangesByName(df, dfp1, name, i)
-        chg_p2 = GetFollowChangesByName(dfp1, dfp2, name, i)
-        chg_p3 = GetFollowChangesByName(dfp2, dfp3, name, i)
-        chg_p4 = GetFollowChangesByName(dfp3, dfp4, name, i)
-        chg_p5 = GetFollowChangesByName(dfp4, dfp5, name, i)
-        chg_p6 = GetFollowChangesByName(dfp5, dfp6, name, i)
-        chg_p7 = GetFollowChangesByName(dfp6, dfp7, name, i)
+        chg_p1 = GetFollowChangesByName(df, dfp1, code, i)
+        chg_p2 = GetFollowChangesByName(dfp1, dfp2, code, i)
+        chg_p3 = GetFollowChangesByName(dfp2, dfp3, code, i)
+        chg_p4 = GetFollowChangesByName(dfp3, dfp4, code, i)
+        chg_p5 = GetFollowChangesByName(dfp4, dfp5, code, i)
+        chg_p6 = GetFollowChangesByName(dfp5, dfp6, code, i)
+        chg_p7 = GetFollowChangesByName(dfp6, dfp7, code, i)
         pct_chg = round(chg_p1*100./(follows-chg_p1), 2)
         line = name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7
         list.append(line)
