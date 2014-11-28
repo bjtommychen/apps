@@ -109,65 +109,18 @@ def GetFollowChangesByName(df1, df2, name, startidx = 0):
                 
     return 0, 0
 
-# 流通股本
-def GetLiuTong_fromInfos(df1, name):
-    name = name.replace('(','').replace(')','').replace(':','').lower()
-    for i in xrange(0, len(df1)):
-        if df1['A'][i] == name:
-            num = (df1['K'][i])
-            num = num.strip()
-            if len(num) > 1:
-                return (float)(df1['K'][i])
-            else:
-                return 0.0
-    return 0.
     
-def convert_num(string):
-    return str(string)
-    
-def get_StockInfo(code):
-    url = 'http://xueqiu.com/S/%s' % code
-    # print url
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
-        r = requests.get(url,timeout=5,headers=headers)
-        data = r.content
-        # print r.encoding
-        r.close()
-    except Exception, e:
-        return 'Error'
-
-    pos1 = data.find('span class="stockName"')        
-    pos2 = data.find('</table>', pos1)  
-    # print pos1, pos2
-    if pos1 == -1 and pos2 == -1:
-        return 'Error'
-    # print data[pos1:pos2].encode('gbk')
-    match = re.compile(r'(?<=<span>).*?(?=<\/span>)')
-    r = re.findall(match, data[pos1:pos2].encode('gbk'))
-    # print len(r), r
-    # for line in r:
-        # print line.decode('gbk')
-    if len(r) < 19:
-        return 'Error'
-    # 52周最高, 52周最低, 总市值, 每股净资产, 市盈率, 总股本, 每股收益, 市净率, 30日均量, 流通股本, 股息率, 市销率
-    infoline = ''
-    # infoline.append(code)
-    # infoline.append(convert_num(r[3]))
-    # infoline.append(convert_num(r[5]))
-    # infoline.append(convert_num(r[8]))
-    # infoline.append(convert_num(r[9]))
-    # infoline.append(convert_num(r[10]))
-    # infoline.append(convert_num(r[12]))
-    # infoline.append(convert_num(r[13]))
-    # infoline.append(convert_num(r[14]))
-    # infoline.append(convert_num(r[15]))
-    # infoline.append(convert_num(r[16]))
-    # infoline.append(convert_num(r[17]))
-    # infoline.append(convert_num(r[18]))
-    # print infoline
-    infoline += r[8].decode('gbk')
-    return infoline
+def GetStockInfo_fromFile(reader, check_code):
+    # name = name.replace('(','').replace(')','').replace(':','').lower()
+    # check_code = check_code[2:]
+    # print check_code
+    for one in reader:
+        # print one, code
+        code, name, info = one
+        # print code,check_code
+        if code == check_code:
+            return info
+    return 'N/A'
     
 def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
     # print type(pct_chg), pct_chg, chg_p1, LiuTongYi
@@ -311,7 +264,8 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             print '.',
         name = df['name'][i]
         code = df['code'][i]
-        # print name, code
+        xq_code = code[code.find(':'):].replace('(','').replace(')','').replace(':','').upper()
+        # print name, code, GetStockInfo_fromFile(csv.reader(file('stockinfo_hk.csv','rb')),xq_code)
         follows = df['follows'][i]
         if False:
             chg_p1, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = GetFollowChangesByName_Assembled([df,dfp1, dfp2, dfp3, dfp4, dfp5, dfp6, dfp7], code, i)
@@ -335,14 +289,10 @@ def GetFollowsChanges_InRecentFiles(rawlist):
     for one in rlist:
         name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
         xq_code = code[code.find(':'):].replace('(','').replace(')','').replace(':','').upper()
-        # print name, code, xq_code
-        # LiuTongYi= GetLiuTong_fromInfos(df_stockinfo, one[1])/10000
         LiuTongYi = 0
-        # stock_info_str = get_StockInfo(xq_code)
-        # print stock_info_str
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
-            stock_info_str = get_StockInfo(xq_code)
-            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], u'港股市值'+stock_info_str, get_stock_lastday_status(one[1])
+            stock_info_str = u'港股市值'+ GetStockInfo_fromFile(csv.reader(file('stockinfo_hk.csv','rb')),xq_code).decode('gbk')
+            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
             # , str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
     print filelist
     
