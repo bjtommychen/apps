@@ -265,7 +265,9 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             print '.',
         name = df['name'][i]
         code = df['code'][i]
-        # print name, code, GetLiuTong_fromInfos(df_stockinfo,code)
+        if False:
+            print '%-10s'%name, code, u'总市值'.encode('gbk')
+            exit(0)
         follows = df['follows'][i]
         chg_p1 = GetFollowChangesByName(df, dfp1, code, i)
         chg_p2 = GetFollowChangesByName(dfp1, dfp2, code, i)
@@ -292,8 +294,8 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         # print stock_info_str
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
             stock_info_str = get_StockInfo(xq_code)
-            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], u'总市值'+stock_info_str, get_stock_lastday_status(one[1])
-            # , str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
+            print  '%-10s'%one[0].decode('gbk').encode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], u'总市值'.encode('gbk')+stock_info_str.encode('gbk'), get_stock_lastday_status(one[1])
+            
     print filelist
     
 if  __name__ == '__main__':
