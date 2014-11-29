@@ -286,14 +286,21 @@ def GetFollowsChanges_InRecentFiles(rawlist):
     list.sort(key=lambda data : data[2], reverse=True)
     print 'sorted.'
     rlist = list[:100]
+    # Final 
+    fcsv = open('watch_hk.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
     for one in rlist:
         name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
         xq_code = code[code.find(':'):].replace('(','').replace(')','').replace(':','').upper()
         LiuTongYi = 0
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
             stock_info_str = u'港股市值'+ GetStockInfo_fromFile(csv.reader(file('stockinfo_hk.csv','rb')),xq_code).decode('gbk')
-            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
-            # , str(LiuTongYi)+u'亿', get_stock_lastday_status(one[1])
+            FollowsMultiple = (chg_p1/GetFollowsMeanByCode(dirfilelist, code))
+            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
+            if FollowsMultiple > 3:
+                watch_line = 'cn', xq_code, FollowsMultiple, stock_info_str
+                csvWriter.writerow(watch_line)
+    fcsv.close()
     print filelist
     
 if  __name__ == '__main__':
