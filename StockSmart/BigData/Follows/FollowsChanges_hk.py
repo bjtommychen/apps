@@ -151,7 +151,7 @@ def get_hk_rt_price_sinaapi(code='hk00390'):
         else:
             return ('', 0, 0, 0, 0, 0)
 
-def get_hk_rt_price(code='hk00390'):
+def get_hkstock_rt_price(code='hk00390'):
     code = code.replace('(','').replace(')','').upper()
     code = code.replace(':','').replace('HK0','') 
     if len(code) == 4:
@@ -194,7 +194,7 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
             
 def get_stock_lastday_status(code):
     # return 0, 0, 0
-    name, openprice, lastclose, curr, todayhigh, todaylow = get_hk_rt_price(code)
+    name, openprice, lastclose, curr, todayhigh, todaylow = get_hkstock_rt_price(code)
     diff_pct = '%Error'
     if lastclose != 0:
         diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
