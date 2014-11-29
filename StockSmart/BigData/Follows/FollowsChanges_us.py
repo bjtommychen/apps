@@ -241,7 +241,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         LiuTongYi = 0
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
             stock_info_str = u'总市值'+ GetStockInfo_fromFile(csv.reader(file('stockinfo_us.csv','rb')),xq_code).decode('gbk')
-            print  '%-10s'%one[0], one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
+            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
             
     print filelist
     
