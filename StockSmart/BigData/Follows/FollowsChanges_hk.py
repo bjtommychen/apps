@@ -160,7 +160,7 @@ def get_hk_rt_price(code='hk00390'):
     if False:
         return get_hk_rt_price_sinaapi(code)
     else:
-        return get_hk_rt_price_SinaWeb_Requests(code)
+        return get_hk_rt_price(code)
             
 us_url_swap = 1            
 def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
