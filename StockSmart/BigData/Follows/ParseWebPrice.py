@@ -57,7 +57,9 @@ class parseSinaWebFinanceText_hkstock(HTMLParser.HTMLParser):
         if self.data[1].find('.') != -1:
             self.price_curr = float(self.data[1])
         pos = self.data[6].find('（')
-        if self.data[6][:pos].find('.') != -1:
+        if pos == -1:
+            pos = self.data[6].find('(')
+        if self.data[6][:pos].find('.') != -1 and self.data[6][:pos].find('--') == -1:
             # print self.data[6][:pos], float(self.data[6][:pos])
             self.price_change = float(self.data[6][:pos])
         if self.data[85].find('.') != -1:                
