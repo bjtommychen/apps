@@ -151,7 +151,7 @@ def get_hk_rt_price_QQWeb_Mobile(code):
         r = requests.get(url,timeout=5,headers=headers)
         data = r.content
         # print r.encoding, len(data)
-        if True:
+        if False:
             fp = open('parsewebprice.html', 'wb')
             fp.write(data)
             fp.close()        
