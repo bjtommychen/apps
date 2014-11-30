@@ -194,7 +194,12 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
             
 def get_stock_lastday_status(code):
     # return 0, 0, 0
-    name, openprice, lastclose, curr, todayhigh, todaylow = get_hkstock_rt_price(code)
+    rt = get_hkstock_rt_price(code)
+    if rt == []:
+        rt = get_hkstock_rt_price(code)
+        if rt == []:
+            return 0,0,'%Error'
+    name, openprice, lastclose, curr, todayhigh, todaylow = rt
     diff_pct = '%Error'
     if lastclose != 0:
         diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
