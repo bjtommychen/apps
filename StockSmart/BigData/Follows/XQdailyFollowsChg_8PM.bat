@@ -3,6 +3,7 @@ rem .\GetStockFollows.py
 .\GetStockFollows_us.py 
 rem .\GetStockFollows_hk.py 
 cp data/*.csv f:\KuaiDisk\StockSmart\follows\data\ -n
+cp watch_us.csv d:\workspace\apps\StockSmart\Longan\
 
 echo '[ China Market --- PostClose ]' > body.txt
 FollowsChanges.py  >> body.txt
@@ -18,6 +19,7 @@ echo '' >> body.txt
 
 chcp 936
 cat body.txt
+cp body.txt f:\KuaiDisk\StockSmart\follows\
 xq_follows_sendmail.py "я╘гР╧ьв╒╦ЗвымМио╨ц@xueqiu#" body.txt
 
 echo 'wait 60s...'
