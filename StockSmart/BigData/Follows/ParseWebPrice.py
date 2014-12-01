@@ -222,6 +222,7 @@ def get_us_rt_price_SinaWeb_Requests(code):
     openprice = lParser.price_open
     curr = lParser.price_curr
     lastclose = curr - lParser.price_change
+    lastclose = round(lastclose, 2)
     if lastclose < 0:
         lastclose = 0
     todayhigh = todaylow = 0    
