@@ -111,6 +111,7 @@ def stockmon_check_cn_stock(force):
             diff_ppk = 0
             if price_old:
                 diff_ppk = abs((curr - price_old)*1000/price_old)
+                chg_ppk = ((curr - price_old)*1000/price_old)
             day_chg_pct = 0
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
@@ -119,6 +120,8 @@ def stockmon_check_cn_stock(force):
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name.encode('gbk')
                 wlist_stock[i][3] = curr
+                if chg_ppk > 0:
+                    strout += '↑'
                 strout += '%s: %s, %s, %s%%,%sX,%s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
     if need_printout:
         strout += timetext
