@@ -124,7 +124,7 @@ def GetStockInfo_fromFile(reader, check_code):
     
 def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
     # print type(pct_chg), pct_chg, chg_p1, LiuTongYi
-    if chg_p1 > 10 and pct_chg > 2.0:# and LiuTongYi < 80:
+    if chg_p1 > 10 and pct_chg > 1.0:# and LiuTongYi < 80:
         return True
     else:
         return False
@@ -300,7 +300,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         LiuTongYi = 0
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
             stock_info_str = u'港股市值'+ GetStockInfo_fromFile(csv.reader(file('stockinfo_hk.csv','rb')),xq_code).decode('gbk')
-            FollowsMultiple = (chg_p1/GetFollowsMeanByCode(dirfilelist, code))
+            FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 2)
             print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
             if FollowsMultiple > 3:
                 watch_line = 'hk', xq_code, FollowsMultiple, stock_info_str

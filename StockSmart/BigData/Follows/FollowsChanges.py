@@ -229,7 +229,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         LiuTongYi = 0
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
             stock_info_str = u'总市值'+GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), xq_code).decode('gbk')
-            FollowsMultiple = (chg_p1/GetFollowsMeanByCode(dirfilelist, code))
+            FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 2)
             print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
             if FollowsMultiple > 5 and chg_p1 > 200:
                 watch_line = 'cn', xq_code, FollowsMultiple, stock_info_str
