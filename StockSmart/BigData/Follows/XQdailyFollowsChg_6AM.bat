@@ -18,6 +18,7 @@ echo '' >> body.txt
 
 cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
 cp watch_*.csv f:\KuaiDisk\StockSmart\follows\
+call copy2ec2.bat watch_*.csv
 
 chcp 936
 cat body.txt
