@@ -3,7 +3,6 @@ rem .\GetStockFollows.py
 .\GetStockFollows_us.py 
 rem .\GetStockFollows_hk.py 
 cp data/*.csv f:\KuaiDisk\StockSmart\follows\data\ -n
-cp watch_us.csv d:\workspace\apps\StockSmart\Longan\
 
 echo '[ China Market --- PostClose ]' > body.txt
 FollowsChanges.py  >> body.txt
@@ -16,6 +15,10 @@ echo '' >> body.txt
 echo '[ HK Market --- PostClose ]' >> body.txt
 FollowsChanges_hk.py  >> body.txt
 echo '' >> body.txt
+
+cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
+cp watch_*.csv f:\KuaiDisk\StockSmart\follows\
+
 
 chcp 936
 cat body.txt
