@@ -126,7 +126,7 @@ def stockmon_check_cn_stock(force):
                     strout += '↑'
                 if chg_ppk < 0:
                     strout += '↓'
-                strout += '%s: %s, %s, %s%%, %sX, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+                strout += '%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
     if need_printout:
         strout += timetext
     return strout
@@ -153,7 +153,7 @@ def stockmon_check_us_stock(force):
     for i in range(0, len(wlist_stock)):
         if wlist_stock[i][0] != 'us':
             continue
-        print 'checking', wlist_stock[i]
+        # print 'checking', wlist_stock[i]
         name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price(wlist_stock[i][1])
         # print name, openprice, lastclose, curr, todayhigh, todaylow
         if stockmon_debug:
@@ -175,7 +175,7 @@ def stockmon_check_us_stock(force):
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             # print name, diff_ppk, day_chg_pct
-            if (diff_ppk >= 5 or stockmon_debug): # and day_chg_pct > 2:
+            if (diff_ppk >= 10 or stockmon_debug) and day_chg_pct > 2:
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
                 wlist_stock[i][3] = curr
@@ -183,7 +183,7 @@ def stockmon_check_us_stock(force):
                     strout += '↑' #.encode('gbk')
                 if chg_ppk < 0:
                     strout += '↓' #.encode('gbk')
-                strout += '%s: %s, %s, %s%%, %sX, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+                strout += '%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
     if need_printout:
         strout += timetext
     return strout
@@ -264,7 +264,7 @@ if  __name__ == '__main__':
         if force:
             force = False
         if msgstr != '':
-            print '*** Msg out *** \n', msgstr
+            print '*** Msg out *** \n'
             Gtalk_send(msgstr)
         time.sleep(5)
         print '.',
