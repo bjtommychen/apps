@@ -41,8 +41,8 @@ def check_cn_market_open():
         checkopen = True
     elif text >= '13:00' and text <= '15:00':
         checkopen = True
-    if stockmon_enable:
-        print 'cn market status:', checkopen
+    # if stockmon_enable:
+        # print 'cn market status:', checkopen
     return checkopen
 
 def check_us_market_open():
@@ -90,7 +90,7 @@ def stockmon_check_cn_stock(force):
     timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
     if not cn_market_open:
         timetext += 'Close'
-    timetext += '\n'
+    timetext += '\n\n'
     #check list
     wlist_stock = wlist
     need_printout = False
@@ -104,7 +104,7 @@ def stockmon_check_cn_stock(force):
             # strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
             day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
-            strout += '%s: %s, %s, %s%%\n' %(name,curr, (curr-lastclose), day_chg_pct)
+            strout += '#%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
             wlist_stock[i][2] = '%s'% name.encode('gbk')
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -119,7 +119,7 @@ def stockmon_check_cn_stock(force):
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             #print diff_ppk, day_chg_pct
-            if (diff_ppk >= 5 or stockmon_debug) and day_chg_pct > 2:
+            if (diff_ppk >= 5 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name.encode('gbk')
                 wlist_stock[i][3] = curr
@@ -146,7 +146,7 @@ def stockmon_check_us_stock(force):
     timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
     if not us_market_open:
         timetext += 'Close'
-    timetext += '\n'
+    timetext += '\n\n'
     #check list
     wlist_stock = wlist
     need_printout = False
@@ -161,7 +161,7 @@ def stockmon_check_us_stock(force):
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
             day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
-            strout += '%s: %s, %s, %s%%\n' %(name, curr, (curr-lastclose), day_chg_pct)
+            strout += '#%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
             wlist_stock[i][2] = '%s'% name
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -176,7 +176,7 @@ def stockmon_check_us_stock(force):
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             # print name, diff_ppk, day_chg_pct
-            if (diff_ppk >= 10 or stockmon_debug) and day_chg_pct > 2:
+            if (diff_ppk >= 5 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
                 wlist_stock[i][3] = curr
@@ -203,7 +203,7 @@ def stockmon_check_hk_stock(force):
     timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
     if not hk_market_open:
         timetext += 'Close'
-    timetext += '\n'
+    timetext += '\n\n'
     #check list
     wlist_stock = wlist
     need_printout = False
@@ -218,7 +218,7 @@ def stockmon_check_hk_stock(force):
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
             day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
-            strout += '%s: %s, %s, %s%%\n' %(name, curr, (curr-lastclose), day_chg_pct)
+            strout += '#HK:%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
             wlist_stock[i][2] = '%s'% name
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -233,7 +233,7 @@ def stockmon_check_hk_stock(force):
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             # print name, diff_ppk, day_chg_pct
-            if (diff_ppk >= 5 or stockmon_debug) and day_chg_pct > 2:
+            if (diff_ppk >= 5 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
                 wlist_stock[i][3] = curr
@@ -276,7 +276,7 @@ def stockmon_process(force = False):
     list = watchlist_update() 
     if list != [] and len(list) > 0:
         # print list
-        strout += 'WatchList updated ! new len:' + str(len(list)) + '\n'
+        strout += 'WatchList updated ! len:' + str(len(wlist)) + ' -> ' + str(len(list)) + '\n'
         wlist = []
         count = 0
         for one in list:
@@ -287,6 +287,7 @@ def stockmon_process(force = False):
             wlist.append([market, code, '', 0, float('%.1f' % float(follows_multiple)), market_value])
         # print 'new wlist:', wlist
         print 'new watchlist! len:', len(wlist)
+        stockmon_force = True
     else:
         print '@',
 
@@ -314,7 +315,7 @@ def stockmon_process(force = False):
 if  __name__ == '__main__':   
     force = False
     banner = stockmon_init()
-    use_Gtalk = False
+    use_Gtalk = True
     if use_Gtalk:
         Gtalk_init()
         Gtalk_run()
