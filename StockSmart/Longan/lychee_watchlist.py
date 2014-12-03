@@ -4,7 +4,7 @@ import stat,fnmatch
 import datetime
 import csv
 
-filelist = [['watch_cn.csv', ''], ['watch_hk.csv', ''], ['watch_us.csv', ''],]
+filelist = [['watch_cn.csv', ''], ['watch_hk.csv', ''], ['watch_us.csv', ''], ['hold_cn.csv', ''], ['hold_hk.csv', ''], ['hold_us.csv', ''],]
 
 def watchlist_update():
     DataPath = './'
@@ -28,6 +28,7 @@ def watchlist_update():
                     bChanged = True
                     break
     if bChanged:
+        time.sleep(10)  #Wait until all watch list file copied.   
         return watchlist_load()
     else:
         return []
