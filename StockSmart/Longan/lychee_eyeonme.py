@@ -22,6 +22,7 @@ start_time = time.time()
 update_interval_in_seconds = 30
 
 cn_market_open = False
+hk_market_open = False
 us_market_open = False
 run_1st = True
 
@@ -93,7 +94,7 @@ def stockmon_check_cn_stock(force):
     #check list
     wlist_stock = wlist
     need_printout = False
-    print 'Check one by one, ',  len(wlist_stock)
+    print 'Check cn one by one, ',  len(wlist_stock)
     for i in range(0, len(wlist_stock)):
         if wlist_stock[i][0] != 'cn':
             continue
@@ -118,7 +119,7 @@ def stockmon_check_cn_stock(force):
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             #print diff_ppk, day_chg_pct
-            if (diff_ppk >= 10 or stockmon_debug) and day_chg_pct > 2:
+            if (diff_ppk >= 5 or stockmon_debug) and day_chg_pct > 2:
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name.encode('gbk')
                 wlist_stock[i][3] = curr
@@ -188,7 +189,62 @@ def stockmon_check_us_stock(force):
         strout += timetext
     return strout
 
-      
+#['market','code','name','price','ppk_limit']            
+def stockmon_check_hk_stock(force):
+    global hk_market_open
+    global wlist
+    strout = ''
+    if not force and hk_market_open == check_cn_market_open() and hk_market_open == False:
+        return ''
+    if hk_market_open != check_cn_market_open():    #check if market status changed.
+        hk_market_open = check_cn_market_open()
+        force = True
+    #get time
+    timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
+    if not hk_market_open:
+        timetext += 'Close'
+    timetext += '\n'
+    #check list
+    wlist_stock = wlist
+    need_printout = False
+    print 'Check hk one by one, ',  len(wlist_stock)
+    for i in range(0, len(wlist_stock)):
+        if wlist_stock[i][0] != 'hk':
+            continue
+        # print 'checking', wlist_stock[i]
+        name, openprice, lastclose, curr, todayhigh, todaylow = get_hk_rt_price(wlist_stock[i][1])
+        # print name, openprice, lastclose, curr, todayhigh, todaylow
+        if stockmon_debug:
+            strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
+        if force:
+            day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+            strout += '%s: %s, %s, %s%%\n' %(name, curr, (curr-lastclose), day_chg_pct)
+            wlist_stock[i][2] = '%s'% name
+            need_printout = True
+        elif wlist_stock[i][3] != curr and lastclose != 0:
+            price_old = float(wlist_stock[i][3])
+            if price_old == 0.0:
+                price_old = 0.1
+            diff_ppk = 0
+            if price_old:
+                diff_ppk = abs((curr - price_old)*1000/price_old)
+                chg_ppk = ((curr - price_old)*1000/price_old)
+            day_chg_pct = 0
+            if lastclose:
+                day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+            # print name, diff_ppk, day_chg_pct
+            if (diff_ppk >= 5 or stockmon_debug) and day_chg_pct > 2:
+                need_printout = True
+                wlist_stock[i][2] = '%s'% name
+                wlist_stock[i][3] = curr
+                if chg_ppk > 0:
+                    strout += '↑' #.encode('gbk')
+                if chg_ppk < 0:
+                    strout += '↓' #.encode('gbk')
+                strout += 'HK:%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+    if need_printout:
+        strout += timetext
+    return strout      
   
 def stockmon_init(): 
     banner = '*** Stockmon Daemon. Longan Version. v1.0 ' 
@@ -248,13 +304,18 @@ def stockmon_process(force = False):
         strout += stockmon_check_us_stock(stockmon_force)
     except:
         strout += 'check us stock except!'
+    try:
+        strout += stockmon_check_hk_stock(stockmon_force)
+    except:
+        strout += 'check hk stock except!'
     stockmon_force = False
     return strout
             
 if  __name__ == '__main__':   
     force = False
     banner = stockmon_init()
-    if True:
+    use_Gtalk = False
+    if use_Gtalk:
         Gtalk_init()
         Gtalk_run()
         Gtalk_send('Welcome tommy! Eye on Yours! ')
@@ -264,8 +325,10 @@ if  __name__ == '__main__':
         if force:
             force = False
         if msgstr != '':
-            print '*** Msg out *** \n'
-            Gtalk_send(msgstr)
+            if not use_Gtalk:
+                print '*** Msg out *** \n', msgstr, '*** Msg done ***\n'
+            else:
+                Gtalk_send(msgstr)
         time.sleep(5)
         print '.',
         
