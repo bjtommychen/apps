@@ -119,7 +119,7 @@ def stockmon_check_cn_stock(force):
             if lastclose:
                 day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
             #print diff_ppk, day_chg_pct
-            if (diff_ppk >= 5 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
+            if (diff_ppk >= 8 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name.encode('gbk')
                 wlist_stock[i][3] = curr
@@ -288,8 +288,8 @@ def stockmon_process(force = False):
         # print 'new wlist:', wlist
         print 'new watchlist! len:', len(wlist)
         stockmon_force = True
-    else:
-        print '@',
+    # else:
+        # print '@',
 
     if not force and (curr_time - start_time) < update_interval_in_seconds:    #update intervals
         return strout
@@ -331,5 +331,5 @@ if  __name__ == '__main__':
             else:
                 Gtalk_send(msgstr)
         time.sleep(5)
-        print '.',
+        # print '.',
         
