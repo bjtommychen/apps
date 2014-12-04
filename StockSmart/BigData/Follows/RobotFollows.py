@@ -148,34 +148,41 @@ if  __name__ == '__main__':
     myip_count = 0
     print 'Start !'
     SendInfo_ReActive()
-    start = time.time()    
+    last_tick = time.time()    
     while True:
         print '.',
-        time.sleep(30)
-        end = time.time()
-        elapsed = float('%.2f' %(end - start))
+        time.sleep(60)
+        curr_tick = time.time()
+        elapsed = float('%.2f' %(curr_tick - last_tick))
+        last_tick = curr_tick
         # print 'elapsed', elapsed
-        if elapsed > 40:
+        if elapsed > 600:
             SendInfo_ReActive()
+            continue
+
+        if myip_count > (myip_checkinterval/30) or myip == '':
+            if myip != getmyip():
+                myip = getmyip()
+                myip_count = 0
+                print 'New IP:', myip
+                myip_changed_notification()
+        else:
+            myip_count += 1
+
         # Process Cmds
         if Check_NeedWork():
             print '\n*** Work for Money! ***'
             Run_XQdailyFollowsChg()
             force_sleep = True
+            continue
         # reset timer, Must before Sleep.
-        start = time.time()
+        # last_tick = time.time()
         if Check_NeedSleep() or force_sleep:
             print 'Sleep now.'
             if force_sleep:
                 force_sleep = False
                 time.sleep(60*10)
             PowerState_Hibernate()
-        if myip_count > (myip_checkinterval/30) or myip == '':
-            myip = getmyip()
-            myip_count = 0
-            print 'New IP:', myip
-            myip_changed_notification()
-        else:
-            myip_count += 1
+            continue
     print 'Completed !'
     
