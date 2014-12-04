@@ -5,6 +5,8 @@ import string
 import subprocess
 import thread 
 import argparse
+import socket
+import urllib2, re
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -12,8 +14,15 @@ print 'System Default Encoding:',sys.getdefaultencoding()
 reload(sys) 
 sys.setdefaultencoding('utf')
 active_cnt = 0
-
 run_mode = 0
+
+myip_checkinterval = 600 # check every 600s
+
+def getmyip():
+    url = urllib2.urlopen('http://ip138.com/ip2city.asp')
+    result = url.read()
+    m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+    return m.group(0)
 
 def beep_sos(): 
     #sys.stdout.write('\a')
@@ -78,6 +87,25 @@ def PowerState_Hibernate():
     external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState')
+
+def myip_changed_notification():
+    text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
+    external_cmd("echo MyIP Changed at " + text +" > body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    
+def Check_PrepareForOpen():
+    global run_mode
+    checkopen = False
+    # if (datetime.datetime.now().weekday() > 4):
+        # return False
+    text = time.strftime("%H:%M", time.localtime())
+    if text >= '06:05' and text <= '06:07': 
+        run_mode = 1
+        checkopen = True
+    if text >= '20:05' and text <= '20:07':
+        run_mode = 2
+        checkopen = True
+    return checkopen
     
 def Check_NeedWork():
     global run_mode
@@ -116,6 +144,8 @@ def Check_NeedSleep():
     
 if  __name__ == '__main__':
     force_sleep = False
+    myip = ''
+    myip_count = 0
     print 'Start !'
     SendInfo_ReActive()
     start = time.time()    
@@ -140,5 +170,12 @@ if  __name__ == '__main__':
                 force_sleep = False
                 time.sleep(60*10)
             PowerState_Hibernate()
+        if myip_count > (myip_checkinterval/30) or myip == '':
+            myip = getmyip()
+            myip_count = 0
+            print 'New IP:', myip
+            myip_changed_notification()
+        else:
+            myip_count += 1
     print 'Completed !'
     
