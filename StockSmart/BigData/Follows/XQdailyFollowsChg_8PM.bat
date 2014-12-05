@@ -16,14 +16,14 @@ echo '[ HK Market --- PostClose ]' >> body.txt
 FollowsChanges_hk.py  >> body.txt
 echo '' >> body.txt
 
-cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
-cp watch_*.csv f:\KuaiDisk\StockSmart\follows\
-call copy2ec2.bat watch_*.csv
-
 chcp 936
 cat body.txt
 cp body.txt f:\KuaiDisk\StockSmart\follows\
 xq_follows_sendmail.py "Ñ©Çò¹Ø×¢¸ú×ÙÍíÉÏºÃ@xueqiu#" body.txt
+
+cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
+cp watch_*.csv f:\KuaiDisk\StockSmart\follows\
+pscp -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan
 
 echo 'wait 60s...'
 sleep 60
