@@ -24,12 +24,22 @@ update_interval_in_seconds = 30
 cn_market_open = False
 hk_market_open = False
 us_market_open = False
+flag_heartbeat = False
 run_1st = True
 
 wlist = []
 
 def stockmon_enable_send(onoff):
     stockmon_enable = onoff        
+
+def check_heartbeat():
+    # return True
+    text = time.strftime("%H:%M", time.localtime())
+    pos = text.find(':')
+    if text[pos+1:] == '00':
+        return True
+    else:
+        return False
     
 def check_cn_market_open():
     global stockmon_enable
@@ -247,7 +257,7 @@ def stockmon_check_hk_stock(force):
     return strout      
   
 def stockmon_init(): 
-    banner = '*** Stockmon Daemon. Longan Version. v1.0 ' 
+    banner = '*** Stockmon Daemon. Longan Version. v2.0 ' 
     banner += '_us_cn_hk_RealTime_'
     banner += '\n'
     return banner    
@@ -261,6 +271,7 @@ def stockmon_process(force = False):
     global stockmon_force
     global run_1st
     global wlist
+    global flag_heartbeat
     
     if run_1st:
         force = True
@@ -269,6 +280,14 @@ def stockmon_process(force = False):
         stockmon_force = True
     # update ?
     strout = ''
+    
+    if flag_heartbeat != check_heartbeat():
+        flag_heartbeat = check_heartbeat()
+        if flag_heartbeat:
+            return '!---$$$♋D♐€€€---!'
+        else:
+            return ''
+    
     curr_time = time.time()
     # if stockmon_debug:
         # print (curr_time - start_time)
