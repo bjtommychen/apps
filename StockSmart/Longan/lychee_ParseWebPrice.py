@@ -184,7 +184,8 @@ def get_hk_rt_price_QQWeb_Mobile(code):
     pos2 = data.find('</span>', pos1)
     name_str = data[pos1:pos2+1]
     name_str = name_str[:name_str.rfind('</strong>')]    
-    name_str = name_str[name_str.rfind('>')+1:]  
+    name_str = name_str[name_str.rfind('>')+1:]
+    name_str = name_str.decode('gbk')    
     # print name_str        
         
     pos1 = data.find('<div class="price">')        
