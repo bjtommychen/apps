@@ -19,11 +19,14 @@ run_mode = 0
 myip_checkinterval = 600 # check every 600s
 
 def getmyip():
-    url = urllib2.urlopen('http://ip138.com/ip2city.asp')
-    result = url.read()
-    m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
-    return m.group(0)
-
+    try:
+        url = urllib2.urlopen('http://ip138.com/ip2city.asp')
+        result = url.read()
+        m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+        return m.group(0)
+    except:
+        return 'Get IP Error'
+        
 def beep_sos(): 
     #sys.stdout.write('\a')
     print '\a'*2, 'beep !'
@@ -63,16 +66,29 @@ def Run_XQdailyFollowsChg():
     # external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
     if run_mode == 1:
-        external_cmd("XQdailyFollowsChg_6AM.bat")
+        stdout_value, stderr_value = external_cmd("XQdailyFollowsChg_6AM.bat")
     if run_mode == 2:
-        external_cmd("XQdailyFollowsChg_8PM.bat")
+        stdout_value, stderr_value = external_cmd("XQdailyFollowsChg_8PM.bat")
     # print 'test XQdailyFollowsChg'
     # while True:
         # text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
         # print text
         # time.sleep(30)
+    fp = open('external_cmd.log', 'wb')
+    fp.write(stdout_value)
+    fp.write(stderr_value)
+    fp.close()
     beep_sos()
     beep_sos()
+    
+def DoCommand_CopyWatchListToCloud():
+    text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
+    external_cmd("echo DoCommand_CopyWatchListToCloud at " + text +" > body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    beep_sos()
+    external_cmd('pscp -batch -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan')
+    
+     
     
 def PowerState_Standby():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
@@ -118,7 +134,12 @@ def Check_NeedWork():
     if text >= '06:05' and text <= '06:07': 
         run_mode = 1
         checkopen = True
-    if text >= '20:05' and text <= '20:07':
+
+    # if text >= '10:10' and text <= '10:12': 
+        # run_mode = 1
+        # checkopen = True        
+        
+    if text >= '20:15' and text <= '20:17':
         run_mode = 2
         checkopen = True
     return checkopen
@@ -135,8 +156,8 @@ def Check_NeedSleep():
     # night
     if text >= '23:30' and text <= '23:31': 
         checkclose = True
-    # if text >= '10:15' and text <= '10:16': 
-        # checkclose = True
+    if text >= '10:15' and text <= '10:16': 
+        checkclose = True
     if text >= '16:15' and text <= '16:16': 
         checkclose = True        
         
@@ -173,6 +194,7 @@ if  __name__ == '__main__':
         if Check_NeedWork():
             print '\n*** Work for Money! ***'
             Run_XQdailyFollowsChg()
+            last_tick = time.time()
             force_sleep = True
             continue
         # reset timer, Must before Sleep.
@@ -182,6 +204,7 @@ if  __name__ == '__main__':
             if force_sleep:
                 force_sleep = False
                 time.sleep(60*10)
+            DoCommand_CopyWatchListToCloud()
             PowerState_Hibernate()
             continue
     print 'Completed !'
