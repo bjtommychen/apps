@@ -204,7 +204,7 @@ if  __name__ == '__main__':
             if force_sleep:
                 force_sleep = False
                 time.sleep(60*10)
-            DoCommand_CopyWatchListToCloud()
+                DoCommand_CopyWatchListToCloud()
             PowerState_Hibernate()
             continue
     print 'Completed !'
