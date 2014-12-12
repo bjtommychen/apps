@@ -99,7 +99,7 @@ def GetStockInfo_fromFile(reader, check_code):
     
 def CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
     # print type(pct_chg), pct_chg, chg_p1, LiuTongYi
-    if chg_p1 > 100 and pct_chg > 2.0: # and LiuTongYi < 180:
+    if chg_p1 > 200 and pct_chg > 2.0: # and LiuTongYi < 180:
         return True
     else:
         return False
@@ -231,7 +231,8 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), xq_code).decode('gbk')
             stock_info_str = u'总市值'+ value_str
             FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 2)
-            print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
+            if FollowsMultiple > 2:
+                print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
             if FollowsMultiple > 5 and chg_p1 > 200:
                 watch_line = 'cn', xq_code, FollowsMultiple, value_str
                 csvWriter.writerow(watch_line)
