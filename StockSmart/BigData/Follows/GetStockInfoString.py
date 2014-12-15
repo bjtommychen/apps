@@ -12,12 +12,33 @@ import csv
 import requests
 import time
 
+'''
+按照股票列表stocklist_cn.csv
+从xueqiu读入股票信息, 现在重点是市值方面的
+然后写入文件stockinfo_cn.csv
+'''
+
 print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
 sys.setdefaultencoding('utf')
 
 DebugMode = False
+
+def Float2Int_InString(str):
+    # print str
+    pos = str.find('.')
+    if  pos == -1:
+        return str
+    else:
+        rt = str[:pos]
+        for i in range(pos + 1, len(str)):
+            ch = str[i]
+            # print 'NO.',i, ch
+            if not ch.isdigit():
+                rt += ch
+        # print 'result:', rt
+        return rt
 
 #####################
 ######## CN #########
@@ -82,6 +103,7 @@ def get_stock_infos_cn():
             print codestr
             fcsv.flush()
         infostr = get_StockInfo_cn(codestr)
+        infostr = Float2Int_InString(infostr)
         # print infostr
         # exit(0)
         if len(infostr) > 0:
@@ -146,6 +168,7 @@ def get_stock_infos_hk():
             print codestr
             fcsv.flush()
         infostr = get_StockInfo_hk(codestr)
+        infostr = Float2Int_InString(infostr)
         # print infostr
         # exit(0)
         if len(infostr) > 0:
@@ -210,6 +233,7 @@ def get_stock_infos_us():
             print codestr
             fcsv.flush()
         infostr = get_StockInfo_us(codestr)
+        infostr = Float2Int_InString(infostr)
         # print infostr
         # exit(0)
         if len(infostr) > 0:
@@ -222,8 +246,9 @@ def get_stock_infos_us():
     
 if  __name__ == '__main__':
     print 'Start !'    
-    print get_StockInfo_cn('sh600030')
+    print Float2Int_InString(get_StockInfo_cn('sh600030'))
     print get_StockInfo_cn('sh600458')
-    get_stock_infos_cn()
-    # get_stock_infos_hk()
-    # get_stock_infos_us()    
+    # print Float2Int_InString('123.456Wan')
+    # get_stock_infos_cn()
+    get_stock_infos_hk()
+    get_stock_infos_us()    
