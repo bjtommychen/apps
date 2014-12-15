@@ -57,7 +57,7 @@ def check_cn_market_open():
 
 def check_us_market_open():
     checkopen = False
-    if (datetime.datetime.now().weekday() > 4):
+    if (datetime.datetime.now().weekday() > 5):
         return False
     text = time.strftime("%H:%M", time.localtime())
     if text >= '21:30' and text <= '23:59':
@@ -113,8 +113,9 @@ def stockmon_check_cn_stock(force):
         # if stockmon_debug:
             # strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
-            day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
-            strout += '#%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+            day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
+            open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
+            strout += '#%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5], open_chg_pct)
             wlist_stock[i][2] = '%s'% name.encode('gbk')
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -126,18 +127,34 @@ def stockmon_check_cn_stock(force):
                 diff_ppk = abs((curr - price_old)*1000/price_old)
                 chg_ppk = ((curr - price_old)*1000/price_old)
             day_chg_pct = 0
+            open_chg_pct = 0
             if lastclose:
-                day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+                day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
+                open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
             #print diff_ppk, day_chg_pct
-            if (diff_ppk >= 8 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
+            if wlist_stock[i][5] == 'hold':
+                if diff_ppk >= 5 or stockmon_debug:
+                    need_printout = True
+                    wlist_stock[i][2] = '%s'% name.encode('gbk')
+                    wlist_stock[i][3] = curr    #backup as last ref.
+                    if chg_ppk > 0:
+                        if day_chg_pct > 2:
+                            strout +='★'
+                        strout += '↑'
+                    if chg_ppk < 0:
+                        strout += '↓'
+                    strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+            elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name.encode('gbk')
                 wlist_stock[i][3] = curr
                 if chg_ppk > 0:
+                    if day_chg_pct < 4 and open_chg_pct < 1:
+                        strout +='★'
                     strout += '↑'
                 if chg_ppk < 0:
                     strout += '↓'
-                strout += '%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+                strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
     if need_printout:
         strout += timetext
     return strout
@@ -170,8 +187,9 @@ def stockmon_check_us_stock(force):
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
-            day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
-            strout += '#%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+            day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
+            open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
+            strout += '#%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
             wlist_stock[i][2] = '%s'% name
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -183,18 +201,34 @@ def stockmon_check_us_stock(force):
                 diff_ppk = abs((curr - price_old)*1000/price_old)
                 chg_ppk = ((curr - price_old)*1000/price_old)
             day_chg_pct = 0
+            open_chg_pct = 0
             if lastclose:
-                day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+                day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
+                open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
             # print name, diff_ppk, day_chg_pct
-            if (diff_ppk >= 5 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
+            if wlist_stock[i][5] == 'hold':
+                if diff_ppk >= 5 or stockmon_debug:
+                    need_printout = True
+                    wlist_stock[i][2] = '%s'% name
+                    wlist_stock[i][3] = curr    #backup as last ref.
+                    if chg_ppk > 0:
+                        if day_chg_pct > 2:
+                            strout +='★'
+                        strout += '↑'
+                    if chg_ppk < 0:
+                        strout += '↓'
+                    strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+            elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
                 wlist_stock[i][3] = curr
                 if chg_ppk > 0:
+                    if day_chg_pct < 8 and open_chg_pct < 1:
+                        strout +='★'
                     strout += '↑' #.encode('gbk')
                 if chg_ppk < 0:
                     strout += '↓' #.encode('gbk')
-                strout += '%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+                strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
     if need_printout:
         strout += timetext
     return strout
@@ -227,8 +261,9 @@ def stockmon_check_hk_stock(force):
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
-            day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
-            strout += '#HK:%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+            day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
+            open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
+            strout += '#HK:%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
             wlist_stock[i][2] = '%s'% name
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -240,18 +275,34 @@ def stockmon_check_hk_stock(force):
                 diff_ppk = abs((curr - price_old)*1000/price_old)
                 chg_ppk = ((curr - price_old)*1000/price_old)
             day_chg_pct = 0
+            open_chg_pct = 0
             if lastclose:
-                day_chg_pct = round ((curr-lastclose)*100/lastclose, 2)
+                day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
+                open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
             # print name, diff_ppk, day_chg_pct
-            if (diff_ppk >= 5 or stockmon_debug) and (day_chg_pct > 1 or wlist_stock[i][5] == 'hold'):
+            if wlist_stock[i][5] == 'hold':
+                if diff_ppk >= 5 or stockmon_debug:
+                    need_printout = True
+                    wlist_stock[i][2] = '%s'% name
+                    wlist_stock[i][3] = curr    #backup as last ref.
+                    if chg_ppk > 0:
+                        if day_chg_pct > 2:
+                            strout +='★'
+                        strout += '↑'
+                    if chg_ppk < 0:
+                        strout += '↓'
+                    strout += 'HK%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+            elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
                 wlist_stock[i][3] = curr
                 if chg_ppk > 0:
+                    if day_chg_pct < 8 and open_chg_pct < 1:
+                        strout +='★'
                     strout += '↑' #.encode('gbk')
                 if chg_ppk < 0:
                     strout += '↓' #.encode('gbk')
-                strout += 'HK:%s: %s, %s, %s%%, %sx, %s\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5])
+                strout += 'HK%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
     if need_printout:
         strout += timetext
     return strout      
@@ -284,7 +335,7 @@ def stockmon_process(force = False):
     if flag_heartbeat != check_heartbeat():
         flag_heartbeat = check_heartbeat()
         if flag_heartbeat:
-            return '!---$$$♋D♐€€€---!'
+            return '!---$$$♋♥♓♥♐€€€---!'
         else:
             return ''
     
