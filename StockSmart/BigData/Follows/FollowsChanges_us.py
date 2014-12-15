@@ -249,7 +249,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 2)
             if FollowsMultiple > 2:
                 print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
-            if FollowsMultiple > 3 and chg_p1 > 20:
+            if FollowsMultiple >= 3 and chg_p1 > 20:
                 watch_line = 'us', xq_code, FollowsMultiple, value_str
                 csvWriter.writerow(watch_line)
     fcsv.close()
