@@ -25,7 +25,7 @@ def getmyip():
         m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
         return m.group(0)
     except:
-        return 'Get IP Error'
+        return 'Error'
         
 def beep_sos(): 
     #sys.stdout.write('\a')
@@ -182,8 +182,9 @@ if  __name__ == '__main__':
             continue
 
         if myip_count > (myip_checkinterval/30) or myip == '':
-            if myip != getmyip():
-                myip = getmyip()
+            newip = getmyip()
+            if myip != newip and newip != 'Error':
+                myip = newip
                 myip_count = 0
                 print 'New IP:', myip
                 myip_changed_notification()
