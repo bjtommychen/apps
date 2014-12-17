@@ -271,7 +271,7 @@ class parseGoogleFinanceText(HTMLParser.HTMLParser):
         self.price_curr = float(self.data[1])
         self.price_change = float(self.data[2])
         for i in range(0, len(self.data)):
-            if self.data[i] == 'Open' and self.data[i+1].isdigit():
+            if self.data[i] == 'Open' and self.data[i+1][0].isdigit():
                 self.price_open = float(self.data[i+1])
                 break
     # def handle_starttag(self, tag, attrs):
@@ -327,15 +327,15 @@ def get_us_rt_price(code):
     # return get_us_rt_price_SinaWeb_Requests(code)
     
 if  __name__ == '__main__':   
-    print 'qq web fast version 00358,', get_hk_rt_price_QQWeb_Requests('00358')
-    print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
-    print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00224')
-    print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00218')
+    # print 'qq web fast version 00358,', get_hk_rt_price_QQWeb_Requests('00358')
+    # print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
+    # print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00224')
+    # print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00218')
     # print 'sina web 00358,', get_hk_rt_price_SinaWeb_Requests('00358')
     # print 'qq, web mobile version ', get_hk_rt_price_QQWeb_Requests('08201')
     # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('bidu')
-    # print 'GoogleWeb,',get_us_rt_price_SinaWeb_Requests('bidu')
+    print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('amcn')
     # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
-    # print 'GoogleWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
+    print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('LEJU')
     
     
