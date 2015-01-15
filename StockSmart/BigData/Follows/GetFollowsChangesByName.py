@@ -100,16 +100,19 @@ def GetFollows_InFiles(rawlist, code):
             dirfilelist.append(one)
     # print dirfilelist
     init_run = True
-    list = []       
+    list = []      
+    name_good = 'name_notready'
     for one in dirfilelist:
         # print one,
         df_curr = pd.read_csv(one, names = ['name', 'code', 'follows'], skiprows=[0])
         name, follows = GetFollowsByCode(df_curr, code)
+        # print name, follows, one
         if follows > 0:
+            name_good = name
             line = one, name, code, follows
             list.append(line)
         # print follows
-    return name, list
+    return name_good, list
 
 def GetPriceByDate(list, date):
     # print len(list), len(list[0])
@@ -227,6 +230,7 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     xdata = zip(*follows_chg_list)[0]   #get DataFrame from List
     df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT', 'PRICE'])
     print df
+    print df.tail(10)
     # print len(df)
     # print df.CHG.describe()
     CHG_mean = df.CHG.mean()

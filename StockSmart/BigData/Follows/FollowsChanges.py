@@ -131,8 +131,9 @@ def get_stock_lastday_status(code):
         name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(code)
     diff_pct = '%Error'
     if lastclose != 0:
-        diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
-    return lastclose, curr, diff_pct    
+        diff_pct = str(round(((curr - lastclose)*100/lastclose), 1))+'%'
+        open_pct = str(round(((openprice - lastclose)*100/lastclose), 1))+'%'
+    return lastclose, curr, diff_pct, open_pct    
         
 def GetFollowsByCode(df1, code, startidx = 0):
     codemarket = 0 
@@ -210,7 +211,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         chg_p5,idx = GetFollowChangesByName(dfp4, dfp5, name, idx)
         chg_p6,idx = GetFollowChangesByName(dfp5, dfp6, name, idx)
         chg_p7,idx = GetFollowChangesByName(dfp6, dfp7, name, idx)
-        pct_chg = round(chg_p1*100./(follows-chg_p1), 2)
+        pct_chg = round(chg_p1*100./(follows-chg_p1), 1)
         line = name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7
         list.append(line)
         # print line
@@ -230,7 +231,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         if CheckStar(name, code, chg_p1, pct_chg, chg_p2, chg_p3, LiuTongYi):
             value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), xq_code).decode('gbk')
             stock_info_str = u'总市值'+ value_str
-            FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 2)
+            FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
             if FollowsMultiple > 2:
                 print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
             if FollowsMultiple > 5 and chg_p1 > 200:
@@ -238,6 +239,31 @@ def GetFollowsChanges_InRecentFiles(rawlist):
                 csvWriter.writerow(watch_line)
     fcsv.close()
     print filelist
+    # print list
+    #Update hold_cn.csv
+    reader = csv.reader(file('hold_cn.csv','rb'))
+    list_out = []
+    for row in reader:
+        # print row
+        if len(row) != 4:
+            continue
+        market_str, hold_code, FollowsMultiple, value_str = row
+        for one in list:
+            name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
+            xq_code = code.replace('(','').replace(')','').replace(':','').lower()
+            if hold_code == xq_code:
+                FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
+                stock_info_str = u'总市值'+ value_str
+                print code, name.decode('gbk'), FollowsMultiple
+                break
+        line = market_str, hold_code, FollowsMultiple, value_str
+        list_out.append(line)
+                
+    fcsv = open('hold_cn.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    for line in list_out:                    
+        csvWriter.writerow(line)
+    fcsv.close()    
     
 if  __name__ == '__main__':
     print '#'*60

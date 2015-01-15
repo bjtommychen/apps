@@ -86,9 +86,8 @@ def DoCommand_CopyWatchListToCloud():
     external_cmd("echo DoCommand_CopyWatchListToCloud at " + text +" > body1.txt")
     external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
-    external_cmd('pscp -batch -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan')
+    external_cmd('pscp -batch -i myec2.ppk watch_*.csv hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan')
     
-     
     
 def PowerState_Standby():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
@@ -204,8 +203,9 @@ if  __name__ == '__main__':
             print 'Sleep now.'
             if force_sleep:
                 force_sleep = False
-                time.sleep(60*10)
+                time.sleep(60*1)
                 DoCommand_CopyWatchListToCloud()
+                time.sleep(60*15)
             PowerState_Hibernate()
             continue
     print 'Completed !'

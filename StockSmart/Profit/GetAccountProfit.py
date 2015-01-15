@@ -33,8 +33,8 @@ def GetDataFrame_FromFiles(csvlist):
     filelist = []
     column_names = ['name','date','time','flag','price','count','amount','cjbh','wtbh','zqdm','gddm']
     for one in csvlist:
-        if 'tommy' in one:
-        # if 'xibao' in one:
+        # if 'tommy' in one:
+        if 'xibao' in one:
             filelist.append(one)
     print filelist
     df = pandas.DataFrame()
@@ -58,6 +58,7 @@ def CalculateProfit(df):
     print 'Total', len(df)
     name2check = ''
     code2check = 0
+    code2check_name = ''
     lastprice = 0
     profit = 0
     TotalProfit = 0
@@ -68,6 +69,7 @@ def CalculateProfit(df):
     newstock = False
     newstock_name = ''
     newstock_list = []
+    profitstock_list = []
     for i in range(len(df)):
         name = df.iloc[i]['name']
         date = df.iloc[i]['date']
@@ -85,8 +87,9 @@ def CalculateProfit(df):
                 # trade_count = 0
                 # print '\t\t', 'Profit:', profit, 'Count_balance:', trade_count
             
-            if trade_count == 0:
+            if trade_count == 0 and not newstock and profit != 0:
                 TotalProfit += profit
+                profitstock_list.append(code2check_name+str(profit))
             if trade_count == 0 and profit == 0:
                 newstock_failed += 1
             if profit > 0 and newstock:
@@ -96,6 +99,7 @@ def CalculateProfit(df):
             print 'TotalProfit', TotalProfit    
             profit = 0; trade_count = 0; newstock = False
             code2check = code
+            code2check_name = name
             print 'Check:', name
         print '\t', date,time,flag,price,count,amount
         if name == '申购款'.decode('utf').encode('gbk'):
@@ -120,6 +124,11 @@ def CalculateProfit(df):
     for i in range(len(newstock_list)):
         print '\t', i, newstock_list[i]
     print 'newstock_profit', newstock_profit
+
+    print '*'* 10, 'Profit stocks list', '*'*10
+    for i in range(len(profitstock_list)):
+        print '\t', i, profitstock_list[i]
+    
     print 'TotalProfit', TotalProfit
     
 if  __name__ == '__main__':
