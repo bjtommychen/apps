@@ -225,6 +225,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
     fcsv = open('watch_cn.csv', 'wb')
     csvWriter = csv.writer(fcsv)
     for one in rlist:
+        # break
         name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
         xq_code = code.replace('(','').replace(')','').replace(':','').lower()
         LiuTongYi = 0
@@ -254,9 +255,10 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             if hold_code == xq_code:
                 FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
                 stock_info_str = u'总市值'+ value_str
-                print code, name.decode('gbk'), FollowsMultiple
+                print code, name.decode('gbk'), FollowsMultiple, one[2:]
                 break
         line = market_str, hold_code, FollowsMultiple, value_str
+        print line
         list_out.append(line)
                 
     fcsv = open('hold_cn.csv', 'wb')
