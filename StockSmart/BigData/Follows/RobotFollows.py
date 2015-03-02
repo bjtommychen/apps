@@ -86,7 +86,7 @@ def DoCommand_CopyWatchListToCloud():
     external_cmd("echo DoCommand_CopyWatchListToCloud at " + text +" > body1.txt")
     external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     beep_sos()
-    external_cmd('pscp -batch -i myec2.ppk watch_*.csv hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan')
+    #external_cmd('pscp -batch -i myec2.ppk watch_*.csv f:\KuaiDisk\StockSmart\follows\hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan')
     
     
 def PowerState_Standby():
@@ -130,7 +130,7 @@ def Check_NeedWork():
     text = time.strftime("%H:%M", time.localtime())
     # print text
     # print 'check', text
-    if text >= '06:05' and text <= '06:07': 
+    if text >= '06:05' and text <= '06:15': 
         run_mode = 1
         checkopen = True
 
