@@ -1,4 +1,6 @@
 chcp 936
+copy f:\KuaiDisk\StockSmart\follows\hold_*.csv . /y
+
 rem .\GetStockFollows.py 
 .\GetStockFollows_us.py 
 rem .\GetStockFollows_hk.py 
@@ -21,10 +23,10 @@ cat body.txt
 cp body.txt f:\KuaiDisk\StockSmart\follows\
 xq_follows_sendmail.py "Ñ©Çò¹Ø×¢¸ú×ÙÍíÉÏºÃ@xueqiu#" body.txt
 
-cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
+REM cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
 cp watch_*.csv f:\KuaiDisk\StockSmart\follows\
 pscp -batch -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
-pscp -batch -i myec2.ppk f:\KuaiDisk\StockSmart\follows\hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
+pscp -batch -i myec2.ppk hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
 
 echo 'wait 60s...'
 sleep 60
