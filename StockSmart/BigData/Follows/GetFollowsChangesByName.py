@@ -16,6 +16,8 @@ import argparse
 reload(sys) 
 sys.setdefaultencoding('utf')
 
+livemode = False
+
 from pylab import *  
 mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei'] #指定默认字体
 mpl.rcParams['axes.unicode_minus'] = False #解决保存图像是负号'-'显示为方块的问题
@@ -115,18 +117,20 @@ def GetFollows_InFiles(rawlist, code):
     return name_good, list
 
 def GetPriceByDate(list, date):
-    # print len(list), len(list[0])
-    # print type(list[0]), type(list[1])
-    # print 'GetPriceByDate', date    
+    first_or_default = next((x for x in list if x[0]==date), None)
+    if first_or_default != None and len(first_or_default) == 7:
+        mDate, mOpen, mHigh, mLow, mClose, mVolume, mAdj = first_or_default
+        return float(mOpen), float(mClose)
+    else:
+        return 0, 0
+
+
     for row in list:
         if (len(row) != 7):
             print len(row), 'must be 7!!!'
             continue
         mDate, mOpen, mHigh, mLow, mClose, mVolume, mAdj = row
-        # print mDate, mClose
-        # print date, mDate, type(date), type(mDate)
         if date == mDate:
-            # print date, mClose
             return float(mOpen), float(mClose) 
     return 0, 0
     
@@ -172,7 +176,7 @@ def yahoo_name_convert(code):
         new = code
     return new
     
-def get_stock_history_csv(code, name):
+def get_stock_history_csv_live(code, name):
     url = 'http://ichart.finance.yahoo.com/table.csv?s=' + yahoo_name_convert(code)+'&a=8&b=1&c=2014'
     local = 'stock_history_price.csv'
     if False: #os.path.exists(local):
@@ -185,6 +189,19 @@ def get_stock_history_csv(code, name):
         except:
             exit(1)
         print 'Got csv file, size:', os.path.getsize(local), 'bytes!'
+    return local
+
+def get_stock_history_csv(code, name):
+    if livemode:
+        return get_stock_history_csv_live(code, name)
+    else:
+        filename = 'output_qda/'+ code + '_qda.csv'
+        if os.path.exists(filename):
+            return filename
+        else:
+            print filename, 'NOT exist.'
+            return ''
+        
         
 def CodeName_AutoCompleted(code):
     if len(code) == 6:      #SH,SZ
@@ -224,13 +241,17 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     print 'code:', code
     name, follows_list = GetFollows_InFiles(filelist, code)   
     print name.decode('gbk')
-    get_stock_history_csv(code, name.decode('gbk'))
+    csvfilename = get_stock_history_csv(code, name.decode('gbk'))
+    print csvfilename
+    if csvfilename == '':
+        print 'csv file not found. exit.'
+        return
     # print 'follows_list:', follows_list
-    follows_chg_list = GetFollows_ProcessList(follows_list, './stock_history_price.csv')
+    follows_chg_list = GetFollows_ProcessList(follows_list, csvfilename) 
     xdata = zip(*follows_chg_list)[0]   #get DataFrame from List
     df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT', 'PRICE'])
-    print df
-    print df.tail(10)
+    # print df
+    print df.tail(20)
     # print len(df)
     # print df.CHG.describe()
     CHG_mean = df.CHG.mean()
@@ -258,8 +279,10 @@ if  __name__ == '__main__':
     parser.add_argument('-t', action='store', dest='codename', default='SH600036', help='Specify the stock code name, Example:SH600036.')
     parser.add_argument('-path', action='store', dest='datapath', default='data/', help='Specify the path contains the follows-csv files')
     parser.add_argument('--debug', action='store_const', dest='debug',default=0,const=1,help='enable debug mode.') 
+    parser.add_argument('--live', action='store_const', dest='live',default=False,const=True,help='enable debug mode.') 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()    
     
-    # print args.codename
+    if args.live:
+        livemode = True
     GetFollowsByCode_InFiles(getFileList(args.datapath, '*.csv', False), args.codename)
