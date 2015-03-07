@@ -22,6 +22,26 @@ data_ext = 'qda'
 output_path = 'output/'
 bUseMultiCore = False
 thread_num=8
+debugmode = False
+
+def getFileList(path, ext, subdir = True ):
+    if os.path.exists(path):
+        dirlist = []
+    
+        for name in os.listdir(path):
+            fullname = os.path.join(path, name)
+            # print fullname
+            st = os.lstat(fullname)
+            if stat.S_ISDIR(st.st_mode) and subdir:
+                dirlist += getFileList(fullname,ext)
+            elif os.path.isfile(fullname):
+                if fnmatch.fnmatch( fullname, ext): 
+                    dirlist.append(fullname)
+                else:
+                    pass
+        return dirlist
+    else:
+        return [] 
 
 def get_Long(fp):
     num = struct.unpack("L",fp.read(4))
@@ -40,10 +60,10 @@ def get_String12(fp):
         return ''
 
 def get_DateString(m_time):
-    return str(time.strftime('%Y/%m/%d', time.gmtime(m_time)))
+    return str(time.strftime('%Y-%m-%d', time.gmtime(m_time)))
 
 def get_TimeFromString(time_string):
-    return time.mktime(time.strptime(time_string, '%Y/%m/%d'))-time.timezone   
+    return time.mktime(time.strptime(time_string, '%Y-%m-%d'))-time.timezone   
     
 def get_QM_header(fp):
     flag = get_Long(fp)
@@ -89,21 +109,6 @@ def write_QM_data_to_csv(filename, code, name, listall):
         csvWriter.writerow(wline)
     fcsv.close()        
     
-def get_AllQMdata():
-    reader = csv.reader(file(listfile_sh,'rb'))    
-    i = 0
-    pool = workerpool.WorkerPool(size=thread_num, maxjobs=thread_num)
-    for row in reader:
-        print row
-        Get_OneQMData(pool, data_path,data_ext, row[0].upper(), row[1])
-
-    reader = csv.reader(file(listfile_sz,'rb'))  
-    for row in reader:
-        print row
-        Get_OneQMData(pool, data_path,data_ext, row[0].upper(), row[1])
-
-    pool.shutdown()
-    pool.wait()
     
 def get_NextRecord(fp, code_filter = ''):
     if True:
@@ -133,9 +138,13 @@ def get_NextRecord(fp, code_filter = ''):
         return code, name, list5min
     return '', '', []    
     
+    
 def update_QDA_to_csv(filename, code, name, listall):
+    global debugmode
+    # print 'try write_QDA_data_to_csv', filename, len(listall)
     if not os.path.exists(filename):
-        print 'write_QDA_data_to_csv', filename, len(listall)
+        if debugmode:
+            print 'write_QDA_data_to_csv', filename, len(listall)
         fcsv = open(filename, 'wb')
         csvWriter = csv.writer(fcsv)
         title = 'Date' ,'Open','High','Low','Close','Volume','Adj Close'
@@ -155,11 +164,14 @@ def update_QDA_to_csv(filename, code, name, listall):
         list_old = []
         for one in reader:
             list_old.append(one)
-        # print list_old[1]
+        # print 'list_old', list_old[1]
         # print get_TimeFromString(list_old[1][0])
         # print listall[len(listall)-1]
+        # print listall
+        # print 'check', listall[len(listall)-1][0] , get_TimeFromString(list_old[1][0])
         if listall[len(listall)-1][0] > get_TimeFromString(list_old[1][0]):
-            print 'update_QDA_data_to_csv', filename, len(listall)
+            if debugmode:
+                print 'update_QDA_data_to_csv', filename, len(listall)
             fcsv = open(filename, 'wb')
             csvWriter = csv.writer(fcsv)            
             csvWriter.writerow(list_old[0])
@@ -174,10 +186,13 @@ def update_QDA_to_csv(filename, code, name, listall):
                 csvWriter.writerow(wline)
             for one in list_old[1:]:
                 csvWriter.writerow(one)
-            fcsv.close()  
+            fcsv.close()
+        # else:
+            # print 'skip.'
     
     
 def UpdateCSV_with_InputQDAfile(opath, filename):
+    global debugmode
     listall = []
     print filename  
     fp=open(filename,"rb")
@@ -189,19 +204,34 @@ def UpdateCSV_with_InputQDAfile(opath, filename):
         # fp=open(filename,"rb")
     flag, version, total_num = get_QM_header(fp)
     print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
+    cnt = 0
     while True:
         code, name, list_day = get_NextRecord(fp)
         if list_day != []:
             code = code.split('\x00')[0]
             name = name.split('\x00')[0]
-            print code, name, len(list_day)
+            if debugmode:
+                print code, name, len(list_day)
+            else:
+                print 'Updating No.', cnt, '\r', 
+                cnt += 1
             list_day.sort(key=lambda data : data[0], reverse=True)
-            update_QDA_to_csv(opath + code + '_qda.csv', code, name, list_day) 
-            # break
+            update_QDA_to_csv(os.path.join(opath, code + '_qda.csv'), code, name, list_day) 
         else:
             break
     fp.close()
+  
+def UpdateCSV_with_InputPath(output_path, inpath):
+    filelists = getFileList(inpath, '*.qda', False)
+    filelists.sort()
+    print filelists
+    for filename in filelists:
+        UpdateCSV_with_InputQDAfile(output_path, filename)
     
+#Usage:
+#   python ..\UpdateCSV_withQMdata.py -opath output_qda -i input_qda\Quote20150306.QDA
+#   python ..\UpdateCSV_withQMdata.py -opath output_qda -i
+#    
     
 if  __name__ == '__main__':
     print '#'*60
@@ -211,12 +241,18 @@ if  __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', action='store', dest='filename', default='input.qm1', help='Specify the QDA data file to read.')       
+    parser.add_argument('-ipath', action='store', dest='inputpath', default='inpath', help='Specify the QDA data path.')       
     parser.add_argument('-opath', action='store', dest='output_path', default='.\\output\\', help='Specify the output path to write/update.')       
     parser.add_argument('--debug', action='store_const', dest='debug',default=0,const=1,help='enable debug mode.') 
     parser.add_argument('--version', action='version', version='%(prog)s v1.0')
     args = parser.parse_args()  
+    if args.debug == 1:
+        debugmode = True
     
     print 'Start !'
-    UpdateCSV_with_InputQDAfile(args.output_path, args.filename)
+    if args.inputpath != 'inpath':
+        UpdateCSV_with_InputPath(args.output_path, args.inputpath)
+    else:
+        UpdateCSV_with_InputQDAfile(args.output_path, args.filename)
     print 'Completed !'
     
