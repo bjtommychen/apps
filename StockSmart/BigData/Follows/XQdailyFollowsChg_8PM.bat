@@ -1,5 +1,7 @@
 chcp 936
 copy f:\KuaiDisk\StockSmart\follows\hold_*.csv . /y
+python python GetQDAdata.py
+python ..\UpdateCSV_withQMdata.py -opath output_qda -ipath input_qda
 
 rem .\GetStockFollows.py 
 .\GetStockFollows_us.py 
