@@ -143,6 +143,7 @@ def get_us_rt_price_yahoo(code):    # DELAY 15 MINUTES
             return ('', 0, 0, 0, 0, 0)                 
             
 def get_stock_lastday_status(code):
+    # return 0, 0, 0
     code = code[code.find(':'):]
     code = code.replace('(','').replace(')','').replace(':','').upper()    
     name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_SinaWeb_Requests(code)
@@ -249,11 +250,38 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 2)
             if FollowsMultiple > 2:
                 print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % (chg_p1/GetFollowsMeanByCode(dirfilelist, code))),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
-            if FollowsMultiple >= 3 and chg_p1 > 20:
+            if FollowsMultiple >= 2 and chg_p1 > 10:
                 watch_line = 'us', xq_code, FollowsMultiple, value_str
                 csvWriter.writerow(watch_line)
     fcsv.close()
     print filelist
+    # print list
+    #Update hold_cn.csv
+    reader = csv.reader(file('hold_us.csv','rb'))
+    list_out = []
+    for row in reader:
+        # print row
+        if len(row) != 4:
+            continue
+        market_str, hold_code, FollowsMultiple, value_str = row
+        for one in list:
+            name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
+            xq_code = code[code.find(':')+1:].replace('(','').replace(')','').upper()
+            # print xq_code
+            if hold_code == xq_code:
+                FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
+                stock_info_str = u'总市值'+ value_str
+                print code, name.decode('gbk'), str(FollowsMultiple)+'x', one[2:]
+                break
+        line = market_str, hold_code, FollowsMultiple, value_str
+        print line
+        list_out.append(line)
+                
+    fcsv = open('hold_us.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    for line in list_out:                    
+        csvWriter.writerow(line)
+    fcsv.close()    
     
 if  __name__ == '__main__':
     print '#'*60
