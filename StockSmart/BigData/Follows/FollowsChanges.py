@@ -255,7 +255,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             if hold_code == xq_code:
                 FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
                 stock_info_str = u'总市值'+ value_str
-                print code, name.decode('gbk'), FollowsMultiple, one[2:]
+                print code, name.decode('gbk'), str(FollowsMultiple)+'x', one[2:]
                 break
         line = market_str, hold_code, FollowsMultiple, value_str
         print line
