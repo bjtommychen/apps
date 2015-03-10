@@ -309,6 +309,33 @@ def GetFollowsChanges_InRecentFiles(rawlist):
                 csvWriter.writerow(watch_line)
     fcsv.close()
     print filelist
+    #Update hold_hk.csv
+    reader = csv.reader(file('hold_hk.csv','rb'))
+    list_out = []
+    for row in reader:
+        # print row
+        if len(row) != 4:
+            continue
+        market_str, hold_code, FollowsMultiple, value_str = row
+        for one in list:
+            name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
+            xq_code = code[code.find(':')+1:].replace('(','').replace(')','').upper()
+            # print xq_code
+            if hold_code == xq_code:
+                FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
+                stock_info_str = u'总市值'+ value_str
+                print code, name.decode('gbk'), str(FollowsMultiple)+'x', one[2:]
+                break
+        line = market_str, hold_code, FollowsMultiple, value_str
+        print line
+        list_out.append(line)
+                
+    fcsv = open('hold_hk.csv', 'wb')
+    csvWriter = csv.writer(fcsv)
+    for line in list_out:                    
+        csvWriter.writerow(line)
+    fcsv.close()    
+    
     
 if  __name__ == '__main__':
     print '#'*60
