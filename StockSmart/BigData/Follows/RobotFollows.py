@@ -107,6 +107,7 @@ def myip_changed_notification():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo MyIP Changed at " + text +" > body1.txt")
     external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    external_cmd("python ddclient.py")
     
 def Check_PrepareForOpen():
     global run_mode
@@ -130,7 +131,7 @@ def Check_NeedWork():
     text = time.strftime("%H:%M", time.localtime())
     # print text
     # print 'check', text
-    if text >= '06:05' and text <= '06:15': 
+    if text >= '06:00' and text <= '06:15': 
         run_mode = 1
         checkopen = True
 
@@ -182,6 +183,7 @@ if  __name__ == '__main__':
 
         if myip_count > (myip_checkinterval/30) or myip == '':
             newip = getmyip()
+            # print 'IP', newip, 
             if myip != newip and newip != 'Error':
                 myip = newip
                 myip_count = 0

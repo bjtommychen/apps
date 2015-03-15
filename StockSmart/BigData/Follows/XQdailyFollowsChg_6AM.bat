@@ -3,7 +3,7 @@ REM goto copy_csv
 chcp 936
 copy f:\KuaiDisk\StockSmart\follows\hold_*.csv . /y
 
-.\GetStockFollows.py 
+.\GetStockFollows.py
 .\GetStockFollows_hk.py 
 rem .\GetStockFollows_us.py 
 cp data/*.csv f:\KuaiDisk\StockSmart\follows\data\ -n
