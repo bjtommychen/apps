@@ -28,7 +28,7 @@ xq_follows_sendmail.py "Ñ©Çò¹Ø×¢¸ú×ÙÔçÉÏºÃ@xueqiu#" body.txt
 
 :copy_csv
 REM cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
-cp watch_*.csv f:\KuaiDisk\StockSmart\follows\ 
+copy watch_*.csv f:\KuaiDisk\StockSmart\follows\ /y
 copy hold_*.csv f:\KuaiDisk\StockSmart\follows\ /y
 pscp -batch -i myec2.ppk hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
 sleep 6
