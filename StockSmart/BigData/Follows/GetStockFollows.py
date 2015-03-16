@@ -51,7 +51,8 @@ def getmyip():
     try:
         url = urllib2.urlopen('http://ip138.com/ip2city.asp')
         result = url.read()
-        m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+        # m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+        m = re.search(r'((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)',result) #TOMMY
         return m.group(0)
     except:
         return ''    
