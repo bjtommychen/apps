@@ -16,13 +16,14 @@ sys.setdefaultencoding('utf')
 active_cnt = 0
 run_mode = 0
 
-myip_checkinterval = 600 # check every 600s
+myip_checkinterval = 120 # check every 120s
 
 def getmyip():
     try:
         url = urllib2.urlopen('http://ip138.com/ip2city.asp')
         result = url.read()
-        m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+        # m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+        m = re.search(r'((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)',result) #TOMMY        
         return m.group(0)
     except:
         return 'Error'
@@ -181,7 +182,7 @@ if  __name__ == '__main__':
             SendInfo_ReActive()
             continue
 
-        if myip_count > (myip_checkinterval/30) or myip == '':
+        if myip_count > (myip_checkinterval/60) or myip == '':
             newip = getmyip()
             # print 'IP', newip, 
             if myip != newip and newip != 'Error':
