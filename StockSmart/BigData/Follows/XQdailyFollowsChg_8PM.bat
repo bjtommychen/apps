@@ -1,5 +1,6 @@
 chcp 936
 copy f:\KuaiDisk\StockSmart\follows\hold_*.csv . /y
+REM Update All Stock Day Price Data
 python GetQDAdata.py
 python ..\UpdateCSV_withQMdata.py -opath output_qda -ipath input_qda
 
