@@ -159,7 +159,7 @@ def GetFollows_ProcessList(followslist, filename_pricehistory):
         if price_open == 0: #invalid
             day_price = last_day_price
         else:
-            day_price = price_open
+            day_price = price_close
             last_day_price = price_close
         line = filename, follows_chg, follows_chgpct, day_price
         list.append(line)
