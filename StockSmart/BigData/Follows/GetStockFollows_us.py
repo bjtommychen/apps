@@ -11,6 +11,7 @@ import re
 import csv
 import requests
 import time
+import subprocess
 
 print 'System Default Encoding:',sys.getdefaultencoding()
 
@@ -20,6 +21,28 @@ sys.setdefaultencoding('utf')
 
 DebugMode = False
 
+def external_cmd(cmd, rundir='./', msg_in=''):
+    # print 'rundir:',rundir, ', cmds:', cmd
+    # return 'stdout', 'stderr'
+    try:
+        proc = subprocess.Popen(cmd,
+                   shell=True,
+                   stdin=subprocess.PIPE,
+                   stdout=subprocess.PIPE,
+                   stderr=subprocess.PIPE,
+                   cwd=rundir
+                  )
+        stdout_value, stderr_value = proc.communicate(msg_in)
+        # time.sleep(0.2)
+        return stdout_value, stderr_value
+    except ValueError as err:
+        print ("ValueError: %s" % err)
+        return None, None
+    except IOError as err:
+        print("IOError: %s" % err)
+        return None, None
+
+
 def convert_num(string):
     return str(string)
 
@@ -27,7 +50,8 @@ def getmyip():
     try:
         url = urllib2.urlopen('http://ip138.com/ip2city.asp')
         result = url.read()
-        m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+        # m = re.search(r'(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])',result)
+        m = re.search(r'((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)',result) #TOMMY
         return m.group(0)
     except:
         return ''    
@@ -39,7 +63,13 @@ def get_StockFollows(code):
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
         r = requests.get(url,timeout=5,headers=headers)
+        if not r.ok:
+            if r.status_code == 404:
+                return ['404', '404', '404']
+            print r.status_code
         data = r.content
+        if data.find('captcha') != -1:
+            return ['captcha', 'captcha', 'captcha']
         # print r.encoding
         r.close()
     except Exception, e:
@@ -115,11 +145,18 @@ def get_stock_follows(currlist = []):
                 time.sleep(.1)
             infostr = get_StockFollows(codestr)
             if len(infostr) > 0:
-                count += 1
-                outlist.append(infostr)
-                print infostr
-                if initmode == False:
-                    print '#'*5, infostr
+                if infostr[0] == '404':
+                    print '',
+                elif infostr[0] == 'captcha':
+                    print 'FOUND CAPTCHA! pppoe_restart ... ',
+                    external_cmd('pppoe_restart.bat')
+                    time.sleep(5)
+                    print 'DONE.'
+                else:
+                    count += 1
+                    outlist.append(infostr)
+                    if initmode == False:
+                        print '#'*5, infostr
             else:
                 # when error, delay more.
                 falsecnt += 1
@@ -129,7 +166,7 @@ def get_stock_follows(currlist = []):
                             break
                         time.sleep(30)
                         print 'wait for online ...'
-                time.sleep(1)   #count%10+5)
+                time.sleep(.1)   #count%10+5)
             
             print '.'*(count%10+3)+'^'+'.'*(10-count%10+3)+str(count)+'/'+str(total), '\r',
             if DebugMode and total > 100:
@@ -174,6 +211,7 @@ if  __name__ == '__main__':
         print 'followlist',len(followlist)
         write_follows_csv(csvfilename, followlist)
         if len(followlist) > 500 and time1st == False:
+            time.sleep(6)
             break
         time1st = False
         print 'one loop done.'
