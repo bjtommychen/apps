@@ -235,6 +235,18 @@ def CodeName_process(code):
         nameprefix = 'data/nasdaq-'
     return code
     
+def GetXticksList(datelist):
+    length = len(datelist)
+    list = []
+    listlabel = []
+    idx = 0
+    while idx < length:
+        list.append(idx)
+        listlabel.append(datelist[idx])
+        idx += 30
+    list.append(length-1)
+    return list, listlabel
+    
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     # print filelist
     code = CodeName_process(code)
@@ -266,8 +278,13 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     ax_right.set_ylabel('PRICE')
     plt.title(name.decode('gbk')+code)
     plt.xlabel('Date')
+    # print type(plt.xlim())
+    # print type(xdata), xdata, xdata[0]
+    list, listlabel = GetXticksList(xdata)
+    ax_left.set_xticks(list)
+    ax_left.set_xticklabels(listlabel, fontsize='small')
     # plt.legend()
-    fig.autofmt_xdate()
+    # fig.autofmt_xdate()
     plt.show()
     
 if  __name__ == '__main__':
