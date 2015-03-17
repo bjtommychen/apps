@@ -110,19 +110,23 @@ def myip_changed_notification():
     external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
     external_cmd("python ddclient.py")
     
-def Check_PrepareForOpen():
-    global run_mode
-    checkopen = False
+# def Check_PrepareForOpen():
+    # global run_mode
+    # checkopen = False
     # if (datetime.datetime.now().weekday() > 4):
         # return False
-    text = time.strftime("%H:%M", time.localtime())
-    if text >= '06:05' and text <= '06:07': 
-        run_mode = 1
-        checkopen = True
-    if text >= '20:05' and text <= '20:07':
-        run_mode = 2
-        checkopen = True
-    return checkopen
+    # text = time.strftime("%H:%M", time.localtime())
+    # if text >= '22:40' and text <= '22:57': 
+        # run_mode = 1
+        # checkopen = True
+
+    # if text >= '06:00' and text <= '06:07': 
+        # run_mode = 1
+        # checkopen = True
+    # if text >= '20:05' and text <= '20:07':
+        # run_mode = 2
+        # checkopen = True
+    # return checkopen
     
 def Check_NeedWork():
     global run_mode
@@ -136,11 +140,11 @@ def Check_NeedWork():
         run_mode = 1
         checkopen = True
 
-    # if text >= '10:10' and text <= '10:12': 
+    # if text >= '22:50' and text <= '22:59': 
         # run_mode = 1
         # checkopen = True        
         
-    if text >= '20:15' and text <= '20:17':
+    if text >= '20:05' and text <= '20:10':
         run_mode = 2
         checkopen = True
     return checkopen
