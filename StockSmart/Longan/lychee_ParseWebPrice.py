@@ -170,7 +170,7 @@ def get_hk_rt_price_QQWeb_Mobile(code):
     url = 'http://m.finance.qq.com/hk/q?f=HSI&sid=&s=%s' % code
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
-        r = requests.get(url,timeout=3,headers=headers)
+        r = requests.get(url,timeout=6,headers=headers)
         data = r.content
         # print r.encoding, len(data)
         if False:
