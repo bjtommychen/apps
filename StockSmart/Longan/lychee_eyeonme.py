@@ -7,13 +7,18 @@ import requests
 import HTMLParser
 
 from lychee_gtalk_io import *
+from lychee_gtalk import *
 from lychee_watchlist import *
 from lychee_ParseWebPrice import *
+from lychee_ui_center import *
+from lychee_sys import *
 
 # print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
 reload(sys) 
 sys.setdefaultencoding('utf')
+
+DebugMode = False
 
 stockmon_enable = True
 stockmon_debug = False
@@ -25,7 +30,7 @@ cn_market_open = False
 hk_market_open = False
 us_market_open = False
 flag_heartbeat = False
-run_1st = True
+stockmon_run1st = True
 
 wlist = []
 
@@ -100,7 +105,7 @@ def stockmon_check_cn_stock(force):
     timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
     if not cn_market_open:
         timetext += 'Close'
-    timetext += '\n\n'
+    timetext += '\n'
     #check list
     wlist_stock = wlist
     need_printout = False
@@ -133,6 +138,7 @@ def stockmon_check_cn_stock(force):
                 open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
             #print diff_ppk, day_chg_pct
             if wlist_stock[i][5] == 'hold':
+                # if Hold Stock
                 if diff_ppk >= 5 or stockmon_debug:
                     need_printout = True
                     wlist_stock[i][2] = '%s'% name.encode('gbk')
@@ -145,9 +151,10 @@ def stockmon_check_cn_stock(force):
                         strout += '↓'
                     strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
             elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
+                # if Watch Stock
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name.encode('gbk')
-                wlist_stock[i][3] = curr
+                wlist_stock[i][3] = curr    #backup as last ref.
                 if chg_ppk > 0:
                     if day_chg_pct < 4 and open_chg_pct < 1:
                         strout +='★'
@@ -155,6 +162,7 @@ def stockmon_check_cn_stock(force):
                 if chg_ppk < 0:
                     strout += '↓'
                 strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+
     if need_printout:
         strout += timetext
     return strout
@@ -207,6 +215,7 @@ def stockmon_check_us_stock(force):
                 open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
             # print name, diff_ppk, day_chg_pct
             if wlist_stock[i][5] == 'hold':
+                # if Hold Stock
                 if diff_ppk >= 5 or stockmon_debug:
                     need_printout = True
                     wlist_stock[i][2] = '%s'% name
@@ -219,16 +228,18 @@ def stockmon_check_us_stock(force):
                         strout += '↓'
                     strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
             elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
+                # if Watch Stock
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
-                wlist_stock[i][3] = curr
+                wlist_stock[i][3] = curr    #backup as last ref.
                 if chg_ppk > 0:
                     if day_chg_pct < 8 and open_chg_pct < 1:
                         strout +='★'
-                    strout += '↑' #.encode('gbk')
+                    strout += '↑'
                 if chg_ppk < 0:
-                    strout += '↓' #.encode('gbk')
+                    strout += '↓'
                 strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+
     if need_printout:
         strout += timetext
     return strout
@@ -281,6 +292,7 @@ def stockmon_check_hk_stock(force):
                 open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
             # print name, diff_ppk, day_chg_pct
             if wlist_stock[i][5] == 'hold':
+                # if Hold Stock
                 if diff_ppk >= 5 or stockmon_debug:
                     need_printout = True
                     wlist_stock[i][2] = '%s'% name
@@ -293,22 +305,23 @@ def stockmon_check_hk_stock(force):
                         strout += '↓'
                     strout += 'HK%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
             elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
+                # if Watch Stock
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
-                wlist_stock[i][3] = curr
+                wlist_stock[i][3] = curr    #backup as last ref.
                 if chg_ppk > 0:
                     if day_chg_pct < 8 and open_chg_pct < 1:
                         strout +='★'
-                    strout += '↑' #.encode('gbk')
+                    strout += '↑'
                 if chg_ppk < 0:
-                    strout += '↓' #.encode('gbk')
+                    strout += '↓'
                 strout += 'HK%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
     if need_printout:
         strout += timetext
     return strout      
   
 def stockmon_init(): 
-    banner = '*** Stockmon Daemon. Longan Version. v2.0 ' 
+    banner = '*** Stockmon Daemon. \nLongan Version. v2.0 ' 
     banner += '_us_cn_hk_RealTime_'
     banner += '\n'
     return banner    
@@ -320,13 +333,13 @@ def stockmon_process(force = False):
     global start_time
     global update_interval_in_seconds
     global stockmon_force
-    global run_1st
+    global stockmon_run1st
     global wlist
     global flag_heartbeat
     
-    if run_1st:
+    if stockmon_run1st:
         force = True
-        run_1st = False
+        stockmon_run1st = False
     if force:
         stockmon_force = True
     # update ?
@@ -381,25 +394,55 @@ def stockmon_process(force = False):
         strout += 'check hk stock except!'
     stockmon_force = False
     return strout
-            
+           
 if  __name__ == '__main__':   
+    # global stockmon_run1st
+    # global DebugMode
+    # Setting
+    DebugMode = True
+    stockmon_run1st = True
+    # Init
     force = False
-    banner = stockmon_init()
-    use_Gtalk = True
-    if use_Gtalk:
-        Gtalk_init()
-        Gtalk_run()
-        Gtalk_send('Welcome tommy! Eye on Yours! ')
-        Gtalk_send(banner)
-    while True:
-        msgstr = stockmon_process(force)
-        if force:
-            force = False
-        if msgstr != '':
-            if not use_Gtalk:
-                print '*** Msg out *** \n', msgstr, '*** Msg done ***\n'
+    # banner = stockmon_init()
+    if DebugMode:
+        ui_use_gtalk_io = False
+    else:
+        ui_use_gtalk_io = True
+    use_Gtalk = ui_use_gtalk_io
+
+    # if use_Gtalk:
+        # Gtalk_init()
+        # Gtalk_run()
+        # Gtalk_send('Welcome tommy! Eye on Yours! ')
+        # Gtalk_send(banner)
+    ui_init()
+    try:
+        print 'Enter mainloop ...'
+        global ui_running
+        while ui_running:
+            # print 'ui_running', ui_running 
+            cmds = ui_get_commands()
+            if len(cmds)>0:
+                # print '[INPUT]:', cmds
+                output = ui_dispatch_commands(cmds)
+                ui_put_str(output)
+            
+            if not DebugMode:
+                msgstr = stockmon_process(force)
             else:
-                Gtalk_send(msgstr)
-        time.sleep(5)
-        # print '.',
-        
+                msgstr = 'stockmon_process ' + str(force) + str(stockmon_run1st)
+                stockmon_run1st = False
+            if force:
+                force = False
+            if msgstr != '':
+                if DebugMode:
+                    ui_put_str('*** Msg out *** \n'+msgstr+ '*** Msg done ***\n')
+                else:
+                    ui_put_str(msgstr)
+            if use_Gtalk:
+                time.sleep(5)   
+            # print '.',
+    except Exception, e:
+        print 'Mainloop except!' ,Exception,e
+    finally:
+        ui_exit()    

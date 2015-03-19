@@ -5,7 +5,7 @@ import HTMLParser
 import subprocess
 import requests, re
 
-debugmode = True
+DebugMode = False
 
 def write_data_to_file(data):
     fp = open('parsewebprice.html', 'wb')
@@ -134,14 +134,14 @@ class parseQQWebFinanceText_hkstock(HTMLParser.HTMLParser):
                 # break        
     
 def get_hk_rt_price_QQWeb_Requests(code):
-    url = 'http://finance.qq.com/hk/q.htm?stockcode=%s' % code
-    # print url
+    url = 'http://finance.qq.com/hk/q.htm?s=%s' % code
+    if DebugMode:
+        print url   
     data = crawler_geturl_phantomjs(url)
     data = data.decode('utf').encode('gbk')
-    # data = read_data_from_file()
-    # print 'get data', len(data)
-    # print data.decode('utf').encode('gbk')
-    # write_data_to_file(data)
+    if DebugMode:
+        write_data_to_file(data)    
+        print 'get data', len(data)
     
     pos1 = data.find('<div class="titlebar"')
     pos2 = data.find('</span>', pos1)
@@ -170,14 +170,14 @@ def get_hk_rt_price_QQWeb_Mobile(code):
     url = 'http://m.finance.qq.com/hk/q?f=HSI&sid=&s=%s' % code
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
-        r = requests.get(url,timeout=5,headers=headers)
+        r = requests.get(url,timeout=3,headers=headers)
         data = r.content
         # print r.encoding, len(data)
-        if True:
+        if False:
             write_data_to_file(data)
         r.close()
     except Exception, e:
-        print 'Exception!'
+        print 'Exception! when get', code, e
         return []
         
     pos1 = data.find('<div class="titlebar"')
@@ -208,9 +208,12 @@ def get_hk_rt_price_QQWeb_Mobile(code):
     
     
 def get_hk_rt_price(code):
-    # return get_hk_rt_price_SinaWeb_Requests(code)
-    # return get_hk_rt_price_QQWeb_Requests(code)
-    return get_hk_rt_price_QQWeb_Mobile(code)
+    # ret = get_hk_rt_price_SinaWeb_Requests(code)
+    # ret = get_hk_rt_price_QQWeb_Requests(code)
+    ret = get_hk_rt_price_QQWeb_Mobile(code)
+    if ret == []:
+        ret = get_hk_rt_price_QQWeb_Mobile(code)
+    return ret
     
 ###################### US ############################    
 class parseSinaWebFinanceText_usstock(HTMLParser.HTMLParser):
@@ -302,7 +305,9 @@ def get_us_rt_price_GoogleWeb_Requests(code):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
         r = requests.get(url,timeout=15,headers=headers)
         data = r.content
-        # print r.encoding, len(data)
+        print r.encoding, len(data)
+        if False:
+            write_data_to_file(data)
         r.close()
     except Exception, e:
         return []   
@@ -327,15 +332,27 @@ def get_us_rt_price(code):
     # return get_us_rt_price_SinaWeb_Requests(code)
     
 if  __name__ == '__main__':   
-    # print 'qq web fast version 00358,', get_hk_rt_price_QQWeb_Requests('00358')
-    # print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
-    # print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00224')
-    # print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00218')
-    # print 'sina web 00358,', get_hk_rt_price_SinaWeb_Requests('00358')
-    # print 'qq, web mobile version ', get_hk_rt_price_QQWeb_Requests('08201')
+    DebugMode = True
+    # Test HK
+    print 'Start Testing HK'
+    # print '?\n\r','get_hk_rt_price_QQWeb_Requests 00358,', get_hk_rt_price_QQWeb_Requests('00358')
+    print '?\n\r','get_hk_rt_price_QQWeb_Mobile 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
+    # print '?\n\r','get_hk_rt_price_SinaWeb_Requests 00358,', get_hk_rt_price_SinaWeb_Requests('00358')
+    # print 'get_hk_rt_price_QQWeb_Requests 00224,', get_hk_rt_price_QQWeb_Requests('00224')
+    print 'get_hk_rt_price_QQWeb_Mobile 00224,', get_hk_rt_price_QQWeb_Mobile('00224')
+    # print 'get_hk_rt_price_QQWeb_Requests 00218,', get_hk_rt_price_QQWeb_Requests('00218')
+    print 'get_hk_rt_price_QQWeb_Mobile 00218,', get_hk_rt_price_QQWeb_Mobile('00218')
+    # print 'get_hk_rt_price_QQWeb_Requests 08201 ', get_hk_rt_price_QQWeb_Requests('08201')
+
+    print get_hk_rt_price('00358')
+    print get_hk_rt_price('00218')
+    print get_hk_rt_price('08201')
+    
+    
+    # Test US
     # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('bidu')
-    print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('amcn')
+    # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('bidu')
     # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
-    print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('LEJU')
+    # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('LEJU')
     
     
