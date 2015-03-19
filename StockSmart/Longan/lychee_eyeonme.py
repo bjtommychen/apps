@@ -12,6 +12,7 @@ from lychee_watchlist import *
 from lychee_ParseWebPrice import *
 from lychee_ui_center import *
 from lychee_sys import *
+from longan_savelogs import *
 
 # print 'System Default Encoding:',sys.getdefaultencoding()
 #add this to fix crash when Chinsese input under Ubuntu
@@ -120,7 +121,18 @@ def stockmon_check_cn_stock(force):
         if force:
             day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
             open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
-            strout += '#%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5], open_chg_pct)
+            oneline = ''
+            if open_chg_pct < 2:
+                if day_chg_pct > 2:
+                    oneline +='★'
+                    if day_chg_pct < 5:
+                        oneline +='★'        #Add one more Star
+            if day_chg_pct > 0:
+                oneline += '↑'
+            elif day_chg_pct < 0:
+                oneline += '↓'            
+            oneline += '#%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5], open_chg_pct)
+            strout += oneline
             wlist_stock[i][2] = '%s'% name.encode('gbk')
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -143,11 +155,13 @@ def stockmon_check_cn_stock(force):
                     need_printout = True
                     wlist_stock[i][2] = '%s'% name.encode('gbk')
                     wlist_stock[i][3] = curr    #backup as last ref.
+                    if day_chg_pct > 2:
+                        strout +='★'
+                        if day_chg_pct < 5:
+                            strout +='★'        #Add one more Star
                     if chg_ppk > 0:
-                        if day_chg_pct > 2:
-                            strout +='★'
                         strout += '↑'
-                    if chg_ppk < 0:
+                    elif chg_ppk < 0:
                         strout += '↓'
                     strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
             elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
@@ -155,12 +169,15 @@ def stockmon_check_cn_stock(force):
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name.encode('gbk')
                 wlist_stock[i][3] = curr    #backup as last ref.
-                if chg_ppk > 0:
-                    if day_chg_pct < 4 and open_chg_pct < 1:
+                if open_chg_pct < 2:
+                    if day_chg_pct > 2:
                         strout +='★'
+                        if day_chg_pct < 5:
+                            strout +='★'        #Add one more Star
+                if chg_ppk > 0:
                     strout += '↑'
-                if chg_ppk < 0:
-                    strout += '↓'
+                elif chg_ppk < 0:
+                    strout += '↓'                
                 strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
 
     if need_printout:
@@ -220,23 +237,28 @@ def stockmon_check_us_stock(force):
                     need_printout = True
                     wlist_stock[i][2] = '%s'% name
                     wlist_stock[i][3] = curr    #backup as last ref.
+                    if day_chg_pct > 2:
+                        strout +='★'
+                        if day_chg_pct < 5:
+                            strout +='★'        #Add one more Star
                     if chg_ppk > 0:
-                        if day_chg_pct > 2:
-                            strout +='★'
                         strout += '↑'
-                    if chg_ppk < 0:
+                    elif chg_ppk < 0:
                         strout += '↓'
                     strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
-            elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
+            elif (diff_ppk >= 5 and day_chg_pct > 1) or stockmon_debug:
                 # if Watch Stock
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
                 wlist_stock[i][3] = curr    #backup as last ref.
-                if chg_ppk > 0:
-                    if day_chg_pct < 8 and open_chg_pct < 1:
+                if open_chg_pct < 2:
+                    if day_chg_pct > 2:
                         strout +='★'
+                        if day_chg_pct < 5:
+                            strout +='★'
+                if chg_ppk > 0:
                     strout += '↑'
-                if chg_ppk < 0:
+                elif chg_ppk < 0:
                     strout += '↓'
                 strout += '%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
 
@@ -403,7 +425,7 @@ if  __name__ == '__main__':
     stockmon_run1st = True
     # Init
     force = False
-    # banner = stockmon_init()
+    SaveLogs_SetIntervalSeconds(600)
     if DebugMode:
         ui_use_gtalk_io = False
     else:
@@ -439,6 +461,7 @@ if  __name__ == '__main__':
                     ui_put_str('*** Msg out *** \n'+msgstr+ '*** Msg done ***\n')
                 else:
                     ui_put_str(msgstr)
+                    SaveLogs_SaveOneString(msgstr)
             if use_Gtalk:
                 time.sleep(5)   
             # print '.',

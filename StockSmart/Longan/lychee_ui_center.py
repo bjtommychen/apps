@@ -102,7 +102,7 @@ def ui_get_commands():
     str = []
     if not ui_use_gtalk_io:
         #str = raw_input('Please input cmds .... ')
-        str = input_with_timeout('?', 5)
+        str = input_with_timeout('<input>', 5)
         str = str.split()
     else:
         global ui_gtalk_newcmd, ui_gtalk_newcmd_got
