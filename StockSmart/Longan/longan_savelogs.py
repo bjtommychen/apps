@@ -28,11 +28,11 @@ def SaveLogs_SaveOneString(string):
     if len(string) < 1:
         return
     if logs_filename == '':
-        logs_filename = 'logs/Logs-'+get_DateString()
+        logs_filename = 'logs/Logs-'+get_DateString()+'.txt'
         print 'LOGS: logs_filename', logs_filename
     logs_strings.append(string)
     logs_stringslen += len(string)
-    print len(logs_strings), logs_strings
+    print 'logs_strings len:', logs_stringslen
     if logs_lastsavetime != 0 and (time.time() - logs_lastsavetime) > logs_interval and logs_stringslen > 300:
         fp = open(logs_filename, 'wb')
         fp.writelines(logs_strings)

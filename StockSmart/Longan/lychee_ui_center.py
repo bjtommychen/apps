@@ -8,6 +8,7 @@ from lychee_sys import *
 from lychee_gtalk import *
 from lychee_gtalk_io import *
 from lychee_eyeonme import *
+from longan_savelogs import *
 
 ### config
 ui_use_gtalk_io = True         # If False, use print, not gtalk.
@@ -171,7 +172,7 @@ def ui_reboot_to_refresh():
 #    if (datetime.datetime.now().weekday() > 4):
 #        return False
     text = time.strftime("%H:%M", time.localtime())
-    if text == '09:00' or text == '21:25' or text == '19:50':
+    if text == '09:00' or text == '21:00':# or text == '19:50':
         checkopen = True
     return checkopen    
     
@@ -180,6 +181,7 @@ def ui_mainloop():
     global ui_force_update
     
     ui_init()
+    SaveLogs_SetIntervalSeconds(600)
     while(ui_running):
         print '@1',
         if ui_reboot_to_refresh():
@@ -197,11 +199,13 @@ def ui_mainloop():
             if ui_force_update:
                 ui_force_update = False
             ui_put_str(output)
+            SaveLogs_SaveOneString(output)
             time.sleep(1)
         except:
             print 'ui main loop except!'
             ui_running = False         
     ui_put_str('ui_mainloop done.')
+    SaveLogs_Flush()
     ui_exit()
     if ui_use_gtalk_io:
         Gtalk_exit()
