@@ -195,17 +195,20 @@ class parseSinaWebFinanceText_usstock(HTMLParser.HTMLParser):
         self.idx = 0
     def handle_data(self, data):
         if data != '\n':
-            self.data.append(string.replace(data,'\n',''))
-            # print 'No.', self.idx, "Data     :", data
-            self.idx += 1
+            data = data.strip().replace('\n', '')
+            if (data.find('.') != -1 or data.isdigit()) and len(data) < 30:
+                self.data.append(data)
+                # print 'No.', self.idx, "Data     :", data
+                self.idx += 1
     def MyProcess(self):
-        if self.data[1].find('.') != -1:
-            self.price_curr = float(self.data[1])
-        pos = self.data[5].find('(')
-        if self.data[5][:pos].find('.') != -1:
-            self.price_change = float(self.data[5][:pos])
-        if self.data[64].find('.') != -1:                
-            self.price_open = float(self.data[64])
+        print ''
+        if self.data[0].find('.') != -1:
+            self.price_curr = float(self.data[0])
+        pos = self.data[1].find('(')
+        if self.data[1][:pos].find('.') != -1:
+            self.price_change = float(self.data[1][:pos])
+        if self.data[3].find('.') != -1:                
+            self.price_open = float(self.data[3])
     
 def get_us_rt_price_SinaWeb_Requests(code):
     code = code.upper()
@@ -215,7 +218,7 @@ def get_us_rt_price_SinaWeb_Requests(code):
     # print 'get data', len(data)
     
     pos1 = data.find('<div class="hq_summary" id="hqSummary">')        
-    pos2 = data.find('<th>前收盘', pos1)
+    pos2 = data.find('<th>贝塔系数', pos1)
     lParser = parseSinaWebFinanceText_usstock()
     lParser.feed(data[pos1:pos2])
     lParser.MyProcess()
@@ -261,13 +264,13 @@ def get_us_rt_price(code):
     # return get_us_rt_price_SinaWeb_Requests(code)
     
 if  __name__ == '__main__':   
-    print 'qq web fast version 00358,', get_hk_rt_price_QQWeb_Requests('00358')
-    print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
+    # print 'qq web fast version 00358,', get_hk_rt_price_QQWeb_Requests('00358')
+    # print 'qq, web mobile version 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
     # print 'sina web 00358,', get_hk_rt_price_SinaWeb_Requests('00358')
     # print 'qq, web mobile version ', get_hk_rt_price_QQWeb_Requests('08201')
     print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('bidu')
-    print 'GoogleWeb,',get_us_rt_price_SinaWeb_Requests('bidu')
-    print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
-    print 'GoogleWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
+    # print 'GoogleWeb,',get_us_rt_price_SinaWeb_Requests('bidu')
+    # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
+    # print 'GoogleWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
     
     
