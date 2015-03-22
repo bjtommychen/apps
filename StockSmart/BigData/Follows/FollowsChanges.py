@@ -129,7 +129,7 @@ def get_stock_lastday_status(code):
     name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(code)
     if lastclose == 0:
         name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(code)
-    diff_pct = '%Error'
+    diff_pct = open_pct = '%Error'
     if lastclose != 0:
         diff_pct = str(round(((curr - lastclose)*100/lastclose), 1))+'%'
         open_pct = str(round(((openprice - lastclose)*100/lastclose), 1))+'%'
@@ -234,7 +234,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             stock_info_str = u'总市值'+ value_str
             FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
             if FollowsMultiple > 2:
-                print  '%-10s'%one[0].decode('gbk'), one[1], ',', one[2], ',[', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ',', one[4:], stock_info_str, get_stock_lastday_status(one[1])
+                print  '%-10s'%one[0].decode('gbk'), one[1], ', ', one[2], ', [', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ', ', one[4:], stock_info_str, get_stock_lastday_status(one[1])
             if FollowsMultiple > 5 and chg_p1 > 200:
                 watch_line = 'cn', xq_code, FollowsMultiple, value_str
                 csvWriter.writerow(watch_line)
@@ -248,16 +248,17 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         # print row
         if len(row) != 4:
             continue
-        market_str, hold_code, FollowsMultiple, value_str = row
+        market_str, hold_code, FollowsMultiple, comments = row
         for one in list:
             name, code, chg_p1, pct_chg, chg_p2, chg_p3, chg_p4, chg_p5, chg_p6, chg_p7 = one
             xq_code = code.replace('(','').replace(')','').replace(':','').lower()
             if hold_code == xq_code:
                 FollowsMultiple = round((chg_p1/GetFollowsMeanByCode(dirfilelist, code)), 1)
+                value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), xq_code).decode('gbk')
                 stock_info_str = u'总市值'+ value_str
-                print code, name.decode('gbk'), str(FollowsMultiple)+'x', one[2:]
+                print code, name.decode('gbk'), str(FollowsMultiple)+'x', one[2:], stock_info_str, get_stock_lastday_status(one[1])
                 break
-        line = market_str, hold_code, FollowsMultiple, value_str
+        line = market_str, hold_code, FollowsMultiple, comments
         print line
         list_out.append(line)
                 
