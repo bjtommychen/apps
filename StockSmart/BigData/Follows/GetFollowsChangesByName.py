@@ -17,6 +17,8 @@ reload(sys)
 sys.setdefaultencoding('utf')
 
 livemode = False
+savepng = False
+save_fname = ''
 
 from pylab import *  
 mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei'] #指定默认字体
@@ -270,7 +272,7 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     print 'CHG_mean', CHG_mean
     # print [CHG_mean for x in range(10)]
     # return  #####
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8*2,4*2))
     ax_left = df.CHG.plot(kind='bar', alpha=0.5, align='center', linewidth=2)
     plt.plot([CHG_mean for x in range(len(df))], 'g--')
     ax_left.set_ylabel('Follows Change')
@@ -285,7 +287,10 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     ax_left.set_xticklabels(listlabel, fontsize='small')
     # plt.legend()
     # fig.autofmt_xdate()
-    plt.show()
+    if not savepng:
+        plt.show()
+    else:
+        fig.savefig(save_fname, dpi=140)
     
 if  __name__ == '__main__':
     print '#'*60
@@ -295,11 +300,15 @@ if  __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', action='store', dest='codename', default='SH600036', help='Specify the stock code name, Example:SH600036.')
     parser.add_argument('-path', action='store', dest='datapath', default='data/', help='Specify the path contains the follows-csv files')
-    parser.add_argument('--debug', action='store_const', dest='debug',default=0,const=1,help='enable debug mode.') 
-    parser.add_argument('--live', action='store_const', dest='live',default=False,const=True,help='enable debug mode.') 
+    parser.add_argument('--debug', action='store_const', dest='debug', default=0, const=1, help='enable debug mode.') 
+    parser.add_argument('--live', action='store_const', dest='live', default=False, const=True, help='Get stock day price from YahooWeb.') 
+    parser.add_argument('--save', action='store', dest='save', default='notexist', help='Save to PNG format.') 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()    
     
     if args.live:
         livemode = True
+    if args.save != 'notexist':
+        savepng = True
+        save_fname = args.save
     GetFollowsByCode_InFiles(getFileList(args.datapath, '*.csv', False), args.codename)
