@@ -11,4 +11,4 @@ cp e:/KuaiDisk/StockSmart/follows/hold*.csv . -f
 cp e:/KuaiDisk/StockSmart/follows/watch*.csv . -f
 rm -f save_png/*
 python SaveWatchList2PNG.py
-pause
+REM pause

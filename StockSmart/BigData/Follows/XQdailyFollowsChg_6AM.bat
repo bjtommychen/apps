@@ -34,6 +34,7 @@ pscp -batch -i myec2.ppk hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/scr
 sleep 6
 pscp -batch -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
 
+call run_daily.bat
 echo 'wait 60s...'
 sleep 60
 rem pause
