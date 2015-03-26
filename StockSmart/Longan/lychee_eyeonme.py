@@ -214,7 +214,18 @@ def stockmon_check_us_stock(force):
         if force:
             day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
             open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
-            strout += '#%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+            oneline = ''
+            if open_chg_pct < 2:
+                if day_chg_pct > 2:
+                    oneline +='★'
+                    if day_chg_pct < 5:
+                        oneline +='★'        #Add one more Star
+            if day_chg_pct > 0:
+                oneline += '↑'
+            elif day_chg_pct < 0:
+                oneline += '↓'                 
+            oneline += '#%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+            strout += oneline
             wlist_stock[i][2] = '%s'% name
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -296,7 +307,18 @@ def stockmon_check_hk_stock(force):
         if force:
             day_chg_pct = round ((curr-lastclose)*100/lastclose, 1)
             open_chg_pct = round ((openprice-lastclose)*100/lastclose, 1)
-            strout += '#HK:%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+            oneline = ''
+            if open_chg_pct < 2:
+                if day_chg_pct > 2:
+                    oneline +='★'
+                    if day_chg_pct < 5:
+                        oneline +='★'        #Add one more Star
+            if day_chg_pct > 0:
+                oneline += '↑'
+            elif day_chg_pct < 0:
+                oneline += '↓'                  
+            oneline += '#HK:%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
+            strout += oneline
             wlist_stock[i][2] = '%s'% name
             need_printout = True
         elif wlist_stock[i][3] != curr and lastclose != 0:
@@ -319,31 +341,36 @@ def stockmon_check_hk_stock(force):
                     need_printout = True
                     wlist_stock[i][2] = '%s'% name
                     wlist_stock[i][3] = curr    #backup as last ref.
+                    if day_chg_pct > 2:
+                        strout +='★'
+                        if day_chg_pct < 5:
+                            strout +='★'        #Add one more Star
                     if chg_ppk > 0:
-                        if day_chg_pct > 2:
-                            strout +='★'
                         strout += '↑'
-                    if chg_ppk < 0:
+                    elif chg_ppk < 0:
                         strout += '↓'
                     strout += 'HK%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
-            elif (diff_ppk >= 8 and day_chg_pct > 1) or stockmon_debug:
+            elif (diff_ppk >= 5 and day_chg_pct > 1) or stockmon_debug:
                 # if Watch Stock
                 need_printout = True
                 wlist_stock[i][2] = '%s'% name
                 wlist_stock[i][3] = curr    #backup as last ref.
-                if chg_ppk > 0:
-                    if day_chg_pct < 8 and open_chg_pct < 1:
+                if open_chg_pct < 2:
+                    if day_chg_pct > 2:
                         strout +='★'
+                        if day_chg_pct < 5:
+                            strout +='★'        #Add one more Star
+                if chg_ppk > 0:
                     strout += '↑'
-                if chg_ppk < 0:
-                    strout += '↓'
+                elif chg_ppk < 0:
+                    strout += '↓'      
                 strout += 'HK%s: %s, %s, %s%%, %sx, %s,⋌%s%%\n' %(name, curr, (curr-lastclose), day_chg_pct, wlist_stock[i][4], wlist_stock[i][5],open_chg_pct)
     if need_printout:
         strout += timetext
     return strout      
   
 def stockmon_init(): 
-    banner = '*** Stockmon Daemon. \nLongan Version. v2.0 ' 
+    banner = '*** Stockmon Daemon. \nLongan Version. v2.1 11:21 2015/3/20 ' 
     banner += '_us_cn_hk_RealTime_'
     banner += '\n'
     return banner    
@@ -405,15 +432,15 @@ def stockmon_process(force = False):
     try:
         strout += stockmon_check_cn_stock(stockmon_force)
     except:
-        strout += 'check cn stock except!'
+        strout += 'check CN except!\n'
     try:
         strout += stockmon_check_us_stock(stockmon_force)
     except:
-        strout += 'check us stock except!'
+        strout += 'check US except!\n'
     try:
         strout += stockmon_check_hk_stock(stockmon_force)
     except:
-        strout += 'check hk stock except!'
+        strout += 'check HK except!\n'
     stockmon_force = False
     return strout
            
