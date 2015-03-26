@@ -219,7 +219,9 @@ def CodeName_AutoCompleted(code):
     
 def CodeName_process(code):
     global codemarket
-    global nameprefix    
+    global nameprefix
+    global livemode
+    
     code = CodeName_AutoCompleted(code)
     code = code.upper()
     code = code.replace(':','')
@@ -235,6 +237,8 @@ def CodeName_process(code):
     else:
         codemarket = 2
         nameprefix = 'data/nasdaq-'
+    if codemarket != 0:
+        livemode = True
     return code
     
 def GetXticksList(datelist):
@@ -247,6 +251,7 @@ def GetXticksList(datelist):
         listlabel.append(datelist[idx])
         idx += 30
     list.append(length-1)
+    listlabel.append(datelist[length-1])
     return list, listlabel
     
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
@@ -298,7 +303,7 @@ if  __name__ == '__main__':
     print '#'*60
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', action='store', dest='codename', default='SH600036', help='Specify the stock code name, Example:SH600036.')
+    parser.add_argument('-t', action='store', dest='codename', default='SH600036', help='Specify the stock code name, Example:SH600036/AMCN/00410.')
     parser.add_argument('-path', action='store', dest='datapath', default='data/', help='Specify the path contains the follows-csv files')
     parser.add_argument('--debug', action='store_const', dest='debug', default=0, const=1, help='enable debug mode.') 
     parser.add_argument('--live', action='store_const', dest='live', default=False, const=True, help='Get stock day price from YahooWeb.') 
