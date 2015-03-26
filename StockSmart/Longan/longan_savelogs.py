@@ -12,7 +12,7 @@ logs_stringslen = 0
 logs_lastsavetime = 0
 
 def get_DateString():
-    return time.strftime('%Y-%m-%d-%H-%M-%S', time.gmtime())   
+    return time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime()) 
     
 def SaveLogs_SetIntervalSeconds(seconds = 600):
     global logs_interval
@@ -33,7 +33,7 @@ def SaveLogs_SaveOneString(string):
     logs_strings.append(string)
     logs_stringslen += len(string)
     print 'logs_strings len:', logs_stringslen
-    if logs_lastsavetime != 0 and (time.time() - logs_lastsavetime) > logs_interval and logs_stringslen > 300:
+    if logs_lastsavetime != 0 and (time.time() - logs_lastsavetime) > logs_interval and logs_stringslen > 20000:
         fp = open(logs_filename, 'wb')
         fp.writelines(logs_strings)
         fp.close()
