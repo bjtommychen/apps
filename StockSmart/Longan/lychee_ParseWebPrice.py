@@ -170,7 +170,7 @@ def get_hk_rt_price_QQWeb_Mobile(code):
     url = 'http://m.finance.qq.com/hk/q?f=HSI&sid=&s=%s' % code
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
-        r = requests.get(url,timeout=6,headers=headers)
+        r = requests.get(url,timeout=2,headers=headers)
         data = r.content
         # print r.encoding, len(data)
         if False:
@@ -271,12 +271,15 @@ class parseGoogleFinanceText(HTMLParser.HTMLParser):
         if data != '\n':
             self.data.append(string.replace(data,'\n',''))
     def MyProcess(self):
-        self.price_curr = float(self.data[1])
-        self.price_change = float(self.data[2])
-        for i in range(0, len(self.data)):
-            if self.data[i] == 'Open' and self.data[i+1][0].isdigit():
-                self.price_open = float(self.data[i+1])
-                break
+        try:
+            self.price_curr = float(self.data[1])
+            self.price_change = float(self.data[2])
+            for i in range(0, len(self.data)):
+                if self.data[i] == 'Open' and self.data[i+1][0].isdigit():
+                    self.price_open = float(self.data[i+1])
+                    break
+        except:
+            print '',
     # def handle_starttag(self, tag, attrs):
         # print("Start tag:", tag)
         # for attr in attrs:
@@ -336,23 +339,23 @@ if  __name__ == '__main__':
     # Test HK
     print 'Start Testing HK'
     # print '?\n\r','get_hk_rt_price_QQWeb_Requests 00358,', get_hk_rt_price_QQWeb_Requests('00358')
-    print '?\n\r','get_hk_rt_price_QQWeb_Mobile 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
+    # print '?\n\r','get_hk_rt_price_QQWeb_Mobile 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
     # print '?\n\r','get_hk_rt_price_SinaWeb_Requests 00358,', get_hk_rt_price_SinaWeb_Requests('00358')
     # print 'get_hk_rt_price_QQWeb_Requests 00224,', get_hk_rt_price_QQWeb_Requests('00224')
-    print 'get_hk_rt_price_QQWeb_Mobile 00224,', get_hk_rt_price_QQWeb_Mobile('00224')
+    # print 'get_hk_rt_price_QQWeb_Mobile 00224,', get_hk_rt_price_QQWeb_Mobile('00224')
     # print 'get_hk_rt_price_QQWeb_Requests 00218,', get_hk_rt_price_QQWeb_Requests('00218')
-    print 'get_hk_rt_price_QQWeb_Mobile 00218,', get_hk_rt_price_QQWeb_Mobile('00218')
-    # print 'get_hk_rt_price_QQWeb_Requests 08201 ', get_hk_rt_price_QQWeb_Requests('08201')
+    # print 'get_hk_rt_price_QQWeb_Mobile 08201,', get_hk_rt_price_QQWeb_Mobile('08201')
+    print 'get_hk_rt_price_QQWeb_Requests 08201 ', get_hk_rt_price_QQWeb_Requests('08201')
 
-    print get_hk_rt_price('00358')
-    print get_hk_rt_price('00218')
-    print get_hk_rt_price('08201')
+    # print get_hk_rt_price('00358')
+    # print get_hk_rt_price('00218')
+    # print get_hk_rt_price('08201')
     
     
     # Test US
     # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('bidu')
     # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('bidu')
     # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
-    # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('LEJU')
+    # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('CO')
     
     
