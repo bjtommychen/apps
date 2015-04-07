@@ -97,3 +97,4 @@ if  __name__ == '__main__':
             cmdline = 'GetFollowsChangesByName.py -t ' + str(code) + ' --save ' + save_path+ "us_H%02d_"%i+code+'.png'
             print cmdline
             external_cmd(cmdline)
+            i+= 1
