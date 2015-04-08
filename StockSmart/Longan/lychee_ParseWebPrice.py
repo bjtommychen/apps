@@ -4,8 +4,9 @@ import urllib, urllib2
 import HTMLParser
 import subprocess
 import requests, re
+import random
 
-DebugMode = False
+DebugMode = True #False
 
 def write_data_to_file(data):
     fp = open('parsewebprice.html', 'wb')
@@ -204,15 +205,49 @@ def get_hk_rt_price_QQWeb_Mobile(code):
     lastclose = float(r[29])
     todayhigh = todaylow = 0
     name = code+name_str
+    time.sleep(1)
     return (name, openprice, lastclose, curr, todayhigh, todaylow)
     
+# http://qt.gtimg.cn/r=0.13013921538367867q=r_hkHSI,r_hk08201,stdunixtime,r_hqingtime    
+def get_hk_rt_price_gtimg(code):
+    # print 'Enter get_hk_rt_price_gtimg '
+    random_seed = random.random()
+    # print random_seed
+    url = 'http://qt.gtimg.cn/r=%sq=r_hk%s' % (random_seed, code)
+    print url 
+    # return
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
+        r = requests.get(url,timeout=2,headers=headers)
+        data = r.content
+        # print r.encoding, len(data)
+        if False:
+            write_data_to_file(data)
+        r.close()
+    except Exception, e:
+        print 'Exception! when get', code, e
+        return []
+    r = data.split('~')
+    # print r
+    # for i in range(0, len(r)):
+        # print i, ':', r[i]
+    curr = float(r[3])
+    openprice = float(r[5])
+    lastclose = float(r[4])
+    todayhigh = float(r[33])
+    todaylow = float(r[34])
+    name_str = r[1]
+    name = code+name_str
+    name = name.decode('gbk').encode('utf').decode('utf')
+    return (name, openprice, lastclose, curr, todayhigh, todaylow)
+
     
 def get_hk_rt_price(code):
     # ret = get_hk_rt_price_SinaWeb_Requests(code)
     # ret = get_hk_rt_price_QQWeb_Requests(code)
-    ret = get_hk_rt_price_QQWeb_Mobile(code)
-    if ret == []:
-        ret = get_hk_rt_price_QQWeb_Mobile(code)
+    ret = get_hk_rt_price_gtimg(code)
+    # if ret == []:
+        # ret = get_hk_rt_price_QQWeb_Requests(code)
     return ret
     
 ###################### US ############################    
@@ -330,26 +365,62 @@ def get_us_rt_price_GoogleWeb_Requests(code):
     # print 'GOOGLE Requests!',(name, openprice, lastclose, curr, todayhigh, todaylow)
     return (name, openprice, lastclose, curr, todayhigh, todaylow)    
     
+# http://gp.3g.qq.com/g/s?aid=quote&securities_id=share_WBAI.xnys&stat=q_snyse&    
+def get_us_rt_price_3gQQcom(code):
+    code = code.upper()
+    url = 'http://gp.3g.qq.com/g/s?aid=quote&securities_id=share_%s.xnas&stat=q_snasd&' % code
+    print url, '---------------------------------------------'
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
+        r = requests.get(url,timeout=15,headers=headers)
+        data = r.content
+        print r.encoding, len(data)
+        if False:
+            write_data_to_file(data)
+        r.close()
+    except Exception, e:
+        return []   
+    match = re.compile(r'.*?\xe7\xbe\x8e\xe5\x85\x83')
+    r = re.findall(match, data)
+    print len(r), r
+    listv = []
+    for one in r:
+        pos1 = one.find(':')
+        pos2 = one.find('\xbe\x8e\xe5\x85\x83')
+        if pos1 != -1:
+            print one[pos1+1:pos2-1], len(one[pos1+1:pos2])
+            listv.append(one[pos1+1:pos2-1])
+    
+    openprice = float(listv[3])
+    curr = float(listv[0])
+    lastclose = float(listv[2])
+    todayhigh = float(listv[4])
+    todaylow = float(listv[5])
+    name = code[:]
+    # print 'GOOGLE Requests!',(name, openprice, lastclose, curr, todayhigh, todaylow)
+    return (name, openprice, lastclose, curr, todayhigh, todaylow)       
+    
 def get_us_rt_price(code):
     return get_us_rt_price_GoogleWeb_Requests(code)
-    # return get_us_rt_price_SinaWeb_Requests(code)
+    # return get_us_rt_price_3gQQcom(code)
     
 if  __name__ == '__main__':   
     DebugMode = True
     # Test HK
     print 'Start Testing HK'
+    print '(name, openprice, lastclose, curr, todayhigh, todaylow)'
     # print '?\n\r','get_hk_rt_price_QQWeb_Requests 00358,', get_hk_rt_price_QQWeb_Requests('00358')
     # print '?\n\r','get_hk_rt_price_QQWeb_Mobile 00358,', get_hk_rt_price_QQWeb_Mobile('00358')
     # print '?\n\r','get_hk_rt_price_SinaWeb_Requests 00358,', get_hk_rt_price_SinaWeb_Requests('00358')
     # print 'get_hk_rt_price_QQWeb_Requests 00224,', get_hk_rt_price_QQWeb_Requests('00224')
     # print 'get_hk_rt_price_QQWeb_Mobile 00224,', get_hk_rt_price_QQWeb_Mobile('00224')
     # print 'get_hk_rt_price_QQWeb_Requests 00218,', get_hk_rt_price_QQWeb_Requests('00218')
-    # print 'get_hk_rt_price_QQWeb_Mobile 08201,', get_hk_rt_price_QQWeb_Mobile('08201')
-    print 'get_hk_rt_price_QQWeb_Requests 08201 ', get_hk_rt_price_QQWeb_Requests('08201')
+    print 'get_hk_rt_price_QQWeb_Mobile 08201,', get_hk_rt_price_QQWeb_Mobile('08201')
+    # print 'get_hk_rt_price_QQWeb_Requests 08201 ', get_hk_rt_price_QQWeb_Requests('08201')
 
-    # print get_hk_rt_price('00358')
-    # print get_hk_rt_price('00218')
-    # print get_hk_rt_price('08201')
+    print get_hk_rt_price('00358')
+    print get_hk_rt_price('00218')
+    print get_hk_rt_price('08201')
     
     
     # Test US
@@ -357,5 +428,7 @@ if  __name__ == '__main__':
     # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('bidu')
     # print 'SinaWeb,',get_us_rt_price_SinaWeb_Requests('amcn')
     # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('CO')
+    print '3gQQcom, ', get_us_rt_price_3gQQcom('amcn')
+    print 'GoogleWeb_Requests, ', get_us_rt_price_GoogleWeb_Requests('amcn')
     
     
