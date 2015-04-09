@@ -1,3 +1,5 @@
+REM delay 10m for Kuaidisk sync done.
+sleep 1m
 
 REM Get QMdata.
 python GetQDAdata.py
