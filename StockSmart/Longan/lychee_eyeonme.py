@@ -61,6 +61,20 @@ def check_cn_market_open():
         # print 'cn market status:', checkopen
     return checkopen
 
+def check_hk_market_open():
+    global stockmon_enable
+    checkopen = False
+    if (datetime.datetime.now().weekday() > 4) and stockmon_enable:
+        return False
+    text = time.strftime("%H:%M", time.localtime())
+    if text > '09:20' and text <= '12:00':
+        checkopen = True
+    elif text >= '13:00' and text <= '16:00':
+        checkopen = True
+    # if stockmon_enable:
+        # print 'cn market status:', checkopen
+    return checkopen    
+    
 def check_us_market_open():
     checkopen = False
     if (datetime.datetime.now().weekday() > 5):
@@ -282,10 +296,10 @@ def stockmon_check_hk_stock(force):
     global hk_market_open
     global wlist
     strout = ''
-    if not force and hk_market_open == check_cn_market_open() and hk_market_open == False:
+    if not force and hk_market_open == check_hk_market_open() and hk_market_open == False:
         return ''
-    if hk_market_open != check_cn_market_open():    #check if market status changed.
-        hk_market_open = check_cn_market_open()
+    if hk_market_open != check_hk_market_open():    #check if market status changed.
+        hk_market_open = check_hk_market_open()
         force = True
     #get time
     timetext = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime()) + ' '
@@ -300,7 +314,10 @@ def stockmon_check_hk_stock(force):
         if wlist_stock[i][0] != 'hk':
             continue
         # print 'checking', wlist_stock[i]
-        name, openprice, lastclose, curr, todayhigh, todaylow = get_hk_rt_price(wlist_stock[i][1])
+        oneprice = get_hk_rt_price(wlist_stock[i][1])
+        if oneprice == []:
+            continue
+        name, openprice, lastclose, curr, todayhigh, todaylow = oneprice
         # print name, openprice, lastclose, curr, todayhigh, todaylow
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
