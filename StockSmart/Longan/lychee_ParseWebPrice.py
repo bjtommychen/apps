@@ -215,18 +215,25 @@ def get_hk_rt_price_gtimg(code):
     # print random_seed
     url = 'http://qt.gtimg.cn/r=%sq=r_hk%s' % (random_seed, code)
     print url 
-    # return
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
-        r = requests.get(url,timeout=2,headers=headers)
-        data = r.content
-        # print r.encoding, len(data)
-        if False:
-            write_data_to_file(data)
-        r.close()
+        req = urllib2.Request(url)
+        content = urllib2.urlopen(req).read()
+        data = content
     except Exception, e:
-        print 'Exception! when get', code, e
-        return []
+        return ('', 0, 0, 0, 0, 0)     
+    
+    # return
+    # try:
+        # headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
+        # r = requests.get(url,timeout=2,headers=headers)
+        # data = r.content
+        # print r.encoding, len(data)
+        # if False:
+            # write_data_to_file(data)
+        # r.close()
+    # except Exception, e:
+        # print 'Exception! when get', code, e
+        # return []
     r = data.split('~')
     # print r
     # for i in range(0, len(r)):
@@ -237,8 +244,11 @@ def get_hk_rt_price_gtimg(code):
     todayhigh = float(r[33])
     todaylow = float(r[34])
     name_str = r[1]
-    name = code+name_str
-    name = name.decode('gbk').encode('utf').decode('utf')
+    #print name_str, len(name_str)
+    name_str = name_str.decode('gbk').encode('utf')
+    name = code.encode('utf') + name_str
+    # name = name.decode('gbk').encode('utf').decode('utf')
+    # name = name.decode('gbk').encode('utf').decode('utf')
     return (name, openprice, lastclose, curr, todayhigh, todaylow)
 
     
