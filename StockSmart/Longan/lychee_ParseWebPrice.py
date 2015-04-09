@@ -19,6 +19,10 @@ def read_data_from_file():
     fp.close()
     return data
         
+def getIp(domain):
+    import socket
+    myaddr = socket.getaddrinfo(domain,'http')[0][4][0]
+    return (myaddr)
 
 def external_cmd(cmd, msg_in=''):
 #    print cmd
@@ -205,15 +209,25 @@ def get_hk_rt_price_QQWeb_Mobile(code):
     lastclose = float(r[29])
     todayhigh = todaylow = 0
     name = code+name_str
-    time.sleep(1)
+    #time.sleep(1)
     return (name, openprice, lastclose, curr, todayhigh, todaylow)
     
+ip_used_cnt = -1
+ipaddress = ''
+IP_STATIC_MAX = 1000    # Change IP every n times.    
 # http://qt.gtimg.cn/r=0.13013921538367867q=r_hkHSI,r_hk08201,stdunixtime,r_hqingtime    
 def get_hk_rt_price_gtimg(code):
+    global ip_used_cnt
+    global ipaddress
+    ip_used_cnt += 1
+    if ip_used_cnt > 1000 or ip_used_cnt == 0:
+        ipaddress = getIp('qt.gtimg.cn')
+        ip_used_cnt = 0
     # print 'Enter get_hk_rt_price_gtimg '
     random_seed = random.random()
     # print random_seed
-    url = 'http://qt.gtimg.cn/r=%sq=r_hk%s' % (random_seed, code)
+    # url = 'http://qt.gtimg.cn/r=%sq=r_hk%s' % (random_seed, code)
+    url = 'http://'+ipaddress+'/r=%sq=r_hk%s' % (random_seed, code)
     print url 
     try:
         req = urllib2.Request(url)
@@ -253,12 +267,13 @@ def get_hk_rt_price_gtimg(code):
 
     
 def get_hk_rt_price(code):
-    # ret = get_hk_rt_price_SinaWeb_Requests(code)
-    # ret = get_hk_rt_price_QQWeb_Requests(code)
-    ret = get_hk_rt_price_gtimg(code)
-    # if ret == []:
-        # ret = get_hk_rt_price_QQWeb_Requests(code)
-    return ret
+    try:
+    # return get_hk_rt_price_SinaWeb_Requests(code)
+    # return get_hk_rt_price_QQWeb_Requests(code)
+        one = get_hk_rt_price_gtimg(code)
+        return one
+    except:
+        return ('', 0, 0, 0, 0, 0)
     
 ###################### US ############################    
 class parseSinaWebFinanceText_usstock(HTMLParser.HTMLParser):
@@ -271,17 +286,20 @@ class parseSinaWebFinanceText_usstock(HTMLParser.HTMLParser):
         self.idx = 0
     def handle_data(self, data):
         if data != '\n':
-            self.data.append(string.replace(data,'\n',''))
-            # print 'No.', self.idx, "Data     :", data
-            self.idx += 1
+            data = data.strip().replace('\n', '')
+            if (data.find('.') != -1 or data.isdigit()) and len(data) < 30:
+                self.data.append(data)
+                # print 'No.', self.idx, "Data     :", data
+                self.idx += 1
     def MyProcess(self):
-        if self.data[1].find('.') != -1:
-            self.price_curr = float(self.data[1])
-        pos = self.data[5].find('(')
-        if self.data[5][:pos].find('.') != -1:
-            self.price_change = float(self.data[5][:pos])
-        if self.data[64].find('.') != -1:                
-            self.price_open = float(self.data[64])
+        print ''
+        if self.data[0].find('.') != -1:
+            self.price_curr = float(self.data[0])
+        pos = self.data[1].find('(')
+        if self.data[1][:pos].find('.') != -1:
+            self.price_change = float(self.data[1][:pos])
+        if self.data[3].find('.') != -1:                
+            self.price_open = float(self.data[3])
     
 def get_us_rt_price_SinaWeb_Requests(code):
     code = code.upper()
@@ -291,13 +309,14 @@ def get_us_rt_price_SinaWeb_Requests(code):
     # print 'get data', len(data)
     
     pos1 = data.find('<div class="hq_summary" id="hqSummary">')        
-    pos2 = data.find('<th>前收盘', pos1)
+    pos2 = data.find('<th>贝塔系数', pos1)
     lParser = parseSinaWebFinanceText_usstock()
     lParser.feed(data[pos1:pos2])
     lParser.MyProcess()
     openprice = lParser.price_open
     curr = lParser.price_curr
     lastclose = curr - lParser.price_change
+    lastclose = round(lastclose, 2)
     if lastclose < 0:
         lastclose = 0
     todayhigh = todaylow = 0    
@@ -379,7 +398,7 @@ def get_us_rt_price_GoogleWeb_Requests(code):
 def get_us_rt_price_3gQQcom(code):
     code = code.upper()
     url = 'http://gp.3g.qq.com/g/s?aid=quote&securities_id=share_%s.xnas&stat=q_snasd&' % code
-    print url, '---------------------------------------------'
+    print url
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'}
         r = requests.get(url,timeout=15,headers=headers)
@@ -392,13 +411,13 @@ def get_us_rt_price_3gQQcom(code):
         return []   
     match = re.compile(r'.*?\xe7\xbe\x8e\xe5\x85\x83')
     r = re.findall(match, data)
-    print len(r), r
+    # print len(r), r
     listv = []
     for one in r:
         pos1 = one.find(':')
         pos2 = one.find('\xbe\x8e\xe5\x85\x83')
         if pos1 != -1:
-            print one[pos1+1:pos2-1], len(one[pos1+1:pos2])
+            # print one[pos1+1:pos2-1], len(one[pos1+1:pos2])
             listv.append(one[pos1+1:pos2-1])
     
     openprice = float(listv[3])
@@ -411,8 +430,13 @@ def get_us_rt_price_3gQQcom(code):
     return (name, openprice, lastclose, curr, todayhigh, todaylow)       
     
 def get_us_rt_price(code):
-    return get_us_rt_price_GoogleWeb_Requests(code)
-    # return get_us_rt_price_3gQQcom(code)
+    try:
+        one = get_us_rt_price_GoogleWeb_Requests(code)
+        #one = get_us_rt_price_SinaWeb_Requests(code)
+    except:
+        print 'get_us_rt_price except'
+        return ('', 0,0,0,0,0)
+    return one
     
 if  __name__ == '__main__':   
     DebugMode = True
@@ -425,12 +449,13 @@ if  __name__ == '__main__':
     # print 'get_hk_rt_price_QQWeb_Requests 00224,', get_hk_rt_price_QQWeb_Requests('00224')
     # print 'get_hk_rt_price_QQWeb_Mobile 00224,', get_hk_rt_price_QQWeb_Mobile('00224')
     # print 'get_hk_rt_price_QQWeb_Requests 00218,', get_hk_rt_price_QQWeb_Requests('00218')
-    print 'get_hk_rt_price_QQWeb_Mobile 08201,', get_hk_rt_price_QQWeb_Mobile('08201')
+    # print 'get_hk_rt_price_QQWeb_Mobile 08201,', get_hk_rt_price_QQWeb_Mobile('08201')
     # print 'get_hk_rt_price_QQWeb_Requests 08201 ', get_hk_rt_price_QQWeb_Requests('08201')
 
-    print get_hk_rt_price('00358')
-    print get_hk_rt_price('00218')
-    print get_hk_rt_price('08201')
+    for i in range(0, 2):
+        print get_hk_rt_price('00358')
+        print get_hk_rt_price('00218')
+        print get_hk_rt_price('08201')
     
     
     # Test US
@@ -440,5 +465,8 @@ if  __name__ == '__main__':
     # print 'GoogleWeb,',get_us_rt_price_GoogleWeb_Requests('CO')
     print '3gQQcom, ', get_us_rt_price_3gQQcom('amcn')
     print 'GoogleWeb_Requests, ', get_us_rt_price_GoogleWeb_Requests('amcn')
-    
+    for i in range(0, 2):
+        print get_us_rt_price('amcn')
+        print get_us_rt_price('bidu')
+        print get_us_rt_price('jmei')    
     
