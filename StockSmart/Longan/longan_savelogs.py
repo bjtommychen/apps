@@ -48,10 +48,14 @@ def SaveLogs_Flush():
     global logs_filename
     global logs_stringslen
     
-    fp = open(logs_filename, 'wb')
-    fp.writelines(logs_strings)
-    fp.close()
-    print 'LOGS: Saved to file', logs_filename
+    if logs_filename == '':
+        logs_filename = 'logs/Logs-'+get_DateString()+'.txt'
+        print 'LOGS: logs_filename', logs_filename
+    if logs_strings != []:        
+        fp = open(logs_filename, 'wb')
+        fp.writelines(logs_strings)
+        fp.close()
+        print 'LOGS: Saved to file', logs_filename
     logs_strings = []
     logs_filename = ''
     logs_stringslen = 0
