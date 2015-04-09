@@ -33,6 +33,7 @@ copy hold_*.csv f:\KuaiDisk\StockSmart\follows\ /y
 pscp -batch -i myec2.ppk hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
 sleep 6
 pscp -batch -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
+pscp -batch -i myec2.ppk *_hk.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/Longan_HK 
 
 call run_daily.bat
 echo 'wait 60s...'
