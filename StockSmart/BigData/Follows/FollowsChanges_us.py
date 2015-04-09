@@ -146,7 +146,7 @@ def get_stock_lastday_status(code):
     # return 0, 0, 0
     code = code[code.find(':'):]
     code = code.replace('(','').replace(')','').replace(':','').upper()    
-    name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price_SinaWeb_Requests(code)
+    name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price(code)
     diff_pct = open_pct = '%Error'
     if lastclose != 0:
         diff_pct = str(round(((curr - lastclose)*100/lastclose), 2))+'%'
