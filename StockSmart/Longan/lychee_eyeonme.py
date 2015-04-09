@@ -221,7 +221,11 @@ def stockmon_check_us_stock(force):
         if wlist_stock[i][0] != 'us':
             continue
         # print 'checking', wlist_stock[i]
-        name, openprice, lastclose, curr, todayhigh, todaylow = get_us_rt_price(wlist_stock[i][1])
+        oneprice = get_us_rt_price(wlist_stock[i][1])
+        if oneprice == []:
+            continue
+        name, openprice, lastclose, curr, todayhigh, todaylow = oneprice        
+        
         # print name, openprice, lastclose, curr, todayhigh, todaylow
         if stockmon_debug:
             strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
