@@ -128,8 +128,12 @@ def stockmon_check_cn_stock(force):
     for i in range(0, len(wlist_stock)):
         if wlist_stock[i][0] != 'cn':
             continue
-        # print 'checking', wlist_stock[i]
-        name, openprice, lastclose, curr, todayhigh, todaylow = get_cn_rt_price(wlist_stock[i][1])
+        #print 'checking', i, wlist_stock[i]
+        oneprice = get_cn_rt_price(wlist_stock[i][1])
+        if oneprice == [] or oneprice[0] == '':
+            continue
+        name, openprice, lastclose, curr, todayhigh, todaylow = oneprice
+        #print oneprice
         # if stockmon_debug:
             # strout += str([name, openprice, lastclose, curr, todayhigh, todaylow])
         if force:
