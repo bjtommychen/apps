@@ -57,14 +57,14 @@ def SendInfo_ReActive():
     active_cnt += 1
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo ReActived " + str(active_cnt) + " at " + text +" > body1.txt")
-    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@robot# body1.txt")
     beep_sos()    
 
 def Run_XQdailyFollowsChg():
     global run_mode
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     # external_cmd("echo Run_XQdailyFollowsChg at " + text +" > body1.txt")
-    # external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    # external_cmd("xq_follows_sendmail.py Robot_News@robot# body1.txt")
     beep_sos()
     if run_mode == 1:
         stdout_value, stderr_value = external_cmd("XQdailyFollowsChg_6AM.bat")
@@ -85,7 +85,7 @@ def Run_XQdailyFollowsChg():
 def DoCommand_CopyWatchListToCloud():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo DoCommand_CopyWatchListToCloud at " + text +" > body1.txt")
-    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@robot# body1.txt")
     beep_sos()
     external_cmd('pscp -batch -i myec2.ppk watch_*.csv f:\KuaiDisk\StockSmart\follows\hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan')
     
@@ -93,21 +93,21 @@ def DoCommand_CopyWatchListToCloud():
 def PowerState_Standby():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo Sleep at " + text +" > body1.txt")
-    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@robot# body1.txt")
     beep_sos()
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState 0,1,0')
     
 def PowerState_Hibernate():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo Hibernate at " + text +" > body1.txt")
-    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@robot# body1.txt")
     beep_sos()
     external_cmd('rundll32.exe powrprof.dll,SetSuspendState')
 
 def myip_changed_notification():
     text = time.strftime("%Y-%m-%d %a %H:%M:%S", time.localtime())
     external_cmd("echo MyIP Changed at " + text +" > body1.txt")
-    external_cmd("xq_follows_sendmail.py Robot_News@xueqiu# body1.txt")
+    external_cmd("xq_follows_sendmail.py Robot_News@robot# body1.txt")
     external_cmd("python ddclient.py")
     
 # def Check_PrepareForOpen():
