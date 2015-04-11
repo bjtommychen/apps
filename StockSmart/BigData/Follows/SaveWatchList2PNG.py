@@ -108,4 +108,6 @@ if  __name__ == '__main__':
 
     Save2PNG_OneList('hold_us.csv', 'us_HHH')
     Save2PNG_OneList('watch_us.csv', 'us_WWW')
+    
+    Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt')    
     print 'Done'
