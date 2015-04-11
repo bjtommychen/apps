@@ -4,6 +4,7 @@ sleep 1m
 REM Get QMdata.
 python GetQDAdata.py
 python ..\UpdateCSV_withQMdata.py -opath output_qda -ipath input_qda
+python GetTodaySpurtList.py
 beep
 
 REM delay 10m for Kuaidisk sync done.
