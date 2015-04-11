@@ -56,8 +56,8 @@ def get_OneRecord(fp, code_filter = ''):
         m_fHigh = struct.unpack("f",fp.read(4))[0]
         m_fLow = struct.unpack("f",fp.read(4))[0]
         m_fClose = struct.unpack("f",fp.read(4))[0]
-        m_fVolume = struct.unpack("L",fp.read(4))[0]
-        m_fAmount = struct.unpack("L",fp.read(4))[0]
+        m_fVolume = struct.unpack("f",fp.read(4))[0]
+        m_fAmount = struct.unpack("f",fp.read(4))[0]
         m_fNull = struct.unpack("L",fp.read(4))[0]
         
             #format
