@@ -254,7 +254,19 @@ def GetXticksList(datelist):
     listlabel.append(datelist[length-1])
     return list, listlabel
     
+def GetStockInfo_fromFile(reader, check_code):
+    # name = name.replace('(','').replace(')','').replace(':','').lower()
+    check_code = check_code[2:]
+    for one in reader:
+        # print one, code
+        code, name, info = one
+        # print code,check_code
+        if code == check_code:
+            return info
+    return 'N/A'    
+    
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
+    global codemarket
     # print filelist
     code = CodeName_process(code)
     print 'code:', code
@@ -283,7 +295,11 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     ax_left.set_ylabel('Follows Change')
     ax_right = df.PRICE.plot(secondary_y=True, color='red', marker='v', linewidth=2, alpha=0.7)
     ax_right.set_ylabel('PRICE')
-    plt.title(name.decode('gbk')+code)
+    if codemarket == 0:
+        value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), code).decode('gbk')
+        plt.title(name.decode('gbk')+code+' v'+value_str)
+    else:
+        plt.title(name.decode('gbk')+code)
     plt.xlabel('Date')
     # print type(plt.xlim())
     # print type(xdata), xdata, xdata[0]
