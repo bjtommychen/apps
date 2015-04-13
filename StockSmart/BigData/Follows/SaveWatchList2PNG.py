@@ -6,6 +6,7 @@ import math
 import csv
 import stat,fnmatch
 import subprocess
+import multiprocessing
 
 save_path = './save_png/'
 csv_path = ''  #e:\\KuaiDisk\\StockSmart\\follows\\
@@ -44,6 +45,51 @@ def external_cmd(cmd, rundir='./', msg_in=''):
         print("IOError: %s" % err)
         return None, None
 
+MAX_PROCESSING = 4       
+def run_cmdline_processing(q, lock, cmdline):
+    # print 'run_cmdline_processing', onefile
+    try:
+        external_cmd(cmdline)
+    except:
+        print 'error'
+        
+def do_multiprocessing(cmdlines):
+    global MAX_PROCESSING
+    global result_logs
+    cnt = 0
+    runcnt = 0
+    p_list = []
+    print 'multiprocessing.cpu_count()', multiprocessing.cpu_count()
+    q = multiprocessing.Queue()
+    q.put([])
+    lock = multiprocessing.Lock()
+    for line in cmdlines:
+        cnt += 1
+        print (' Processing No.'+str(cnt)+'/'+str(len(cmdlines))).center(79, '-')
+        print line
+        p = multiprocessing.Process(target=run_cmdline_processing, args=(q, lock, line))
+        p.start()
+        p_list.append(p)
+        # print p,'added'
+        time.sleep(0.2)
+        while(len(p_list) >= MAX_PROCESSING):
+            print 'Waiting ...'
+            time.sleep(2)
+            for p in p_list:
+                # print p
+                p.join(timeout=0.1)
+                if not p.is_alive():
+                    p_list.remove(p)
+                    # handle_ResultsInQueue(q.get())
+                    # print 'Removing Process', p
+    for p in p_list:
+        # print 'wait join', p
+        p.join()
+        # handle_ResultsInQueue(q.get())
+    result_logs = q.get()
+    print 'result_logs', len(result_logs), result_logs
+    print 'All Done!'        
+        
 list_stock_cn = []        
 def GetCodeName_cn(code):
     global list_stock_cn
@@ -81,6 +127,7 @@ def Save2PNG_OneList(fname_list, fname_png_prefix):
     filename  = csv_path+fname_list
     reader = csv.reader(file(filename,'rb'))
     i = 0
+    cmdlists = []
     for one in reader:
         code = one[1]
         name = ''
@@ -91,9 +138,15 @@ def Save2PNG_OneList(fname_list, fname_png_prefix):
         elif '_us' in fname_list:
             name = GetCodeName_us(code)
         cmdline = 'GetFollowsChangesByName.py -t ' + str(code) + ' --save ' + save_path+ fname_png_prefix + '%02d_'%i+code+name+'.png'
-        print cmdline
-        external_cmd(cmdline)
-        i+= 1    
+        cmdlists.append(cmdline)
+        i+= 1  
+    if False:        
+        for cmdline in cmdlists:
+            print cmdline
+            external_cmd(cmdline)        
+    else:
+        do_multiprocessing(cmdlists)
+        
         
 if  __name__ == '__main__':
     print '#'*60
