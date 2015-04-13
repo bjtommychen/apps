@@ -40,6 +40,8 @@ def watchlist_load():
         if os.path.exists(name):
             reader = csv.reader(file(name,'rb'))    
             for row in reader:
+                if row == []:
+                    continue
                 listall.append(row)
     return listall
     
