@@ -128,8 +128,8 @@ def get_NextRecord(fp, code_filter = ''):
             m_fHigh = struct.unpack("f",fp.read(4))[0]
             m_fLow = struct.unpack("f",fp.read(4))[0]
             m_fClose = struct.unpack("f",fp.read(4))[0]
-            m_fVolume = struct.unpack("L",fp.read(4))[0]
-            m_fAmount = struct.unpack("L",fp.read(4))[0]
+            m_fVolume = struct.unpack("f",fp.read(4))[0]
+            m_fAmount = struct.unpack("f",fp.read(4))[0]
             m_fNull = struct.unpack("L",fp.read(4))[0]
     #        print time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(m_time))
             line = (m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull)
@@ -147,7 +147,7 @@ def update_QDA_to_csv(filename, code, name, listall):
             print 'write_QDA_data_to_csv', filename, len(listall)
         fcsv = open(filename, 'wb')
         csvWriter = csv.writer(fcsv)
-        title = 'Date' ,'Open','High','Low','Close','Volume','Adj Close'
+        title = 'Date' ,'Open','High','Low','Close','Volume','Turnover'
         csvWriter.writerow(title)
         for line in listall:
             m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = line
