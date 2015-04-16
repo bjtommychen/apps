@@ -201,6 +201,16 @@ def GetFollowsMeanByCode(dirfilelist, code = '(SH:600036)'):
     # print df.mean()   
     return (df.mean())
         
+def PrintListForWeb(list_web):
+    i = 0
+    for one in list_web:
+        i += 1
+        if i%10 == 0:
+            print one
+        else:
+            print one+',',
+    print ''    
+        
 def GetFollowsChanges_InRecentFiles(rawlist):
     dirfilelist = []
     for one in rawlist:
@@ -248,6 +258,7 @@ def GetFollowsChanges_InRecentFiles(rawlist):
     rlist = list[:100]
     ############ watch ############
     if True:
+        list_web = []
         fcsv = open('watch_cn.csv', 'wb')
         csvWriter = csv.writer(fcsv)
         for one in rlist:
@@ -262,12 +273,16 @@ def GetFollowsChanges_InRecentFiles(rawlist):
                 if FollowsMultiple >= 3:
                     print  '%-10s'%one[0].decode('gbk'), one[1], ', ', one[2], ', [', float('%.1f' % FollowsMultiple),'x ]', str(one[3])+'%', ', ', one[4:], stock_info_str, get_stock_lastday_status(one[1])
                 if FollowsMultiple >= 4 and chg_p1 > 200:
+                    list_web.append(xq_code)
                     watch_line = 'cn', xq_code, FollowsMultiple, value_str
                     csvWriter.writerow(watch_line)
+        PrintListForWeb(list_web)
         fcsv.close()
+        
     ############# foresight ##########    
     if True:
         rlist = list[:500]
+        list_web = []
         # Final 
         fcsv = open('farwatch_cn.csv', 'wb')
         csvWriter = csv.writer(fcsv)
@@ -288,13 +303,16 @@ def GetFollowsChanges_InRecentFiles(rawlist):
                 if FollowsMultiple >= 10 and chg_p1 > 50 and LiuTongYi < 120:
                     watch_line = 'cn', xq_code, FollowsMultiple, value_str
                     csvWriter.writerow(watch_line)
-                    print '******', i, watch_line, stock_info_str, chg_p1, pct_chg, FollowsMultiple
-        fcsv.close()    
+                    list_web.append(xq_code)
+                    print '****** No.', i, '%-10s'%one[0].decode('gbk'), watch_line, stock_info_str, 'chg', chg_p1, str(pct_chg)+'%', str(FollowsMultiple)+'x'
+        fcsv.close()
+        PrintListForWeb(list_web)
     
     print filelist
     #Update hold_cn.csv
     ############ hold ############
     if True:
+        list_web = []
         reader = csv.reader(file('hold_cn.csv','rb'))
         list_out = []
         for row in reader:
@@ -313,8 +331,10 @@ def GetFollowsChanges_InRecentFiles(rawlist):
                     break
             line = market_str, hold_code, FollowsMultiple, comments
             print line
+            list_web.append(hold_code)
             list_out.append(line)
-                    
+        
+        PrintListForWeb(list_web)
         fcsv = open('hold_cn.csv', 'wb')
         csvWriter = csv.writer(fcsv)
         for line in list_out:                    
