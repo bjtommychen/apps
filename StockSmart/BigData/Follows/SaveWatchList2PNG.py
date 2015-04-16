@@ -8,7 +8,6 @@ import stat,fnmatch
 import subprocess
 import multiprocessing
 
-save_path = './save_png/'
 csv_path = ''  #e:\\KuaiDisk\\StockSmart\\follows\\
     
 def save2csv(fname, list):
@@ -123,7 +122,7 @@ def GetCodeName_us(code):
     else:
         return first_or_default[1]  
         
-def Save2PNG_OneList(fname_list, fname_png_prefix):   
+def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/'):   
     filename  = csv_path+fname_list
     reader = csv.reader(file(filename,'rb'))
     i = 0
@@ -162,5 +161,5 @@ if  __name__ == '__main__':
     Save2PNG_OneList('hold_us.csv', 'us_HHH')
     Save2PNG_OneList('watch_us.csv', 'us_WWW')
     
-    Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt')    
+    Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt', './save_png/spurt/')    
     print 'Done'
