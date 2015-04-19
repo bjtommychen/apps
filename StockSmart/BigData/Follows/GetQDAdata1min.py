@@ -46,14 +46,14 @@ def getFileList(path, ext, subdir = True ):
     else:
         return [] 
         
-# sh20150306.rar        
-def getQDAfile(filename='sh20150306.rar'):
+# Sh20150410m1.rar        
+def getQDAfile(filename='Sh20150410m1.rar'):
     print (' Processing '+filename+' ').center(79, '-')
-    outputfilename = 'input_qda/Quote' + filename[2:].replace('.rar', '') + '.QDA'
+    outputfilename = 'input_qda1m/Quote' + filename[2:].replace('.rar', '') + '.QDA'
     if os.path.exists(outputfilename):
         print outputfilename, 'exist, Skip !'
         return
-    cmds = 'wget ftp://datadown:88158@down.58851.com/gpday/' + filename
+    cmds = 'wget ftp://datadown:88158@down.58851.com/gpmin1/' + filename
     stdout_msg, stderr_msg = external_cmd(cmds)
     print stdout_msg + stderr_msg
     if not os.path.exists(filename):
@@ -64,7 +64,7 @@ def getQDAfile(filename='sh20150306.rar'):
     stdout_msg, stderr_msg = external_cmd(cmds)
     print stdout_msg + stderr_msg
 
-    cmds = 'mv -f Quote.QDA ' + outputfilename
+    cmds = 'mv -f Quote.QM1 ' + outputfilename
     stdout_msg, stderr_msg = external_cmd(cmds)
     print stdout_msg + stderr_msg
 
@@ -80,13 +80,13 @@ def get_QDA_recentdays(days=7):
     for i in range(0, days):
         timestamp = time.localtime(time.time()-3600*24*i)
         timestr = time.strftime('%Y%m%d', timestamp)
-        filename = 'sh'+timestr+'.rar'
+        filename = 'sh'+timestr+'m1.rar'
         getQDAfile(filename)
         
         
 ########################################################################
 if __name__ == '__main__':
     # getQDAfile()
-    get_QDA_recentdays(7)
+    get_QDA_recentdays(200)
     
     
