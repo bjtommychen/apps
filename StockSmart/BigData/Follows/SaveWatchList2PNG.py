@@ -122,12 +122,14 @@ def GetCodeName_us(code):
     else:
         return first_or_default[1]  
         
-def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/'):   
+def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/', withDate = False):   
     filename  = csv_path+fname_list
     reader = csv.reader(file(filename,'rb'))
     i = 0
     cmdlists = []
     for one in reader:
+        if len(one) < 4:
+            continue
         code = one[1]
         name = ''
         if '_cn' in fname_list:
@@ -136,7 +138,11 @@ def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/'):
             name = GetCodeName_hk(code)
         elif '_us' in fname_list:
             name = GetCodeName_us(code)
-        cmdline = 'GetFollowsChangesByName.py -t ' + str(code) + ' --save ' + save_path+ fname_png_prefix + '%02d_'%i+code+name+'.png'
+        if not withDate:
+            cmdline = 'GetFollowsChangesByName.py -t ' + str(code) + ' --save ' + save_path+ fname_png_prefix + '%02d_'%i+code+name+'.png'
+        else:
+            timetext = time.strftime("%Y%m%d", time.localtime()) 
+            cmdline = 'GetFollowsChangesByName.py -t ' + str(code) + ' --save ' + save_path+timetext+'_'+ fname_png_prefix + '%02d_'%i+code+name+'.png'
         cmdlists.append(cmdline)
         i+= 1  
     if False:        
@@ -152,14 +158,14 @@ if  __name__ == '__main__':
     print '##### Convert Watch List to PNG files.'
     print '#'*60
 
-    Save2PNG_OneList('hold_cn.csv', 'cn_HHH')
-    Save2PNG_OneList('watch_cn.csv', 'cn_WWW')
+    Save2PNG_OneList('hold_cn.csv', 'cn_H', './save_png/', True)
+    Save2PNG_OneList('watch_cn.csv', 'cn_W', './save_png/', True)
 
-    Save2PNG_OneList('hold_hk.csv', 'hk_HHH')
-    Save2PNG_OneList('watch_hk.csv', 'hk_WWW')
+    Save2PNG_OneList('hold_hk.csv', 'hk_H', './save_png/', True)
+    Save2PNG_OneList('watch_hk.csv', 'hk_W', './save_png/', True)
 
-    Save2PNG_OneList('hold_us.csv', 'us_HHH')
-    Save2PNG_OneList('watch_us.csv', 'us_WWW')
+    Save2PNG_OneList('hold_us.csv', 'us_H', './save_png/', True)
+    Save2PNG_OneList('watch_us.csv', 'us_W', './save_png/', True)
     
-    Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt', './save_png/spurt/')    
+    Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt', './save_png/spurt/', True)    
     print 'Done'
