@@ -122,9 +122,9 @@ def GetPriceByDate(list, date):
     first_or_default = next((x for x in list if x[0]==date), None)
     if first_or_default != None and len(first_or_default) == 7:
         mDate, mOpen, mHigh, mLow, mClose, mVolume, mAdj = first_or_default
-        return float(mOpen), float(mClose)
+        return float(mOpen), float(mClose), float(mVolume)
     else:
-        return 0, 0
+        return 0, 0, 0
 
 
     for row in list:
@@ -157,13 +157,13 @@ def GetFollows_ProcessList(followslist, filename_pricehistory):
         follows_chg = follows - follows_prev
         follows_chgpct = round((follows - follows_prev)*100./follows_prev, 2)
         follows_prev = follows
-        price_open, price_close = GetPriceByDate(pricehistory, filename)
+        price_open, price_close, dayvolume = GetPriceByDate(pricehistory, filename)
         if price_open == 0: #invalid
             day_price = last_day_price
         else:
             day_price = price_close
             last_day_price = price_close
-        line = filename, follows_chg, follows_chgpct, day_price
+        line = filename, follows_chg, follows_chgpct, day_price, dayvolume
         list.append(line)
     return list
     
@@ -245,13 +245,13 @@ def GetXticksList(datelist):
     length = len(datelist)
     list = []
     listlabel = []
-    idx = 0
-    while idx < length:
+    idx = length - 1
+    while idx >= 0:
         list.append(idx)
-        listlabel.append(datelist[idx])
-        idx += 30
-    list.append(length-1)
-    listlabel.append(datelist[length-1])
+        listlabel.append(datelist[idx][5:])
+        idx -= 30
+    list.append(0)
+    listlabel.append(datelist[0][5:])
     return list, listlabel
     
 def GetStockInfo_fromFile(reader, check_code):
@@ -280,7 +280,7 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     # print 'follows_list:', follows_list
     follows_chg_list = GetFollows_ProcessList(follows_list, csvfilename) 
     xdata = zip(*follows_chg_list)[0]   #get DataFrame from List
-    df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT', 'PRICE'])
+    df = DataFrame(follows_chg_list, index=xdata, columns=['DATE', 'CHG', 'CHG_PCT', 'PRICE', 'VOLUME'])
     # print df
     print df.tail(20)
     # print len(df)
@@ -289,12 +289,18 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     print 'CHG_mean', CHG_mean
     # print [CHG_mean for x in range(10)]
     # return  #####
-    fig = plt.figure(figsize=(8*2,4*2))
-    ax_left = df.CHG.plot(kind='bar', alpha=0.5, align='center', linewidth=2)
-    plt.plot([CHG_mean for x in range(len(df))], 'g--')
-    ax_left.set_ylabel('Follows Change')
-    ax_right = df.PRICE.plot(secondary_y=True, color='red', marker='v', linewidth=2, alpha=0.7)
-    ax_right.set_ylabel('PRICE')
+    # fig = plt.figure(figsize=(16,9))
+    # fig, (ax0, ax1) = plt.subplots(nrows=2, figsize=(16,9))
+    fig = plt.figure(figsize=(16,8.5))
+    ax0 = fig.add_axes((0.1, 0.2, 0.8, 0.7))     #[left, bottom, width, height]
+    
+    # ax_left = ax0
+    ax_left = df.CHG.plot(ax=ax0, kind='bar', alpha=0.5, align='center', linewidth=2)
+    ax0.plot([CHG_mean for x in range(len(df))], 'g--', linewidth=2)
+    ax_left.set_ylabel('f')
+    ax_right = df.PRICE.plot(ax=ax0, secondary_y=True, color='red', marker='v', linewidth=2, alpha=0.7)
+    ax_right.set_ylabel('price')
+    
     if codemarket == 0:
         value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), code).decode('gbk')
         plt.title(name.decode('gbk')+code+' v'+value_str)
@@ -305,13 +311,28 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     # print type(xdata), xdata, xdata[0]
     list, listlabel = GetXticksList(xdata)
     ax_left.set_xticks(list)
-    ax_left.set_xticklabels(listlabel, fontsize='small')
+    ax_left.set_xticklabels([]) #(listlabel, fontsize='small')
     # plt.legend()
     # fig.autofmt_xdate()
+    # ax1.set_title('volume')
+    # plt.subplot(223, axisbg='r')
+    ax1 = fig.add_axes((0.1, 0.05, 0.8, 0.15), sharex=ax0)
+    
+    ax_volume = df.VOLUME.plot(ax=ax1, kind='bar', color='green', linewidth=1, alpha=0.7)
+    ax_volume.set_xticklabels([])
+    ax_volume.set_xticklabels(listlabel, fontsize='small')
+    ax_volume.set_xticks(list)
+    ax_volume.set_ylabel('volume')
+    ax1.plot([df.VOLUME.mean() for x in range(len(df))], 'g--', linewidth=2)
+    
+    # fig.subplots_adjust(bottom=0.8)
+    # cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    # fig.colorbar(im, cax=cbar_ax)
+    
     if not savepng:
         plt.show()
     else:
-        fig.savefig(save_fname, dpi=140)
+        fig.savefig(save_fname) #, dpi=140)
     
 if  __name__ == '__main__':
     print '#'*60
