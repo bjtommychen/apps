@@ -168,7 +168,7 @@ def CheckAll_InPath(inpath = "./output_qda"):
         if day_startLatent == []:
             continue
 #         print day_startLatent
-        if day_startLatent[3]> 40 and day_startLatent[1] < 1 and day_startLatent[2] < 2.5:
+        if day_startLatent[3]>= 35 and day_startLatent[1] < 1 and day_startLatent[2] < 2.5:
             if day_startLatent[0][1] < dayend[1]:
                 # 限定已有的涨幅
                 if ((dayend[1] - day_startLatent[0][1])*100/day_startLatent[0][1]) > 30:
