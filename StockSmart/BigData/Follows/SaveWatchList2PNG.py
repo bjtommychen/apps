@@ -128,11 +128,11 @@ def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/', wi
     i = 0
     cmdlists = []
     for one in reader:
-        if len(one) < 4:
+        if len(one) < 2:
             continue
         code = one[1]
         name = ''
-        if '_cn' in fname_list:
+        if '_cn' in fname_list or 'cn_' in fname_list:
             name = GetCodeName_cn(code)
         elif '_hk' in fname_list:
             name = GetCodeName_hk(code)
@@ -158,14 +158,19 @@ if  __name__ == '__main__':
     print '##### Convert Watch List to PNG files.'
     print '#'*60
 
-    Save2PNG_OneList('hold_cn.csv', 'cn_H', './save_png/', True)
-    Save2PNG_OneList('watch_cn.csv', 'cn_W', './save_png/', True)
+    if True:
+        Save2PNG_OneList('hold_cn.csv', 'cn_H', './save_png/', True)
+        Save2PNG_OneList('watch_cn.csv', 'cn_W', './save_png/', True)
 
-    Save2PNG_OneList('hold_hk.csv', 'hk_H', './save_png/', True)
-    Save2PNG_OneList('watch_hk.csv', 'hk_W', './save_png/', True)
+        Save2PNG_OneList('hold_hk.csv', 'hk_H', './save_png/', True)
+        Save2PNG_OneList('watch_hk.csv', 'hk_W', './save_png/', True)
 
-    Save2PNG_OneList('hold_us.csv', 'us_H', './save_png/', True)
-    Save2PNG_OneList('watch_us.csv', 'us_W', './save_png/', True)
+        Save2PNG_OneList('hold_us.csv', 'us_H', './save_png/', True)
+        Save2PNG_OneList('watch_us.csv', 'us_W', './save_png/', True)
+        
+        Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt', './save_png/spurt/', True)
+        Save2PNG_OneList('Sideway_cn.csv', 'cn_sideway', './save_png/sideway/', True)
     
-    Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt', './save_png/spurt/', True)    
+    # if True:
+
     print 'Done'
