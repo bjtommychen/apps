@@ -279,12 +279,12 @@ def GetFollowsChanges_InRecentFiles(rawlist):
         PrintListForWeb(list_web)
         fcsv.close()
         
-    ############# foresight ##########    
+    ############# CatchSpurt_cn ##########    
     if True:
         rlist = list[:500]
         list_web = []
         # Final 
-        fcsv = open('farwatch_cn.csv', 'wb')
+        fcsv = open('catchspurt_cn.csv', 'wb')
         csvWriter = csv.writer(fcsv)
         i = 0
         for one in rlist:
