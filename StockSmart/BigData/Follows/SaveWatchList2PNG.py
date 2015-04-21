@@ -122,7 +122,9 @@ def GetCodeName_us(code):
     else:
         return first_or_default[1]  
         
-def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/', withDate = False):   
+def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/', withDate = False):
+    if not os.path.exists(fname_list):
+        return
     filename  = csv_path+fname_list
     reader = csv.reader(file(filename,'rb'))
     i = 0
@@ -171,6 +173,9 @@ if  __name__ == '__main__':
         Save2PNG_OneList('cn_spurt_today.csv', 'cn_spurt', './save_png/spurt/', True)
         Save2PNG_OneList('Sideway_cn.csv', 'cn_sideway', './save_png/sideway/', True)
     
-    # if True:
+    if True:
+        Save2PNG_OneList('catchspurt_cn.csv', 'cn_CatchSpurt', './save_png/catchspurt/', True)
 
+    
+    
     print 'Done'
