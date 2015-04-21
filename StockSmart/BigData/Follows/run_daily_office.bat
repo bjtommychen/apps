@@ -14,6 +14,9 @@ REM sleep 5m
 cp e:/KuaiDisk/StockSmart/follows/data/*.csv ./data -n
 cp e:/KuaiDisk/StockSmart/follows/hold*.csv . -f
 cp e:/KuaiDisk/StockSmart/follows/watch*.csv . -f
+cp e:/KuaiDisk/StockSmart/follows/watch*.csv . -f
+cp e:/KuaiDisk/StockSmart/follows/catchspurt_cn.csv . -f
+
 REM rm -f save_png/*
 python SaveWatchList2PNG.py
 pause
