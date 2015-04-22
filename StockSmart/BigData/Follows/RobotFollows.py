@@ -159,9 +159,9 @@ def Check_NeedSleep():
     # if text >= '00:10' and text <= '00:16': #TEST
         # checkclose = True
     # night
-    if text >= '23:30' and text <= '23:31': 
-        checkclose = True
-    if text >= '10:15' and text <= '10:16': 
+    # if text >= '23:30' and text <= '23:31': 
+        # checkclose = True
+    if text >= '11:35' and text <= '11:36': 
         checkclose = True
     if text >= '16:15' and text <= '16:16': 
         checkclose = True        
