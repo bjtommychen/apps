@@ -35,6 +35,7 @@ pscp -batch -i myec2.ppk *_hk.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/scrip
 pscp -batch -i myec2.ppk catchspurt_cn.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/Longan_Foresight
 
 call run_daily_home_6am.bat
+pscp -batch -i myec2.ppk Sideway_cn.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/Longan_Foresight
 echo 'wait 60s...'
 sleep 60
 rem pause
