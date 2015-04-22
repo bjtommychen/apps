@@ -174,7 +174,7 @@ def CheckAll_InPath(inpath = "./output_qda"):
                 if ((dayend[1] - day_startLatent[0][1])*100/day_startLatent[0][1]) > 30:
                     continue
             print fname[fname.find('output_qda\\'):], day_startLatent, dayend
-            listr.append(['cn', fname[fname.find('output_qda\\'):][11:19]])
+            listr.append(['cn', fname[fname.find('output_qda\\'):][11:19].lower(), 0, 'sideway'])
             i+=1
 #         if i>10000:
 #             break
