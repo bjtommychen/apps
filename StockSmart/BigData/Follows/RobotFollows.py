@@ -136,7 +136,7 @@ def Check_NeedWork():
     text = time.strftime("%H:%M", time.localtime())
     # print text
     # print 'check', text
-    if text >= '06:00' and text <= '06:15': 
+    if text >= '06:00' and text <= '06:10': 
         run_mode = 1
         checkopen = True
 
@@ -144,7 +144,7 @@ def Check_NeedWork():
         # run_mode = 1
         # checkopen = True        
         
-    if text >= '20:05' and text <= '20:10':
+    if text >= '20:00' and text <= '20:10':
         run_mode = 2
         checkopen = True
     return checkopen
@@ -159,8 +159,8 @@ def Check_NeedSleep():
     # if text >= '00:10' and text <= '00:16': #TEST
         # checkclose = True
     # night
-    # if text >= '23:30' and text <= '23:31': 
-        # checkclose = True
+    if text >= '00:30' and text <= '00:31': 
+        checkclose = True
     if text >= '11:35' and text <= '11:36': 
         checkclose = True
     if text >= '16:15' and text <= '16:16': 
@@ -202,7 +202,7 @@ if  __name__ == '__main__':
             print '\n*** Work for Money! ***'
             Run_XQdailyFollowsChg()
             last_tick = time.time()
-            force_sleep = True
+            # force_sleep = True
             continue
         # reset timer, Must before Sleep.
         # last_tick = time.time()
