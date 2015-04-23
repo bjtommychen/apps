@@ -5,7 +5,6 @@ copy f:\KuaiDisk\StockSmart\follows\hold_*.csv . /y
 
 .\GetStockFollows.py
 .\GetStockFollows_hk.py 
-rem .\GetStockFollows_us.py 
 cp data/*.csv f:\KuaiDisk\StockSmart\follows\data\ -n
 
 echo '[ China Market --- PreOpen ]' > body.txt
@@ -31,12 +30,12 @@ REM cp watch_*.csv d:\workspace\apps\StockSmart\Longan\
 copy watch_*.csv f:\KuaiDisk\StockSmart\follows\ /y
 copy hold_*.csv f:\KuaiDisk\StockSmart\follows\ /y
 pscp -batch -i myec2.ppk hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
-sleep 6
 pscp -batch -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
 pscp -batch -i myec2.ppk *_hk.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/Longan_HK 
 pscp -batch -i myec2.ppk catchspurt_cn.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/Longan_Foresight
 
-call run_daily_home.bat
+call run_daily_home_6am.bat
+pscp -batch -i myec2.ppk Sideway_cn.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/Longan_Foresight
 echo 'wait 60s...'
 sleep 60
 rem pause
