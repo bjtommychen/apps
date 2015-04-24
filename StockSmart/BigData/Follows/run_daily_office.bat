@@ -19,9 +19,9 @@ cp e:/KuaiDisk/StockSmart/follows/watch*.csv . -f
 cp e:/KuaiDisk/StockSmart/follows/catchspurt_cn.csv . -f
 
 mv save_png/* save_png_backup
-mkdir -p save_png/spurt
-mkdir -p save_png/sideway
-mkdir -p save_png/catchspurt
+c:\cygwin\bin\mkdir -p save_png/spurt
+c:\cygwin\bin\mkdir -p save_png/sideway
+c:\cygwin\bin\mkdir -p save_png/catchspurt
 REM rm -f save_png/*
 python SaveWatchList2PNG.py
 echo Done
