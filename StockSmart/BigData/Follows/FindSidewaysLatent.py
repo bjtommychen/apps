@@ -97,14 +97,6 @@ def GetSimpleDayPriceList(rawlist):
         listout.append([m_time,m_fClose])
     return listout
 
-def UpdateSidewaysStartDay(day_startLatent, theday, diff_pct, diff_pct_abs, prevdays):
-    if day_startLatent == []:
-        return [theday, diff_pct, diff_pct_abs, prevdays]
-    elif abs(diff_pct) < abs(diff_pct) or abs(diff_pct) < 1:
-        if diff_pct_abs < day_startLatent[2]:
-            return [theday, diff_pct, diff_pct_abs, prevdays]
-    return day_startLatent
-
 def GetSidewaysData(listd):
     length = len(listd)
     dayend = listd[0]
@@ -129,9 +121,23 @@ def GetSidewaysData(listd):
     return (diff_pct, diff_pct_abs)
 #     print  diff_total_abs/length
     
+DIFF_PCT_LIMIT = 0.5
+DIFF_ABSPCT_LIMIT = 2.5
+LATENT_PCTUP_LIMIT_PERDAY = 0.5
+LATENT_DAYS_LIMIT = 40
+   
+def UpdateSidewaysStartDay(day_startLatent, theday, diff_pct, diff_pct_abs, prevdays):
+    if day_startLatent == []:
+        return [theday, diff_pct, diff_pct_abs, prevdays]
+    # elif abs(diff_pct) < abs(diff_pct) or abs(diff_pct) < 1:
+        # if diff_pct_abs < day_startLatent[2]:
+            # return [theday, diff_pct, diff_pct_abs, prevdays]
+    elif abs(diff_pct) < DIFF_PCT_LIMIT and diff_pct_abs < DIFF_ABSPCT_LIMIT:
+        return [theday, diff_pct, diff_pct_abs, prevdays]
+    return day_startLatent
     
 MAX_DAYS = (80)
-MIN_DAYS = 20
+MIN_DAYS = (20)
 def AnalyseDayList(daylist):
     if len(daylist)< MIN_DAYS:
         return [],[]
@@ -156,6 +162,7 @@ def CheckAll_InPath(inpath = "./output_qda"):
     i = 0
     total = 0
     listr = []
+    timestamp_prev30days = (time.time()-3600*24*30)
     for fname in filelist:
         total += 1
         if 'SH60'not in fname and 'SZ00' not in fname and 'SZ30' not in fname:
@@ -168,18 +175,23 @@ def CheckAll_InPath(inpath = "./output_qda"):
         if day_startLatent == []:
             continue
 #         print day_startLatent
-        if day_startLatent[3]>= 35 and day_startLatent[1] < 1 and day_startLatent[2] < 2.5:
-            if day_startLatent[0][1] < dayend[1]:
-                # 限定已有的涨幅
-                if ((dayend[1] - day_startLatent[0][1])*100/day_startLatent[0][1]) > 30:
+        # [theday, diff_pct, diff_pct_abs, prevdays]
+        if day_startLatent[3]>= LATENT_DAYS_LIMIT and day_startLatent[1] <= DIFF_PCT_LIMIT and day_startLatent[2] <= DIFF_ABSPCT_LIMIT:
+            if day_startLatent[0][1] < dayend[1]:   # 总体上涨而不是下降
+                # 限定已有的涨幅 < 40%, 
+                if ((dayend[1] - day_startLatent[0][1])*100/day_startLatent[0][1])/day_startLatent[3] > LATENT_PCTUP_LIMIT_PERDAY:
                     continue
+            timestamp_dayend = time.mktime(time.strptime(dayend[0], '%Y-%m-%d'))
+            # print timestamp_dayend , timestamp_prev30days
+            if timestamp_dayend < timestamp_prev30days:
+                continue
             print fname[fname.find('output_qda\\'):], day_startLatent, dayend
             listr.append(['cn', fname[fname.find('output_qda\\'):][11:19].lower(), 0, 'sideway'])
             i+=1
-#         if i>10000:
-#             break
+        # if i>10:
+            # break
     print 'total', total, 'cnt', i
-    print listr
+    # print listr
     save2csv('Sideway_cn.csv', listr)
     
 ########################################################################
