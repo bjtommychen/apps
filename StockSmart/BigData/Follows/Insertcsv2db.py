@@ -192,6 +192,8 @@ def Insert_onecsv2db_gp1min(filename):
             cnt += 1
             if cnt%100==0:
                 print '..',cnt,'..',
+            if 'SH60'not in code and 'SZ00' not in code and 'SZ30' not in code:
+                continue
             if True:
                 # print code, name.decode('gbk'), len(list_day)
                 for one in list_day:
@@ -222,7 +224,7 @@ def Insert_onecsv2db_all_gpday():
         Insert_onecsv2db_gpday(one)
     
 def Insert_onecsv2db_all_gp1min():
-    filelist = getFileList('./input_qda1m/bak/', '*.qda', False)
+    filelist = getFileList('./input_qda1m/', '*.qda', False)
     for one in filelist:
         Insert_onecsv2db_gp1min(one)
         # break
@@ -233,7 +235,7 @@ if __name__ == '__main__':
     print (' Processing Mysql').center(79, '-')
     mysql_connect()
 #     Insert_onecsv2db('')
-    # Insert_onecsv2db_all_gpday()
+    Insert_onecsv2db_all_gpday()
     Insert_onecsv2db_all_gp1min()
     mysql_disconnect()
     print 'End!'
