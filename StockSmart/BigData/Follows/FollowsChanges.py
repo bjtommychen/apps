@@ -296,6 +296,8 @@ def GetFollowsChanges_InRecentFiles(rawlist):
             if chg_p1 > 50 and chg_p1 < 200 and pct_chg > 5:
                 # value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), xq_code).decode('gbk')
                 value_str = GetStockInfo_cn(xq_code).decode('gbk')
+                if '亿' not in value_str:
+                    continue
                 LiuTongYi = int(value_str.replace('亿',''))
                 # print LiuTongYi
                 stock_info_str = u'总市值'+ value_str
