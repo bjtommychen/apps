@@ -159,9 +159,9 @@ def get_StockList_us():
 if  __name__ == '__main__':
     print 'Start !'
     print '*** get_StockList_cn ***'
-    # get_StockList_cn()
+    get_StockList_cn()
     print '*** get_StockList_cn ***'
-    # get_StockList_hk()
+    get_StockList_hk()
     print '*** get_StockList_us ***'
     get_StockList_us()
     print 'Completed !'        
