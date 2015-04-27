@@ -140,6 +140,7 @@ def get_NextRecord(fp, code_filter = ''):
     
     
 def update_QDA_to_csv(filename, code, name, listall):
+    bUpdatedSome = False
     global debugmode
     # print 'try write_QDA_data_to_csv', filename, len(listall)
     if not os.path.exists(filename):
@@ -158,7 +159,8 @@ def update_QDA_to_csv(filename, code, name, listall):
                 m_fClose = float('%.2f' % m_fClose)
             wline = get_DateString(m_time), m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount
             csvWriter.writerow(wline)
-        fcsv.close()            
+        fcsv.close()
+        bUpdatedSome = True
     else:
         reader = csv.reader(file(filename,'rb'))
         list_old = []
@@ -187,9 +189,10 @@ def update_QDA_to_csv(filename, code, name, listall):
             for one in list_old[1:]:
                 csvWriter.writerow(one)
             fcsv.close()
+            bUpdatedSome = True
         # else:
             # print 'skip.'
-    
+    return bUpdatedSome
     
 def UpdateCSV_with_InputQDAfile(opath, filename):
     global debugmode
@@ -205,6 +208,7 @@ def UpdateCSV_with_InputQDAfile(opath, filename):
     flag, version, total_num = get_QM_header(fp)
     print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
     cnt = 0
+    skip_cnt = 0
     while True:
         code, name, list_day = get_NextRecord(fp)
         if list_day != []:
@@ -216,7 +220,12 @@ def UpdateCSV_with_InputQDAfile(opath, filename):
                 print 'Updating No.', cnt, '\r', 
                 cnt += 1
             list_day.sort(key=lambda data : data[0], reverse=True)
-            update_QDA_to_csv(os.path.join(opath, code + '_qda.csv'), code, name, list_day) 
+            res = update_QDA_to_csv(os.path.join(opath, code + '_qda.csv'), code, name, list_day) 
+            if res == False:
+                skip_cnt += 1
+            if skip_cnt > 10:
+                print 'Skip this file !'
+                break
         else:
             break
     fp.close()
