@@ -166,7 +166,7 @@ def GetSpurtList_recentdays(days=7):
         if first_or_default == None:
             continue
         lastclose = first_or_default[4]
-        if ((m_fOpen - lastclose)*100/lastclose) < 5 and ((m_fClose - lastclose)*100/lastclose) > 9.5:
+        if lastclose > 0 and ((m_fOpen - lastclose)*100/lastclose) < 5 and ((m_fClose - lastclose)*100/lastclose) > 9.5:
             value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), code)
             listout.append(['cn', code, round(((m_fOpen - lastclose)*100/lastclose), 2), value_str])
     save2csv('cn_spurt_today.csv', listout)
