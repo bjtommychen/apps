@@ -1,4 +1,4 @@
-import os
+﻿import os
 import stat,fnmatch
 import time
 import sys
@@ -6,6 +6,9 @@ import stat,fnmatch
 import pymysql
 import csv
 import struct
+
+reload(sys) 
+sys.setdefaultencoding('utf')
 
 def save2csv(fname, list):
     fcsv = open(fname, 'wb')
@@ -229,13 +232,51 @@ def Insert_onecsv2db_all_gp1min():
         Insert_onecsv2db_gp1min(one)
         # break
     
+def insert_stockinfo_fromcsv(prefix='cn', slist=[], infolist=[]):    
+    global conn,cur
+    sql_insert_prefix = "INSERT INTO `gp`.`stockinfo` (`market`, `code`, `name`,`volume`) VALUES"
+    print prefix.center(79, '-')
+    print prefix, len(slist), len(infolist)
+    print slist[0], infolist[2]
+    for one in slist:
+        code, name = one
+        first_or_default = next((x for x in infolist if x[0]==code), None)
+        if first_or_default != None:
+            value_str = first_or_default[2].decode('gbk')
+            if '亿' in value_str:
+                LiuTongYi = int(value_str.replace('亿',''))  
+            elif '万' in value_str:
+                LiuTongYi = int(int(value_str.replace('万',''))/1000)
+            else:
+                LiuTongYi = 0
+            if prefix == 'cn':
+                if code[0] == '6':
+                    code = 'SH' + code
+                else:
+                    code = 'SZ' + code            
+            one_row = str((prefix, code, 'goodwill', LiuTongYi))
+            one_row = one_row.replace('goodwill', name.decode('gbk'))
+            sqlcmd = sql_insert_prefix + (one_row) + ';'
+            print sqlcmd
+            try:
+                cur.execute(sqlcmd)
+            except Exception, e:
+                print Exception, e
+                pass
+    conn.commit()
+    
+def Insert_StockInfos():
+    insert_stockinfo_fromcsv('cn', loadfromecsv('stocklist_cn.csv'), loadfromecsv('stockinfo_cn.csv'))
+    insert_stockinfo_fromcsv('hk', loadfromecsv('stocklist_hk.csv'), loadfromecsv('stockinfo_hk.csv'))
+    insert_stockinfo_fromcsv('us', loadfromecsv('stocklist_us.csv'), loadfromecsv('stockinfo_us.csv'))
+    
 ########################################################################
 if __name__ == '__main__':
     print 'Start ... '
     print (' Processing Mysql').center(79, '-')
     mysql_connect()
-#     Insert_onecsv2db('')
-    Insert_onecsv2db_all_gpday()
-    Insert_onecsv2db_all_gp1min()
+    # Insert_onecsv2db_all_gpday()
+    # Insert_onecsv2db_all_gp1min()
+    Insert_StockInfos()
     mysql_disconnect()
     print 'End!'
