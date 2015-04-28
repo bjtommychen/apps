@@ -22,7 +22,7 @@ cp e:/KuaiDisk/StockSmart/follows/watch*.csv . -f
 cp e:/KuaiDisk/StockSmart/follows/watch*.csv . -f
 cp e:/KuaiDisk/StockSmart/follows/catchspurt_cn.csv . -f
 
-c:\cygwin\bin\mv save_png/* save_png_backup
+c:\cygwin\bin\mv save_png save_png_backup
 c:\cygwin\bin\mkdir -p save_png/spurt
 c:\cygwin\bin\mkdir -p save_png/sideway
 c:\cygwin\bin\mkdir -p save_png/catchspurt
