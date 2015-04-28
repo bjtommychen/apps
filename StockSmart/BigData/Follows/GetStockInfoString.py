@@ -134,7 +134,7 @@ def get_StockInfo_hk(code):
         r.close()
 
     except Exception, e:
-        return 'Error'
+        return '0'
 
     pos1 = data.find('span class="stockName"')        
     pos2 = data.find('</table>', pos1)  
@@ -148,7 +148,7 @@ def get_StockInfo_hk(code):
     # for line in r:
         # print line.decode('gbk')
     if len(r) < 18:
-        return 'Error'
+        return '0'
     # 52周最高, 52周最低, 总市值, 每股净资产, 市盈率, 总股本, 每股收益, 市净率, 30日均量, 流通股本, 股息率, 市销率
     infoline = ''
     infoline += r[7].decode('gbk')
@@ -199,13 +199,13 @@ def get_StockInfo_us(code):
         # print r.encoding
         r.close()
     except Exception, e:
-        return 'Error'
+        return '0'
 
     pos1 = data.find('span class="stockName"')        
     pos2 = data.find('</table>', pos1)  
     # print pos1, pos2
     if pos1 == -1 and pos2 == -1:
-        return 'Error'
+        return '0'
     # print data[pos1:pos2].encode('gbk')
     match = re.compile(r'(?<=<span>).*?(?=<\/span>)')
     r = re.findall(match, data[pos1:pos2].encode('gbk'))
@@ -213,7 +213,7 @@ def get_StockInfo_us(code):
     # for line in r:
         # print line.decode('gbk')
     if len(r) < 18:
-        return 'Error'
+        return '0'
     # 52周最高, 52周最低, 总市值, 每股净资产, 市盈率, 总股本, 每股收益, 市净率, 30日均量, 流通股本, 股息率, 市销率
     infoline = ''
     infoline += r[7].decode('gbk')
@@ -255,9 +255,10 @@ if  __name__ == '__main__':
     print 'Start !'    
     print Float2Int_InString(get_StockInfo_cn('SZ300422'))
     print Float2Int_InString(get_StockInfo_cn('SZ300381'))
+    print Float2Int_InString(get_StockInfo_hk('00552'))
+    print Float2Int_InString(get_StockInfo_us('amcn'))
     
-    # print Float2Int_InString(get_StockInfo_hk('00552'))
-    # print Float2Int_InString(get_StockInfo_us('amcn'))
     get_stock_infos_cn()
-    # get_stock_infos_hk()
-    # get_stock_infos_us()    
+    get_stock_infos_hk()
+    get_stock_infos_us()
+    
