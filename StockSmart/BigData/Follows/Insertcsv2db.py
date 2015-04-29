@@ -25,10 +25,10 @@ def loadfromecsv(fname):
 
 ####### mysql #########
 # hostip = '10.10.32.29'
-hostip = '127.0.0.1'
+# hostip = '127.0.0.1'
 conn = None
 cur = None
-def mysql_connect():
+def mysql_connect(hostip='localhost'):
     global conn,cur
     conn = pymysql.connect(host=hostip, user='tommy', db='gp', charset='utf8')
     cur = conn.cursor()
@@ -133,20 +133,19 @@ def get_NextRecord(fp, code_filter = ''):
     
 def Insert_onecsv2db_gpday(filename):
     global conn,cur
-#     filename = 'd:\\workspace\\apps\\StockSmart\\BigData\\Follows\\qda_all\\Quote20150422.QDA'
-#     str_insert = "INSERT INTO `gp`.`gpday` (`idx`, `code`, `date`, `open`, `high`, `low`, `close`, `volume`, `amount`) \
-#     VALUES ('sh_webphon', 'code15', '1973-01-01', '1.1', '5.55', '135.5', '35000', '135', '15');"
+    ErrorCnt = 0
     sql_insert_prefix = "INSERT INTO `gp`.`gpday` (`idx`, `code`, `name`,`date`, `open`, `high`, `low`, `close`, `volume`, `amount`) VALUES"
-#     sql_insert_prefix = "INSERT INTO `gp`.`test` (`name`) VALUES"
     print filename.center(79, '-')
+    if not os.path.exists(filename):
+        print 'Not exist!', filename
+        return False
     fp=open(filename,"rb")
-
     while(fp == 0):
         return
     flag, version, total_num = get_QM_header(fp)
     print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
     cnt = 0
-    while True:
+    while ErrorCnt<100:
         code, name, list_day = get_NextRecord(fp)
         if list_day != []:
             code = code.split('\x00')[0]
@@ -155,26 +154,28 @@ def Insert_onecsv2db_gpday(filename):
             if cnt%100==0:
                 print '..',cnt,'..',
             if True:
-                # print code, name.decode('gbk'), len(list_day)
                 for one in list_day:
                     m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = one
                     datestr = str(time.strftime('%Y%m%d', time.gmtime(m_time)))
                     one_row = str((code+'-'+datestr, code, 'goodwill', datestr, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount))
                     one_row = one_row.replace('goodwill', name.decode('gbk'))
-#                     print one_row
                     sqlcmd = sql_insert_prefix + one_row #'(\''+ () +'\');'
                     try:
                         # print sqlcmd
                         cur.execute(sqlcmd)
                     except:
+                        ErrorCnt += 1
                         pass
-#                     conn.commit()
 #                 break
             conn.commit()
         else:
             break
     print ''
     fp.close()       
+    if ErrorCnt < 100:
+        return True
+    else:
+        return False
     
 def Insert_onecsv2db_gp1min(filename):
     global conn,cur
@@ -199,19 +200,28 @@ def Insert_onecsv2db_gp1min(filename):
                 continue
             if True:
                 # print code, name.decode('gbk'), len(list_day)
+                sqlcmd = sql_insert_prefix
+                i = 0
                 for one in list_day:
+                    if i != 0:
+                        sqlcmd += ','
+                    i += 1
                     m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = one
                     datestr = str(time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(m_time)))
                     datestr2 = str(time.strftime('%Y%m%d-%H%M', time.gmtime(m_time)))
                     one_row = str((code+'-'+datestr2, code, 'goodwill', datestr, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount))
                     one_row = one_row.replace('goodwill', name.decode('gbk'))
 #                     print one_row
-                    sqlcmd = sql_insert_prefix + one_row #'(\''+ () +'\');'
-                    try:
-                        # print sqlcmd
-                        cur.execute(sqlcmd)
-                    except:
-                        pass
+                    # sqlcmd = sql_insert_prefix + one_row #'(\''+ () +'\');'
+                    sqlcmd += one_row
+                try:
+                    sqlcmd += ';'
+                    # print sqlcmd
+                    cur.execute(sqlcmd)
+                    # conn.commit()
+                    # break
+                except:
+                    pass
                     # conn.commit()
                 # break
             conn.commit()
@@ -225,7 +235,14 @@ def Insert_onecsv2db_all_gpday():
     filelist = getFileList('./input_qda/', '*.qda', False)
     for one in filelist:
         Insert_onecsv2db_gpday(one)
-    
+
+def Insert_gpday2db_recentdays(days=10):
+    for i in range(0, days):
+        timestamp = time.localtime(time.time()-3600*24*i)
+        timestr = time.strftime('%Y%m%d', timestamp)
+        filename = 'input_qda/Quote'+timestr+ '.QDA'
+        Insert_onecsv2db_gpday(filename)
+        
 def Insert_onecsv2db_all_gp1min():
     filelist = getFileList('./input_qda1m/', '*.qda', False)
     for one in filelist:
@@ -274,9 +291,10 @@ def Insert_StockInfos():
 if __name__ == '__main__':
     print 'Start ... '
     print (' Processing Mysql').center(79, '-')
-    mysql_connect()
+    mysql_connect('10.10.32.29')
     # Insert_onecsv2db_all_gpday()
     # Insert_onecsv2db_all_gp1min()
-    Insert_StockInfos()
+    # Insert_StockInfos()
+    Insert_gpday2db_recentdays()
     mysql_disconnect()
     print 'End!'
