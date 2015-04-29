@@ -87,6 +87,6 @@ def get_QDA_recentdays(days=7):
 ########################################################################
 if __name__ == '__main__':
     # getQDAfile()
-    get_QDA_recentdays(3)
+    get_QDA_recentdays(7)
     
     

@@ -175,20 +175,24 @@ def Insert_onecsv2db_gpday(filename):
     if ErrorCnt < 100:
         return True
     else:
+        print 'Too many Error, exit.'
         return False
     
 def Insert_onecsv2db_gp1min(filename):
     global conn,cur
+    ErrorCnt = 0
     sql_insert_prefix = "INSERT INTO `gp`.`gp1min` (`idx`, `code`, `name`,`datetime`, `open`, `high`, `low`, `close`, `volume`, `amount`) VALUES"
     print filename.center(79, '-')
+    if not os.path.exists(filename):
+        print 'Not exist!', filename
+        return False
     fp=open(filename,"rb")
-
     while(fp == 0):
         return
     flag, version, total_num = get_QM_header(fp)
     print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
     cnt = 0
-    while True:
+    while ErrorCnt<100:
         code, name, list_day = get_NextRecord(fp)
         if list_day != []:
             code = code.split('\x00')[0]
@@ -212,23 +216,25 @@ def Insert_onecsv2db_gp1min(filename):
                     one_row = str((code+'-'+datestr2, code, 'goodwill', datestr, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount))
                     one_row = one_row.replace('goodwill', name.decode('gbk'))
 #                     print one_row
-                    # sqlcmd = sql_insert_prefix + one_row #'(\''+ () +'\');'
                     sqlcmd += one_row
                 try:
                     sqlcmd += ';'
                     # print sqlcmd
                     cur.execute(sqlcmd)
-                    # conn.commit()
-                    # break
                 except:
+                    ErrorCnt += 1
                     pass
-                    # conn.commit()
                 # break
             conn.commit()
         else:
             break
     print ''
-    fp.close()      
+    fp.close()
+    if ErrorCnt < 100:
+        return True
+    else:
+        print 'Too many Error, exit.'
+        return False    
     
 def Insert_onecsv2db_all_gpday():
     # filelist = getFileList('d:\\workspace\\apps\\StockSmart\\BigData\\Follows\\qda_all\\', '*.qda')
@@ -248,6 +254,13 @@ def Insert_onecsv2db_all_gp1min():
     for one in filelist:
         Insert_onecsv2db_gp1min(one)
         # break
+
+def Insert_gp1min2db_recentdays(days=10):
+    for i in range(0, days):
+        timestamp = time.localtime(time.time()-3600*24*i)
+        timestr = time.strftime('%Y%m%d', timestamp)
+        filename = 'input_qda1m/Quote'+timestr+ 'm1.QDA'
+        Insert_onecsv2db_gp1min(filename)        
     
 def insert_stockinfo_fromcsv(prefix='cn', slist=[], infolist=[]):    
     global conn,cur
@@ -295,6 +308,7 @@ if __name__ == '__main__':
     # Insert_onecsv2db_all_gpday()
     # Insert_onecsv2db_all_gp1min()
     # Insert_StockInfos()
-    Insert_gpday2db_recentdays()
+    # Insert_gpday2db_recentdays()
+    Insert_gp1min2db_recentdays()
     mysql_disconnect()
     print 'End!'
