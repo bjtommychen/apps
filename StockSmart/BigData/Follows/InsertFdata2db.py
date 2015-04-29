@@ -172,15 +172,18 @@ def Insert_onecsv2db_all_fdata():
 def Insert_fdata2db_recentdays(days=10):
     for i in range(0, days):
         timestamp = time.localtime(time.time()-3600*24*i)
-        timestr = time.strftime('%Y%m%d', timestamp)
-        filename = 'input_qda/Quote'+timestr+ '.QDA'
-        Insert_onecsv2db_gpday(filename)
+        timestr = time.strftime('%Y-%m-%d', timestamp)
+        filelist = getFileList('.\\data\\', '*'+timestr+'*.csv')
+        for one in filelist:
+            # print one
+            Insert_oneFdata2db(one)
         
 ########################################################################
 if __name__ == '__main__':
     print 'Start ... '
     print (' Processing Mysql').center(79, '-')
-    mysql_connect('10.10.32.29')
-    Insert_onecsv2db_all_fdata()
+    mysql_connect('localhost')
+    # Insert_onecsv2db_all_fdata()
+    Insert_fdata2db_recentdays()
     mysql_disconnect()
     print 'End!'
