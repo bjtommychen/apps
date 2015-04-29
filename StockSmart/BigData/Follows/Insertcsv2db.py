@@ -304,11 +304,11 @@ def Insert_StockInfos():
 if __name__ == '__main__':
     print 'Start ... '
     print (' Processing Mysql').center(79, '-')
-    mysql_connect('10.10.32.29')
+    mysql_connect('localhost')
     # Insert_onecsv2db_all_gpday()
     # Insert_onecsv2db_all_gp1min()
     # Insert_StockInfos()
-    # Insert_gpday2db_recentdays()
+    Insert_gpday2db_recentdays()
     Insert_gp1min2db_recentdays()
     mysql_disconnect()
     print 'End!'

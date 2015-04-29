@@ -8,6 +8,8 @@ python GetQDAdata.py
 python ..\UpdateCSV_withQMdata.py -opath output_qda -ipath input_qda
 title running GetQDAdata1min.py 
 python GetQDAdata1min.py
+title Insertcsv2db
+python Insertcsv2db.py
 REM python ..\UpdateCSV_withQMdata1min.py -opath output_qda1m -ipath input_qda1m
 title running GetTodaySpurtList.py 
 python GetTodaySpurtList.py
