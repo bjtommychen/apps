@@ -3,8 +3,12 @@ copy f:\KuaiDisk\StockSmart\follows\hold_*.csv . /y
 REM Update All Stock Day Price Data
 python GetQDAdata.py
 python ..\UpdateCSV_withQMdata.py -opath output_qda -ipath input_qda
+title running GetQDAdata1min.py 
+python GetQDAdata1min.py
+python Insertcsv2db.py
 
-.\GetStockFollows_us.py 
+.\GetStockFollows_us.py
+python InsertFdata2db.py 
 cp data/*.csv f:\KuaiDisk\StockSmart\follows\data\ -n
 
 echo '[ China Market --- PostClose ]' > body.txt
