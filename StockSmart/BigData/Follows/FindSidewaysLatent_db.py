@@ -6,8 +6,8 @@ import stat,fnmatch
 import csv
 import numpy as np
 
-import matplotlib.pyplot as plt
-from pandas import DataFrame, Series
+# import matplotlib.pyplot as plt
+# from pandas import DataFrame, Series
 
 from mysql_access import *
 
@@ -72,11 +72,11 @@ def GetPriceDayList(filename):
     daylist.sort(key=lambda data : data[0], reverse=True)
     return daylist
 
-def GetSimpleDayPriceList(rawlist):
-    listout = []
-    for one in rawlist:
-        m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount = one
-        listout.append([m_time,m_fClose])
+def GetSimpleDayPriceList(code):
+    cmd1 = "SELECT date_format(date, '%%Y-%%m-%%d'), close FROM `gpday` WHERE `code` LIKE \'%s\' and TIMESTAMPDIFF(month,date,now()) < 4 ORDER BY `date` DESC "
+    cmd_run = cmd1 % code
+    listout = list(mysql_execute(cmd_run))
+    # print code, len(listout)
     return listout
 
 def GetSidewaysData(listd):
@@ -120,6 +120,7 @@ def UpdateSidewaysStartDay(day_startLatent, theday, diff_pct, diff_pct_abs, prev
     
 MAX_DAYS = (80)
 MIN_DAYS = (20)
+# recent day at beginning
 def AnalyseDayList(daylist):
     if len(daylist)< MIN_DAYS:
         return [],[]
@@ -140,20 +141,18 @@ def CheckAllSideway_db():
     i = 0
     total = 0
     listr = []
-    timestamp_prev30days = (time.time()-3600*24*30)
-    for fname in filelist:
+    # timestamp_prev30days = (time.time()-3600*24*30)
+    cnlist = mysql_GetStockList()
+    for onecn in cnlist:
         total += 1
-        if 'SH60'not in fname and 'SZ00' not in fname and 'SZ30' not in fname:
+        code, name, volume = onecn
+        if 'SH60' not in code and 'SZ00' not in code and 'SZ30' not in code:
             continue
-        daypricelist = GetPriceDayList(fname)
-        print daypricelist[:5]
-#     print len(list), list[:3], get_DateString(list[0][0]) 
-        slist = GetSimpleDayPriceList(daypricelist)
-#     print 'slist ', len(slist), slist[:5]
+        slist = GetSimpleDayPriceList(code)
+        # print 'slist ', len(slist), slist[:5]
         day_startLatent, dayend = AnalyseDayList(slist)
         if day_startLatent == []:
             continue
-#         print day_startLatent
         # [theday, diff_pct, diff_pct_abs, prevdays]
         if day_startLatent[3]>= LATENT_DAYS_LIMIT and day_startLatent[1] <= DIFF_PCT_LIMIT and day_startLatent[2] <= DIFF_ABSPCT_LIMIT:
             if day_startLatent[0][1] < dayend[1]:   # 总体上涨而不是下降
@@ -162,14 +161,14 @@ def CheckAllSideway_db():
                     continue
             timestamp_dayend = time.mktime(time.strptime(dayend[0], '%Y-%m-%d'))
             # print timestamp_dayend , timestamp_prev30days
-            if timestamp_dayend < timestamp_prev30days:
-                continue
-            print fname[fname.find('output_qda\\'):], day_startLatent, dayend
-            listr.append(['cn', fname[fname.find('output_qda\\'):][11:19].lower(), 0, 'sideway'])
+            # if timestamp_dayend < timestamp_prev30days:
+                # continue
+            print code,name, day_startLatent, dayend
+            listr.append(['cn', code, str(int(volume))+'Y', 'sideway'])
             i+=1
         # if i>10:
             # break
-    print 'total', total, 'cnt', i
+    print 'total', total, ', cnt', i
     # print listr
     save2csv('Sideway_cn.csv', listr)
     
@@ -177,5 +176,8 @@ def CheckAllSideway_db():
 if __name__ == '__main__':
     print 'Start ... '
     print (' Sideways Latent '.center(79, '-'))
+    mysql_connect('localhost')
+    mysql_setdebug(False)
     CheckAllSideway_db()
+    mysql_disconnect()
     print 'End!'    
