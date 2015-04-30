@@ -338,6 +338,7 @@ if  __name__ == '__main__':
         savepng = True
         save_fname = args.save
     mysql_connect('localhost')
+    mysql_setdebug(False)
     GetFollowsByCode_InFiles(getFileList(args.datapath, '*.csv', False), args.codename)
     mysql_disconnect()
     
