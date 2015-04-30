@@ -6,6 +6,12 @@ sys.setdefaultencoding('utf')
 
 conn = None
 cur = None
+debug_mysql = True
+
+def mysql_setdebug(mode = True):
+    global debug_mysql
+    debug_mysql = mode
+
 def mysql_connect(hostip='localhost'):
     global conn,cur
     try:
@@ -21,7 +27,9 @@ def mysql_connect(hostip='localhost'):
 
 def mysql_execute(sqlcmd):
     global conn,cur
-    print sqlcmd
+    global debug_mysql
+    if debug_mysql:
+        print sqlcmd
     cur.execute(sqlcmd)
     # fetchone()
 #     print 'Description', cur.description
@@ -87,7 +95,7 @@ def mysql_Get1MinByCodeDate(code = 'sh600036', datestart='', dateend=''):
 def mysql_Get1MinByIdx(idx = '%'):
     cmd1 = "SELECT date_format(datetime, '%%Y-%%m-%%d %%H:%%i'),open,high,low,close,volume,amount FROM `gp1min` WHERE `idx` like \'%s\' ORDER BY `datetime` ASC "
     cmd_run = cmd1 % idx
-    print cmd_run
+    # print cmd_run
     listall = mysql_execute(cmd_run)
     return listall  
 
