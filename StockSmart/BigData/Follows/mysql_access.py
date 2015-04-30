@@ -48,9 +48,9 @@ def mysql_disconnect():
 # SELECT *FROM `gpday` WHERE `code` LIKE 'sh600036' AND `date` > '2015-04-08' 
 # SELECT *FROM `gpday` WHERE `code` LIKE 'SH600036' AND `date` BETWEEN '2015-04-16' AND '2015-04-30' 
 def mysql_GetDayByCodeDate(code = 'sh600036', datestart='', dateend=''):
-    cmd1 = 'SELECT * FROM `gpday` WHERE `code` LIKE \'%s\' ORDER BY `date` ASC '
-    cmd2 = 'SELECT * FROM `gpday` WHERE `code` LIKE \'%s\' AND `date` > \'%s\' ORDER BY `date` ASC '
-    cmd3 = 'SELECT * FROM `gpday` WHERE `code` LIKE \'%s\' AND `date` BETWEEN \'%s\' AND \'%s\' ORDER BY `date` ASC '
+    cmd1 = "SELECT date_format(date, '%%Y-%%m-%%d'),open,high,low,close,volume,amount FROM `gpday` WHERE `code` LIKE \'%s\' ORDER BY `date` ASC "
+    cmd2 = "SELECT date_format(date, '%%Y-%%m-%%d'),open,high,low,close,volume,amount FROM `gpday` WHERE `code` LIKE \'%s\' AND `date` > \'%s\' ORDER BY `date` ASC "
+    cmd3 = "SELECT date_format(date, '%%Y-%%m-%%d'),open,high,low,close,volume,amount FROM `gpday` WHERE `code` LIKE \'%s\' AND `date` BETWEEN \'%s\' AND \'%s\' ORDER BY `date` ASC "
     if datestart == '' and dateend == '':
         cmd_run = cmd1 % code
     elif datestart != '' and dateend == '':
@@ -63,7 +63,7 @@ def mysql_GetDayByCodeDate(code = 'sh600036', datestart='', dateend=''):
     
     
 def mysql_GetDayByIdx(idx = '%'):
-    cmd1 = 'SELECT * FROM `gpday` WHERE `idx` like \'%s\' ORDER BY `date` ASC '
+    cmd1 = "SELECT date_format(date, '%%Y-%%m-%%d'),open,high,low,close,volume,amount FROM `gpday` WHERE `idx` like \'%s\' ORDER BY `date` ASC "
     cmd_run = cmd1 % idx
     # print cmd_run
     listall = mysql_execute(cmd_run)
@@ -71,9 +71,9 @@ def mysql_GetDayByIdx(idx = '%'):
     
     
 def mysql_Get1MinByCodeDate(code = 'sh600036', datestart='', dateend=''):
-    cmd1 = 'SELECT * FROM `gp1min` WHERE `code` LIKE \'%s\' ORDER BY `datetime` ASC '
-    cmd2 = 'SELECT * FROM `gp1min` WHERE `code` LIKE \'%s\' AND `datetime` > \'%s\' ORDER BY `datetime` ASC '
-    cmd3 = 'SELECT * FROM `gp1min` WHERE `code` LIKE \'%s\' AND `datetime` BETWEEN \'%s\' AND \'%s\' ORDER BY `datetime` ASC '
+    cmd1 = "SELECT date_format(datetime, '%%Y-%%m-%%d %%H:%%i'),open,high,low,close,volume,amount FROM `gp1min` WHERE `code` LIKE \'%s\' ORDER BY `datetime` ASC "
+    cmd2 = "SELECT date_format(datetime, '%%Y-%%m-%%d %%H:%%i'),open,high,low,close,volume,amount FROM `gp1min` WHERE `code` LIKE \'%s\' AND `datetime` > \'%s\' ORDER BY `datetime` ASC "
+    cmd3 = "SELECT date_format(datetime, '%%Y-%%m-%%d %%H:%%i'),open,high,low,close,volume,amount FROM `gp1min` WHERE `code` LIKE \'%s\' AND `datetime` BETWEEN \'%s\' AND \'%s\' ORDER BY `datetime` ASC "
     if datestart == '' and dateend == '':
         cmd_run = cmd1 % code
     elif datestart != '' and dateend == '':
@@ -85,7 +85,7 @@ def mysql_Get1MinByCodeDate(code = 'sh600036', datestart='', dateend=''):
     return listall    
     
 def mysql_Get1MinByIdx(idx = '%'):
-    cmd1 = 'SELECT * FROM `gp1min` WHERE `idx` like \'%s\' ORDER BY `datetime` ASC '
+    cmd1 = "SELECT date_format(datetime, '%%Y-%%m-%%d %%H:%%i'),open,high,low,close,volume,amount FROM `gp1min` WHERE `idx` like \'%s\' ORDER BY `datetime` ASC "
     cmd_run = cmd1 % idx
     print cmd_run
     listall = mysql_execute(cmd_run)
@@ -94,7 +94,12 @@ def mysql_Get1MinByIdx(idx = '%'):
 def show_list(lista):
     for one in lista:
         print one
-    
+
+def mysql_GetStockList(market = 'cn'):
+    cmd_run = "SELECT code,name,volume  FROM `stockinfo` WHERE `market` LIKE \'%s\'" % market
+    # print cmd_run
+    listall = mysql_execute(cmd_run)
+    return listall          
    
 ########################################################################
 if __name__ == '__main__':
@@ -109,11 +114,19 @@ if __name__ == '__main__':
     listall = mysql_GetDayByCodeDate('sh600036', '2015-01-11', '2015-04-15')
     print 'listall, len:',len(listall)
     listall = mysql_GetDayByIdx('SH600036-2015%')
-    print 'listall, len:',len(listall)
+    print 'listall, len:',len(listall), listall[0]
     
     listall = mysql_Get1MinByIdx('SH600036-2015%')
     print 'listall, len:',len(listall)    
     listall = mysql_Get1MinByCodeDate('sh600036', '2015-01-01', '2015-12-31')
-    print 'listall, len:',len(listall)    
+    print 'listall, len:',len(listall), listall[0] 
+    
+    listall = mysql_GetStockList()
+    print 'cn list', len(listall)
+    listall = mysql_GetStockList('hk')
+    print 'hk list', len(listall)
+    listall = mysql_GetStockList('us')
+    print 'us list', len(listall)
+
     mysql_disconnect()
     print 'End!'
