@@ -3,11 +3,18 @@ title RUN IT DAILY at office 8am
 REM delay 10m for Kuaidisk sync done.
 sleep 5s
 
-REM Get QMdata.
+REM Get QMdata and Update CSV.
 title running GetQDAdata.py 
 python GetQDAdata.py
 title UpdateCSV_withQMdata.py
 python ..\UpdateCSV_withQMdata.py -opath output_qda -ipath input_qda
+REM Get QMdata1min.
+title running GetQDAdata1min.py 
+python GetQDAdata1min.py
+REM Update to db
+title Insertcsv2db
+python Insertcsv2db.py
+REM Get list
 title running GetTodaySpurtList.py 
 python GetTodaySpurtList.py
 title running FindSidewaysLatent.py 
@@ -27,7 +34,7 @@ c:\cygwin\bin\rm -rf save_png
 c:\cygwin\bin\mkdir -p save_png/spurt
 c:\cygwin\bin\mkdir -p save_png/sideway
 c:\cygwin\bin\mkdir -p save_png/catchspurt
-REM rm -f save_png/*
+REM Save to PNG
 title running SaveWatchList2PNG.py 
 python SaveWatchList2PNG.py
 title Done
