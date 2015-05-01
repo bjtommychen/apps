@@ -136,5 +136,6 @@ if __name__ == '__main__':
     listall = mysql_GetStockList('us')
     print 'us list', len(listall)
 
+    print mysql_execute("SELECT * FROM `gpf` WHERE `idx` LIKE 'cyou%' ORDER BY `idx` DESC")[0:5]
     mysql_disconnect()
     print 'End!'
