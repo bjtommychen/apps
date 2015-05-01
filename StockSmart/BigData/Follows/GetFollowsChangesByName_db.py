@@ -104,7 +104,7 @@ def GetFollowsByCode(df1, code, startidx = 0):
     return '',0                    
 
 def GetFollows_InFiles(rawlist, code):
-    listout = mysql_execute("SELECT date_format(date, '%%Y-%%m-%%d'),name,code,f FROM `gpf` WHERE `code` LIKE \'%s\' ORDER BY `date` ASC" % code)
+    listout = mysql_execute("SELECT date_format(date, '%%Y-%%m-%%d'),name,code,f FROM `gpf` WHERE `idx` LIKE \'%s%%\' ORDER BY `date` ASC" % code)
     print 'Sql got lines',len(listout)
     print listout[0]
     return listout[0][1], list(listout)
@@ -255,7 +255,7 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     code = CodeName_process(code)
     print 'code:', code
     name, follows_list = GetFollows_InFiles(filelist, code)   
-    # print follows_list[:3]
+    #print follows_list[-5:-1]
     print name #.decode('gbk')
     pricehistory = get_stock_history_csv(code, name)
     if pricehistory == []:
