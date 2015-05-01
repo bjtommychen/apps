@@ -6,7 +6,7 @@ python ..\UpdateCSV_withQMdata.py -opath output_qda -ipath input_qda
 title running GetQDAdata1min.py 
 python GetQDAdata1min.py
 python Insertcsv2db.py
-
+title GetStockFollows_us
 .\GetStockFollows_us.py
 python InsertFdata2db.py 
 cp data/*.csv f:\KuaiDisk\StockSmart\follows\data\ -n
