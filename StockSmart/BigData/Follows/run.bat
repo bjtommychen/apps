@@ -1,1 +1,1 @@
-d:\workspace\apps\StockSmart\BigData\Follows\GetFollowsChangesByName.py  -t %1
+d:\workspace\apps\StockSmart\BigData\Follows\GetFollowsChangesByName_db.py  -t %1

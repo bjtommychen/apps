@@ -44,7 +44,7 @@ def external_cmd(cmd, rundir='./', msg_in=''):
         print("IOError: %s" % err)
         return None, None
 
-MAX_PROCESSING = 4       
+MAX_PROCESSING = 4    
 def run_cmdline_processing(q, lock, cmdline):
     # print 'run_cmdline_processing', onefile
     try:
@@ -141,10 +141,10 @@ def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/', wi
         elif '_us' in fname_list:
             name = GetCodeName_us(code)
         if not withDate:
-            cmdline = 'GetFollowsChangesByName.py -t ' + str(code) + ' --save ' + save_path+ fname_png_prefix + '%02d_'%i+code+name+'.png'
+            cmdline = 'GetFollowsChangesByName_db.py -t ' + str(code) + ' --save ' + save_path+ fname_png_prefix + '%02d_'%i+code+name+'.png'
         else:
             timetext = time.strftime("%Y%m%d", time.localtime()) 
-            cmdline = 'GetFollowsChangesByName.py -t ' + str(code) + ' --save ' + save_path+timetext+'_'+ fname_png_prefix + '%02d_'%i+code+name+'.png'
+            cmdline = 'GetFollowsChangesByName_db.py -t ' + str(code) + ' --save ' + save_path+timetext+'_'+ fname_png_prefix + '%02d_'%i+code+name+'.png'
         cmdlists.append(cmdline)
         i+= 1  
     if False:        
