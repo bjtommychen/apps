@@ -107,7 +107,7 @@ def GetFollows_InFiles(rawlist, code):
     listout = mysql_execute("SELECT date_format(date, '%%Y-%%m-%%d'),name,code,f FROM `gpf` WHERE `idx` LIKE \'%s%%\' ORDER BY `date` ASC" % code)
     print 'Sql got lines',len(listout)
     print listout[0]
-    return listout[0][1], list(listout)
+    return listout[-1][1], list(listout)    #[-1] to use the latest name
     
 def GetPriceByDate(list, date):
     first_or_default = next((x for x in list if x[0]==date), None)
