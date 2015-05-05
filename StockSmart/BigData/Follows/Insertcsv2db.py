@@ -150,22 +150,33 @@ def Insert_onecsv2db_gpday(filename):
         if list_day != []:
             code = code.split('\x00')[0]
             name = name.split('\x00')[0]
+            try:
+                name = name.decode('gbk')
+            except:
+                print name
+                continue
             cnt += 1
             if cnt%100==0:
                 print '..',cnt,'..',
             if True:
+                sqlcmd = sql_insert_prefix
+                i = 0
                 for one in list_day:
+                    if i != 0:
+                        sqlcmd += ','
+                    i += 1                    
                     m_time, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount, m_fNull = one
                     datestr = str(time.strftime('%Y%m%d', time.gmtime(m_time)))
                     one_row = str((code+'-'+datestr, code, 'goodwill', datestr, m_fOpen, m_fHigh, m_fLow, m_fClose, m_fVolume, m_fAmount))
-                    one_row = one_row.replace('goodwill', name.decode('gbk'))
-                    sqlcmd = sql_insert_prefix + one_row #'(\''+ () +'\');'
-                    try:
-                        # print sqlcmd
-                        cur.execute(sqlcmd)
-                    except:
-                        ErrorCnt += 1
-                        pass
+                    one_row = one_row.replace('goodwill', name)
+                    sqlcmd += one_row
+                try:
+                    sqlcmd += ';'
+                    # print sqlcmd
+                    cur.execute(sqlcmd)
+                except:
+                    ErrorCnt += 1
+                    pass
 #                 break
             conn.commit()
         else:
@@ -304,7 +315,7 @@ def Insert_StockInfos():
 if __name__ == '__main__':
     print 'Start ... '
     print (' Processing Mysql').center(79, '-')
-    mysql_connect('localhost')
+    mysql_connect('192.168.99.9')
     # Insert_onecsv2db_all_gpday()
     # Insert_onecsv2db_all_gp1min()
     # Insert_StockInfos()
