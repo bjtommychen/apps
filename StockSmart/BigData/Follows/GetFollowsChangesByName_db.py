@@ -104,7 +104,10 @@ def GetFollowsByCode(df1, code, startidx = 0):
     return '',0                    
 
 def GetFollows_InFiles(rawlist, code):
-    listout = mysql_execute("SELECT date_format(date, '%%Y-%%m-%%d'),name,code,f FROM `gpf` WHERE `idx` LIKE \'%s%%\' ORDER BY `date` ASC" % code)
+    if code.find('HK') == 0:
+        code = code[2:]
+    # print code
+    listout = mysql_execute("SELECT date_format(date, '%%Y-%%m-%%d'),name,code,f FROM `gpf` WHERE `idx` like \'%s-%%\' ORDER BY `date` ASC" % code)
     print 'Sql got lines',len(listout)
     print listout[0]
     return listout[-1][1], list(listout)    #[-1] to use the latest name
@@ -198,6 +201,7 @@ def CodeName_AutoCompleted(code):
                 code = 'SZ:' + code
     elif len(code) == 5:    #HK
         if code.isdigit():
+            # pass
             code = 'HK:' + code
     return code
     
@@ -337,7 +341,7 @@ if  __name__ == '__main__':
     if args.save != 'notexist':
         savepng = True
         save_fname = args.save
-    mysql_connect('localhost')
+    mysql_connect('192.168.99.9')
     mysql_setdebug(False)
     GetFollowsByCode_InFiles(getFileList(args.datapath, '*.csv', False), args.codename)
     mysql_disconnect()
