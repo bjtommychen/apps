@@ -114,7 +114,7 @@ if __name__ == '__main__':
     print 'Start ... '
     print (' Processing Mysql').center(79, '-')
     
-    if not mysql_connect('localhost'):
+    if not mysql_connect('192.168.99.9'):
         sys.exit(1)  
     mysql_GetDayByIdx('SH600036-20150101')
     print mysql_getDescription()
