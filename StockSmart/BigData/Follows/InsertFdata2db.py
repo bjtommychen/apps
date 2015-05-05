@@ -182,7 +182,7 @@ def Insert_fdata2db_recentdays(days=10):
 if __name__ == '__main__':
     print 'Start ... '
     print (' Processing Mysql').center(79, '-')
-    mysql_connect('localhost')
+    mysql_connect('192.168.99.9')
     # Insert_onecsv2db_all_fdata()
     Insert_fdata2db_recentdays()
     mysql_disconnect()
