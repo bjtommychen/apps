@@ -176,7 +176,7 @@ def CheckAllSideway_db():
 if __name__ == '__main__':
     print 'Start ... '
     print (' Sideways Latent '.center(79, '-'))
-    mysql_connect('localhost')
+    mysql_connect('192.168.99.9')
     mysql_setdebug(False)
     CheckAllSideway_db()
     mysql_disconnect()
