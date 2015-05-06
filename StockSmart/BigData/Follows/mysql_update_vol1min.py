@@ -115,7 +115,7 @@ def show_list(lista):
         print one
         
 def GetVol1min_avg(code='SH600036', timestr='0931'):
-    cmd1 = "SELECT count(volume),avg(volume) FROM `gp1min` WHERE `idx` LIKE \'%s-%%%s\' and TIMESTAMPDIFF(day,datetime,now()) < 10 ORDER BY `idx` DESC "
+    cmd1 = "SELECT count(volume),avg(volume) FROM `gp1min` WHERE `idx` LIKE \'%s-%%%s\' and TIMESTAMPDIFF(day,datetime,now()) < 10"
     cmd_run = cmd1 % (code, timestr)
     listout = list(mysql_execute(cmd_run))
 #     print timestr, len(listout[0])
@@ -305,10 +305,13 @@ if __name__ == '__main__':
     print mysql_getDescription()
     
     print "TRUNCATE TABLE `vol1min`"
-    # mysql_execute("TRUNCATE TABLE `vol1min`")
+    mysql_execute("TRUNCATE TABLE `vol1min`")
 #     show_list(GetVol1min_avg())
 #     UpdateDB_byCodeTime()
+    start = time.time()
     UpdateVol1min_All()
+    end = time.time()
+    print 'time last',end-start
     # UpdateVol1min_All_multiprocessing()
     # InsertDB_byCodeTime()
 #     print listout, len(listout)
