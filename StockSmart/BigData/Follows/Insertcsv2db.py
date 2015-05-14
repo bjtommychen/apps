@@ -189,7 +189,7 @@ def Insert_onecsv2db_gpday(filename):
         print 'Too many Error, exit.'
         return False
     
-def Insert_onecsv2db_gp1min(filename):
+def Insert_onecsv2db_gp1min(filename, filter=''):
     global conn,cur
     ErrorCnt = 0
     sql_insert_prefix = "INSERT INTO `gp`.`gp1min` (`idx`, `code`, `name`,`datetime`, `open`, `high`, `low`, `close`, `volume`, `amount`) VALUES"
@@ -203,7 +203,8 @@ def Insert_onecsv2db_gp1min(filename):
     flag, version, total_num = get_QM_header(fp)
     print 'flag:0x%08x' % flag, 'version:0x%08x' % version, 'total_num:0x%08x' % total_num
     cnt = 0
-    while ErrorCnt<100:
+    running = True
+    while ErrorCnt<100 and running:
         code, name, list_day = get_NextRecord(fp)
         if list_day != []:
             code = code.split('\x00')[0]
@@ -211,7 +212,17 @@ def Insert_onecsv2db_gp1min(filename):
             cnt += 1
             if cnt%100==0:
                 print '..',cnt,'..',
-            if 'SH60'not in code and 'SZ00' not in code and 'SZ30' not in code:
+            if 'SH000001' in code:
+                pass
+            elif 'SH60' not in code and 'SZ00' not in code and 'SZ30' not in code:
+                continue
+                
+            if filter == '':
+                pass
+            elif filter in code:
+                running = False
+                pass
+            elif filter not in code:
                 continue
             if True:
                 # print code, name.decode('gbk'), len(list_day)
@@ -237,6 +248,7 @@ def Insert_onecsv2db_gp1min(filename):
                     pass
                 # break
             conn.commit()
+
         else:
             break
     print ''
