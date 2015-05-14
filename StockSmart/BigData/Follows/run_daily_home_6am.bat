@@ -6,7 +6,7 @@ sleep 5s
 REM Get QMdata.
 python InsertFdata2db.py 
 python GetTodaySpurtList.py
-python FindSidewaysLatent.py
+python FindSidewaysLatent_db.py
 REM beep
 
 REM delay 10m for Kuaidisk sync done.
@@ -20,4 +20,8 @@ d:\cygwin\bin\mkdir -p save_png/sideway
 d:\cygwin\bin\mkdir -p save_png/catchspurt
 REM rm -f save_png/*
 python SaveWatchList2PNG.py
+d:\cygwin\bin\rm -rf f:\KuaiDisk\StockSmart\follows\save_png\
+d:\cygwin\bin\mkdir -p f:\KuaiDisk\StockSmart\follows\save_png\
+d:\cygwin\bin\cp -rf save_png/* f:\KuaiDisk\StockSmart\follows\save_png\
 REM pause
+sleep 10s

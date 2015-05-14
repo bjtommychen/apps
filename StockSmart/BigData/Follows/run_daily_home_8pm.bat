@@ -13,8 +13,8 @@ python Insertcsv2db.py
 REM python ..\UpdateCSV_withQMdata1min.py -opath output_qda1m -ipath input_qda1m
 title running GetTodaySpurtList.py 
 python GetTodaySpurtList.py
-title running FindSidewaysLatent.py 
-python FindSidewaysLatent.py
+title running FindSidewaysLatent_db.py 
+python FindSidewaysLatent_db.py
 REM beep
 
 REM delay 10m for Kuaidisk sync done.
@@ -28,5 +28,8 @@ d:\cygwin\bin\mkdir -p save_png/catchspurt
 REM rm -f save_png/*
 title running SaveWatchList2PNG.py 
 python SaveWatchList2PNG.py
+d:\cygwin\bin\rm -rf f:\KuaiDisk\StockSmart\follows\save_png\
+d:\cygwin\bin\mkdir -p f:\KuaiDisk\StockSmart\follows\save_png\
+d:\cygwin\bin\cp -rf save_png/* f:\KuaiDisk\StockSmart\follows\save_png\
 title Done
 echo Done
