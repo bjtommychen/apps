@@ -198,22 +198,22 @@ if  __name__ == '__main__':
             myip_count += 1
 
         # Process Cmds
-        if Check_NeedWork():
-            print '\n*** Work for Money! ***'
-            Run_XQdailyFollowsChg()
-            last_tick = time.time()
+        # if Check_NeedWork():
+            # print '\n*** Work for Money! ***'
+            # Run_XQdailyFollowsChg()
+            # last_tick = time.time()
             # force_sleep = True
-            continue
+            # continue
         # reset timer, Must before Sleep.
         # last_tick = time.time()
         if Check_NeedSleep() or force_sleep:
             print 'Sleep now.'
-            if force_sleep:
-                force_sleep = False
-                time.sleep(60*1)
-                DoCommand_CopyWatchListToCloud()
-                time.sleep(60*15)
+            # if force_sleep:
+                # force_sleep = False
+                # time.sleep(60*1)
+                # DoCommand_CopyWatchListToCloud()
+                # time.sleep(60*15)
             PowerState_Hibernate()
-            continue
+            # continue
     print 'Completed !'
     
