@@ -73,7 +73,7 @@ def GetPriceDayList(filename):
     return daylist
 
 def GetSimpleDayPriceList(code):
-    cmd1 = "SELECT date_format(date, '%%Y-%%m-%%d'), close FROM `gpday` WHERE `code` LIKE \'%s\' and TIMESTAMPDIFF(month,date,now()) < 4 ORDER BY `date` DESC "
+    cmd1 = "SELECT date_format(date, '%%Y-%%m-%%d'), close FROM `gpday` WHERE `idx` LIKE \'%s-201%%\' and date > '2015-01-01' and TIMESTAMPDIFF(month,date,now()) < 4 ORDER BY `date` DESC "
     cmd_run = cmd1 % code
     listout = list(mysql_execute(cmd_run))
     # print code, len(listout)
@@ -148,6 +148,8 @@ def CheckAllSideway_db():
         code, name, volume = onecn
         if 'SH60' not in code and 'SZ00' not in code and 'SZ30' not in code:
             continue
+        if volume > 500:
+            continue
         slist = GetSimpleDayPriceList(code)
         # print 'slist ', len(slist), slist[:5]
         day_startLatent, dayend = AnalyseDayList(slist)
@@ -164,7 +166,7 @@ def CheckAllSideway_db():
             # if timestamp_dayend < timestamp_prev30days:
                 # continue
             print code,name, day_startLatent, dayend
-            listr.append(['cn', code, str(int(volume))+'Y', 'sideway'])
+            listr.append(['cn', code, 0, str(int(volume))+'亿'+'sideway'])
             i+=1
         # if i>10:
             # break

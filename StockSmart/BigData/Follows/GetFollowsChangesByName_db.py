@@ -20,6 +20,7 @@ sys.setdefaultencoding('utf')
 livemode = False
 savepng = False
 save_fname = ''
+titleprefix = ''
 
 from pylab import *  
 mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei'] #指定默认字体
@@ -191,6 +192,18 @@ def get_stock_history_csv(code, name):
         print 'Sql got lines',len(listout)
         print listout[0]
         return list(listout)
+       
+def get_stockinfo_volume(code):
+    sqlcmd = "SELECT volume,flowcapital FROM `stockinfo` WHERE `code` = \'%s\'" % code
+    print sqlcmd
+    listout = mysql_execute(sqlcmd)
+    # print 'Sql got lines',len(listout)
+    if len(listout) == 0:
+        return 0, 0
+    else:
+        return listout[0][0], listout[0][1]
+    # print listout
+    # return list(listout)        
         
 def CodeName_AutoCompleted(code):
     if len(code) == 6:      #SH,SZ
@@ -255,6 +268,7 @@ def GetStockInfo_fromFile(reader, check_code):
     
 def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     global codemarket
+    global titleprefix
     # print filelist
     code = CodeName_process(code)
     print 'code:', code
@@ -289,11 +303,9 @@ def GetFollowsByCode_InFiles(filelist, code = 'SH600036'):
     ax_right = df.PRICE.plot(ax=ax0, secondary_y=True, color='red', marker='v', linewidth=2, alpha=0.7)
     ax_right.set_ylabel('price')
     
-    if codemarket == 0:
-        value_str = GetStockInfo_fromFile(csv.reader(file('stockinfo_cn.csv','rb')), code).decode('gbk')
-        plt.title(name+code+' v'+value_str)
-    else:
-        plt.title(name+code)
+    value_str = str(get_stockinfo_volume(code)[0])+u'亿'
+    follow_str = str(df.CHG[-1])+'/'+ str(int(CHG_mean))
+    plt.title(df.DATE[-1]+' '+titleprefix+' '+name+code+' v'+value_str+' F'+follow_str)
     plt.xlabel('Date')
     # print type(plt.xlim())
     # print type(xdata), xdata, xdata[0]
@@ -333,6 +345,7 @@ if  __name__ == '__main__':
     parser.add_argument('--debug', action='store_const', dest='debug', default=0, const=1, help='enable debug mode.') 
     parser.add_argument('--live', action='store_const', dest='live', default=False, const=True, help='Get stock day price from YahooWeb.') 
     parser.add_argument('--save', action='store', dest='save', default='notexist', help='Save to PNG format.') 
+    parser.add_argument('--titleprefix', action='store', dest='titleprefix', default='', help='Specify the Title Prefix')
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()    
     
@@ -340,9 +353,14 @@ if  __name__ == '__main__':
         livemode = True
     if args.save != 'notexist':
         savepng = True
-        save_fname = args.save
+        save_fname = args.save 
+    if args.titleprefix != '':
+        titleprefix = args.titleprefix
     mysql_connect('192.168.99.9')
     mysql_setdebug(False)
     GetFollowsByCode_InFiles(getFileList(args.datapath, '*.csv', False), args.codename)
+    # print get_stockinfo_volume('sh600036')
+    # print get_stockinfo_volume('amcn')
+    # print get_stockinfo_volume('aaaaaaaaamcn')
     mysql_disconnect()
     
