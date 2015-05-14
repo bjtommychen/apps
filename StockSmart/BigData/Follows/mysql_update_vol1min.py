@@ -115,7 +115,7 @@ def show_list(lista):
         print one
         
 def GetVol1min_avg(code='SH600036', timestr='0931'):
-    cmd1 = "SELECT count(volume),avg(volume) FROM `gp1min` WHERE `idx` LIKE \'%s-%%%s\' and TIMESTAMPDIFF(day,datetime,now()) < 10"
+    cmd1 = "SELECT count(volume),avg(volume) FROM `gp1min` WHERE `idx` LIKE \'%s-2015%%%s\' and TIMESTAMPDIFF(day,datetime,now()) < 10"
     cmd_run = cmd1 % (code, timestr)
     listout = list(mysql_execute(cmd_run))
 #     print timestr, len(listout[0])
@@ -194,6 +194,7 @@ def InsertDB_byCodeTime(code='SH600036'):
         # print sqlcmd
         # break
         cur.execute(sqlcmd)
+#         pass
     except Exception, e:
         # print Exception, e
         ErrorCnt += 1
@@ -203,8 +204,23 @@ def InsertDB_byCodeTime(code='SH600036'):
 def InsertDB_byCodeTime_MP(code='SH600036'):
     conn = pymysql.connect(host='192.168.99.9', user='tommy', db='gp', charset='utf8')
     cur = conn.cursor()
-    print conn, cur
-    listout = GetVol1min_byCodeTime(code)
+    # print code, conn, cur
+    listout = []
+    total = 0
+    list_min = get_stock_timemin()    
+    # print len(list_min)
+    for onemin in list_min:
+        cmd1 = "SELECT count(volume),avg(volume) FROM `gp1min` WHERE `idx` LIKE \'%s-2015%%%s\' and TIMESTAMPDIFF(day,datetime,now()) < 10"
+        cmd_run = cmd1 % (code, onemin)
+        cur.execute(cmd_run)
+        listout1 = cur.fetchall()
+    #     print timestr, len(listout[0])
+        cnt, volavg = listout1[0]
+        if cnt == 0:
+            total = total
+        else:
+            total += int(volavg)
+        listout.append([onemin,total])    
     print 'len', len(listout)
     current_timetext = time.strftime("%Y-%m-%d %H:%M", time.localtime())
     ErrorCnt = 0
@@ -240,18 +256,20 @@ def UpdateVol1min_All():
         print '.',cnt,'/',length,code,'.'
         InsertDB_byCodeTime(code)
         cnt += 1
+        # break
 
-MAX_PROCESSING = 1
+MAX_PROCESSING = 4
 def run_cmdline_processing(q, lock, code):
-    print 'run_cmdline_processing', code
-    lock.acquire()
+    # print 'run_cmdline_processing', code
+#     lock.acquire()
     try:
         InsertDB_byCodeTime_MP(code)
     except Exception, e:
         print 'error', Exception, e
-    lock.release()            
+#     lock.release()            
         
 def UpdateVol1min_All_multiprocessing():
+    # global conn, cur
     global list_min
     stocklist = mysql_GetStockList()
 
@@ -263,21 +281,23 @@ def UpdateVol1min_All_multiprocessing():
     cnt = 0
     for one in stocklist:
         cnt += 1
+        # if cnt > 10:
+            # break        
         code, name, volume = one
         # print '.',cnt,'/',length,code,'.'        
-        print (' Processing No.'+str(cnt)+'/'+str(len(stocklist))+code).center(79, '-')
+        print (' Processing No.'+str(cnt)+'/'+str(len(stocklist))+'-'+code).center(79, '-')
         # print line
         p = multiprocessing.Process(target=run_cmdline_processing, args=(q, lock, code))
         p.start()
         p_list.append(p)
         # print p,'added'
-        time.sleep(0.2)
+        time.sleep(.1)
         while(len(p_list) >= MAX_PROCESSING):
             print 'Waiting ...'
-            time.sleep(1)
+            time.sleep(.1)
             for p in p_list:
                 # print p
-                p.join(timeout=0.1)
+                p.join(timeout=.1)
                 if not p.is_alive():
                     p_list.remove(p)
                     # handle_ResultsInQueue(q.get())
@@ -309,11 +329,17 @@ if __name__ == '__main__':
 #     show_list(GetVol1min_avg())
 #     UpdateDB_byCodeTime()
     start = time.time()
-    UpdateVol1min_All()
+    # UpdateVol1min_All()
     end = time.time()
     print 'time last',end-start
-    # UpdateVol1min_All_multiprocessing()
+
+    start = time.time()
+    InsertDB_byCodeTime('SH000001')
+    UpdateVol1min_All_multiprocessing()
+    end = time.time()
+    print 'time last',end-start
+
     # InsertDB_byCodeTime()
 #     print listout, len(listout)
     mysql_disconnect()
-    print 'End!'    
+    print 'End!' 
