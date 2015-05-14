@@ -8,11 +8,12 @@ python GetQDAdata1min.py
 python Insertcsv2db.py
 title GetStockFollows_us
 .\GetStockFollows_us.py
+title InsertFdata2db
 python InsertFdata2db.py 
 cp data/*.csv f:\KuaiDisk\StockSmart\follows\data\ -n
 
 echo '[ China Market --- PostClose ]' > body.txt
-FollowsChanges.py  >> body.txt
+FollowsChanges_db.py  >> body.txt
 echo '' >> body.txt
 
 echo '[ US Market --- PreOpen ]' >> body.txt
@@ -33,6 +34,7 @@ pscp -batch -i myec2.ppk watch_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/sc
 pscp -batch -i myec2.ppk hold_*.csv ubuntu@bjtommychen.oicp.net:/home/ubuntu/script/longan 
 
 call run_daily_home_8pm.bat
+pscp -pw K9armed  hold_cn.csv tommy@192.168.99.9:/home/tommy/MyScripts/Longan_Foresight
 echo 'wait 60s...'
 sleep 60
 rem pause
