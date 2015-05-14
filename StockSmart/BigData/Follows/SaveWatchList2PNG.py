@@ -127,9 +127,14 @@ def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/', wi
         return
     filename  = csv_path+fname_list
     reader = csv.reader(file(filename,'rb'))
+    cnt = 0
+    csv_data = []
+    for one in reader:
+        cnt += 1
+        csv_data.append(one)
     i = 0
     cmdlists = []
-    for one in reader:
+    for one in csv_data:
         if len(one) < 2:
             continue
         code = one[1]
@@ -145,6 +150,8 @@ def Save2PNG_OneList(fname_list, fname_png_prefix, save_path = './save_png/', wi
         else:
             timetext = time.strftime("%Y%m%d", time.localtime()) 
             cmdline = 'GetFollowsChangesByName_db.py -t ' + str(code) + ' --save ' + save_path+timetext+'_'+ fname_png_prefix + '%02d_'%i+code+name+'.png'
+        title_header = fname_png_prefix + '%02d_'%i + '/'+ str(cnt)
+        cmdline += ' --titleprefix ' + title_header
         cmdlists.append(cmdline)
         i+= 1  
     if False:        
@@ -160,6 +167,8 @@ if  __name__ == '__main__':
     print '##### Convert Watch List to PNG files.'
     print '#'*60
 
+    # Save2PNG_OneList('hold_cn.csv', 'cn_H', './save_png/', True)
+    # exit(0)
     if True:
         Save2PNG_OneList('hold_cn.csv', 'cn_H', './save_png/', True)
         Save2PNG_OneList('watch_cn.csv', 'cn_W', './save_png/', True)
